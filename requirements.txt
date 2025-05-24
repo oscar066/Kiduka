@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+pydantic
+nump
+pandas
+scikit-learn
+joblib
+langgraph
+langchain-openai
+langchain-core
+openai
+python-multipart
+python-dotenv
