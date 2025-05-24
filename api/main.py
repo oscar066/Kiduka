@@ -50,63 +50,6 @@ class PredictionResponse(BaseModel):
     recommendations: List[str]
     timestamp: str
 
-# Mock trained models (replace with your actual trained models)
-class MockRandomForestModel:
-    def __init__(self, model_type="fertility"):
-        self.model_type = model_type
-        self.classes_ = {
-            "fertility": ["Low", "Moderate", "High"],
-            "fertilizer": ["NPK 10-10-10", "NPK 20-10-10", "NPK 15-15-15", "Organic Compost", "Urea", "Phosphate"]
-        }
-        # Texture encoding mapping
-        self.texture_mapping = {
-            "Sandy": 0, "Loamy": 1, "Clay": 2, "Silt": 3, 
-            "Sandy Loam": 4, "Clay Loam": 5, "Silty Clay": 6, "Other": 7
-        }
-    
-    def predict(self, X):
-        # Mock prediction logic - replace with actual model.predict(X)
-        if self.model_type == "fertility":
-            # Simple logic based on NPK values and pH
-            npk_sum = X[0][2] + X[0][3] + X[0][4]  # N + P + K
-            ph = X[0][1]
-            organic = X[0][5]  # O content
-            
-            # Calculate fertility score
-            fertility_score = (npk_sum * 0.4) + (organic * 0.3) + (abs(7 - ph) * -5)
-            
-            if fertility_score < 30:
-                return ["Low"]
-            elif fertility_score < 70:
-                return ["Moderate"]
-            else:
-                return ["High"]
-        else:  # fertilizer
-            # Mock fertilizer recommendation based on soil data and fertility
-            ph = X[0][1]
-            n = X[0][2]
-            p = X[0][3]
-            k = X[0][4]
-            
-            # Simple recommendation logic
-            if n < 20:
-                return ["Urea"]  # High nitrogen
-            elif p < 15:
-                return ["Phosphate"]  # High phosphorus
-            elif ph < 6.0:
-                return ["NPK 20-10-10"]  # Acidic soil
-            elif ph > 8.0:
-                return ["Organic Compost"]  # Alkaline soil
-            else:
-                return ["NPK 15-15-15"]  # Balanced
-    
-    def predict_proba(self, X):
-        # Mock confidence scores
-        if self.model_type == "fertility":
-            return [[0.1, 0.2, 0.7]]  # Example probabilities for [Low, Moderate, High]
-        else:
-            return [[0.8, 0.1, 0.05, 0.03, 0.01, 0.01]]  # Example probabilities for fertilizers
-
 # Initialize models
 try:
     # Try to load saved models if they exist
@@ -120,12 +63,8 @@ try:
         logger.info("Trained models loaded successfully")
     else:
         logger.warning("Model files not found, using mock models")
-        fertility_model = MockRandomForestModel("fertility")
-        fertilizer_model = MockRandomForestModel("fertilizer")
 except Exception as e:
     logger.warning(f"Error loading trained models: {e}. Using mock models instead.")
-    fertility_model = MockRandomForestModel("fertility")
-    fertilizer_model = MockRandomForestModel("fertilizer")
 
 # Initialize OpenAI LLM (with error handling)
 try:
@@ -158,7 +97,7 @@ class WorkflowState(BaseModel):
 def predict_fertility_node(state: WorkflowState) -> WorkflowState:
     """Predict soil fertility status"""
     try:
-        # Encode texture (you might need to adjust this based on your actual texture values)
+        # Encode texture using the mapping from the model
         texture_encoded = fertility_model.texture_mapping.get(
             state.soil_data["simplified_texture"], 7  # Default to "Other"
         )
