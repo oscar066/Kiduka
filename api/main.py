@@ -12,6 +12,9 @@ from datetime import datetime
 import logging
 from dotenv import load_dotenv
 
+# Import your preprocessing functions
+from preprocessing import SoilDataPreprocessor
+
 # Load environment variables
 load_dotenv()
 
@@ -39,7 +42,6 @@ class SoilData(BaseModel):
     cu: float = Field(..., description="Copper content", ge=0)
     fe: float = Field(..., description="Iron content", ge=0)
     zn: float = Field(..., description="Zinc content", ge=0)
-    crop_type: str = Field(..., description="Intended crop type")
 
 class PredictionResponse(BaseModel):
     soil_fertility_status: str
@@ -50,138 +52,213 @@ class PredictionResponse(BaseModel):
     recommendations: List[str]
     timestamp: str
 
-# Initialize models
-try:
-    # Try to load saved models if they exist
-    models_path = os.path.join(os.path.dirname(__file__), 'models')
-    fertility_model_path = os.path.join(models_path, 'Soil_Status_randomForest_Classifier_Model.joblib')
-    fertilizer_model_path = os.path.join(models_path, 'Fertilizers_xgb_Classifier_Model.joblib')
+# Global variables for models and preprocessors
+fertility_model = None
+fertilizer_model = None
+fertility_preprocessor = None
+fertilizer_preprocessor = None
+llm = None
+
+# Initialize models and preprocessors
+def initialize_models():
+    global fertility_model, fertilizer_model, fertility_preprocessor, fertilizer_preprocessor
     
-    if os.path.exists(fertility_model_path) and os.path.exists(fertilizer_model_path):
-        fertility_model = joblib.load(fertility_model_path)
-        fertilizer_model = joblib.load(fertilizer_model_path)
-        logger.info("Trained models loaded successfully")
-    else:
-        logger.warning("Model files not found, using mock models")
-except Exception as e:
-    logger.warning(f"Error loading trained models: {e}. Using mock models instead.")
+    try:
+        models_path = os.path.join(os.path.dirname(__file__), 'models')
+        
+        # Load fertility model
+        fertility_model_path = os.path.join(models_path, 'Soil_Status_randomForest_Classifier_Model.joblib')
+        if os.path.exists(fertility_model_path):
+            fertility_model = joblib.load(fertility_model_path)
+            logger.info("Fertility model loaded successfully")
+        
+        # Load fertilizer model
+        fertilizer_model_path = os.path.join(models_path, 'Fertilizers_xgb_Classifier_Model.joblib')
+        if os.path.exists(fertilizer_model_path):
+            fertilizer_model = joblib.load(fertilizer_model_path)
+            logger.info("Fertilizer model loaded successfully")
+        
+        # Load preprocessors
+        fertility_preprocessor_path = os.path.join(models_path, 'fertility_preprocessor.joblib')
+        fertilizer_preprocessor_path = os.path.join(models_path, 'fertilizer_preprocessor.joblib')
+        
+        if os.path.exists(fertility_preprocessor_path):
+            fertility_preprocessor = SoilDataPreprocessor()
+            fertility_preprocessor.load(fertility_preprocessor_path)
+            logger.info("Fertility preprocessor loaded successfully")
+        
+        if os.path.exists(fertilizer_preprocessor_path):
+            fertilizer_preprocessor = SoilDataPreprocessor()
+            fertilizer_preprocessor.load(fertilizer_preprocessor_path)
+            logger.info("Fertilizer preprocessor loaded successfully")
+            
+    except Exception as e:
+        logger.warning(f"Error loading models/preprocessors: {e}")
 
-# Initialize OpenAI LLM (with error handling)
-try:
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    if openai_api_key and openai_api_key != "your-openai-api-key-here":
-        llm = ChatOpenAI(
-            model="gpt-4o-mini",
-            temperature=0.3,
-            api_key=openai_api_key
-        )
-        logger.info("OpenAI LLM initialized successfully")
-    else:
-        logger.warning("OpenAI API key not found or invalid, using mock explanations")
-        llm = None
-except Exception as e:
-    logger.warning(f"Error initializing OpenAI LLM: {e}. Using mock explanations.")
-    llm = None
+# Initialize OpenAI LLM
+def initialize_llm():
+    global llm
+    try:
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if openai_api_key and openai_api_key != "your-openai-api-key-here":
+            llm = ChatOpenAI(
+                model="gpt-4o-mini",
+                temperature=0.3,
+                api_key=openai_api_key
+            )
+            logger.info("OpenAI LLM initialized successfully")
+        else:
+            logger.warning("OpenAI API key not found or invalid")
+    except Exception as e:
+        logger.warning(f"Error initializing OpenAI LLM: {e}")
 
-# LangGraph workflow state
-class WorkflowState(BaseModel):
-    soil_data: Dict[str, Any] = {}
-    fertility_prediction: str = ""
-    fertility_confidence: float = 0.0
-    fertilizer_prediction: str = ""
-    fertilizer_confidence: float = 0.0
-    explanation: str = ""
-    recommendations: List[str] = []
+# LangGraph workflow state - use TypedDict instead of BaseModel
+from typing_extensions import TypedDict
+
+class WorkflowState(TypedDict):
+    soil_data: Dict[str, Any]
+    fertility_prediction: Optional[str]
+    fertility_confidence: Optional[float]
+    fertilizer_prediction: Optional[str]
+    fertilizer_confidence: Optional[float]
+    explanation: Optional[str]
+    recommendations: List[str]
+
+def prepare_soil_dataframe(soil_data: Dict[str, Any]) -> pd.DataFrame:
+    """Convert soil data dictionary to DataFrame with proper column names"""
+    # Map API field names to expected DataFrame column names (matching your actual dataset)
+    column_mapping = {
+        'simplified_texture': 'Simplied Texture (1)',
+        'ph': '   pH',    # Three spaces
+        'n': ' N',     
+        'p': ' P',     
+        'k': ' K',     
+        'o': '    O',    # Three spaces
+        'ca': ' Ca',    
+        'mg': ' Mg',    
+        'cu': ' Cu',    
+        'fe': ' Fe',    
+        'zn': '  Zn',   # Two spaces
+    }
+    
+    # Create DataFrame with proper column names
+    mapped_data = {column_mapping.get(k, k): v for k, v in soil_data.items()}
+    df = pd.DataFrame([mapped_data])
+    
+    return df
 
 # Define workflow nodes
 def predict_fertility_node(state: WorkflowState) -> WorkflowState:
     """Predict soil fertility status"""
     try:
-        # Encode texture using the mapping from the model
-        texture_encoded = fertility_model.texture_mapping.get(
-            state.soil_data["simplified_texture"], 7  # Default to "Other"
-        )
+        # Load the preprocessor model
+        fertility_model = joblib.load("/Users/oscar/Desktop/data-project/Fertiliser_Modelling/models/Soil_Status_randomForest_Classifier_Model.joblib")        
+        # Prepare input data
+        df = prepare_soil_dataframe(state["soil_data"])
+
+        fertility_preprocessor = SoilDataPreprocessor()
         
-        # Prepare input for the model - match your dataset column order
-        soil_features = [
-            texture_encoded,                    # Simplified Texture (encoded)
-            state.soil_data["ph"],             # pH
-            state.soil_data["n"],              # N
-            state.soil_data["p"],              # P
-            state.soil_data["k"],              # K
-            state.soil_data["o"],              # O
-            state.soil_data["ca"],             # Ca
-            state.soil_data["mg"],             # Mg
-            state.soil_data["cu"],             # Cu
-            state.soil_data["fe"],             # Fe
-            state.soil_data["zn"]              # Zn
-        ]
+        # Apply preprocessing if preprocessor is available
+        if fertility_preprocessor is not None:
+            df_processed = fertility_preprocessor.fit_transform(df)
+        else:
+            # Basic preprocessing fallback
+            logger.warning("Fertility preprocessor not available, using basic preprocessing")
+            df_processed = df
+        
+        # Extract features (exclude non-feature columns) and convert to DataFrame with proper column names
+        feature_columns = ['Simplied Texture (1)', '   pH', ' N', ' P', ' K', '    O', ' Ca', ' Mg', ' Cu', ' Fe', '  Zn']
+        df_for_prediction = pd.DataFrame(df_processed[feature_columns], columns=feature_columns)
         
         # Make prediction
-        fertility_pred = fertility_model.predict([soil_features])
-        fertility_proba = fertility_model.predict_proba([soil_features])
+        fertility_pred = fertility_model.predict(df_for_prediction)
+        fertility_proba = fertility_model.predict_proba(df_for_prediction)
         
-        state.fertility_prediction = fertility_pred[0]
-        state.fertility_confidence = float(np.max(fertility_proba))
+        # Map numeric predictions to status classes
+        fertility_status_map = {
+            0: "MODERATELY HEALTHY",
+            1: "POOR",
+            2: "VERY POOR"
+        }
         
-        logger.info(f"Fertility prediction: {state.fertility_prediction} (confidence: {state.fertility_confidence:.2f})")
+        # Convert numeric prediction to status class
+        fertility_status = fertility_status_map.get(fertility_pred[0], "UNKNOWN")
+        
+        state["fertility_prediction"] = fertility_status
+        state["fertility_confidence"] = float(np.max(fertility_proba))
+        
+        logger.info(f"Fertility prediction: {state['fertility_prediction']} (confidence: {state['fertility_confidence']:.2f})")
         return state
         
     except Exception as e:
         logger.error(f"Error in fertility prediction: {e}")
-        raise HTTPException(status_code=500, detail="Error in fertility prediction")
+        return state
 
 def predict_fertilizer_node(state: WorkflowState) -> WorkflowState:
     """Predict fertilizer recommendation"""
     try:
-        # Encode texture and fertility status
-        texture_encoded = fertility_model.texture_mapping.get(
-            state.soil_data["simplified_texture"], 7
-        )
-        fertility_encoded = {"Low": 0, "Moderate": 1, "High": 2}.get(state.fertility_prediction, 1)
+        # Load the preprocessor and model
+        fertilizer_preprocessor = SoilDataPreprocessor()
+        fertilizer_model = joblib.load("/Users/oscar/Desktop/data-project/Fertiliser_Modelling/models/Fertilizers_xgb_Classifier_Model.joblib")
         
-        # Prepare input including soil features and fertility status
-        fertilizer_features = [
-            texture_encoded,                    # Simplified Texture (encoded)
-            state.soil_data["ph"],             # pH
-            state.soil_data["n"],              # N
-            state.soil_data["p"],              # P
-            state.soil_data["k"],              # K
-            state.soil_data["o"],              # O
-            state.soil_data["ca"],             # Ca
-            state.soil_data["mg"],             # Mg
-            state.soil_data["cu"],             # Cu
-            state.soil_data["fe"],             # Fe
-            state.soil_data["zn"],             # Zn
-            fertility_encoded                   # Predicted fertility status
-        ]
+        # Prepare input data including fertility prediction
+        df = prepare_soil_dataframe(state["soil_data"])
+        
+        # Validate fertility prediction
+        if state["fertility_prediction"] is None:
+            raise ValueError("Fertility prediction is required for fertilizer recommendation")
+            
+        df['Fertility Status'] = state["fertility_prediction"]
+        
+        # Apply preprocessing if preprocessor is available
+        if fertilizer_preprocessor is not None:
+            df_processed = fertilizer_preprocessor.fit_transform(df)
+        else:
+            # Basic preprocessing fallback
+            logger.warning("Fertilizer preprocessor not available, using basic preprocessing")
+            df_processed = df
+        
+        # Extract features and convert to DataFrame with proper column names
+        #feature_columns = ['Simplied Texture (1)', '   pH', ' N', ' P', ' K', ' O', ' Ca', ' Mg', ' Cu', ' Fe', ' Zn', 'Fertility Status']
+        feature_columns = ['Simplied Texture (1)', '   pH', ' N', ' P', ' K', '    O', ' Ca', ' Mg', ' Cu', ' Fe', '  Zn', 'Soil Fertility Status']
+
+        df_for_prediction = pd.DataFrame(df_processed[feature_columns], columns=feature_columns)
         
         # Make prediction
-        fertilizer_pred = fertilizer_model.predict([fertilizer_features])
-        fertilizer_proba = fertilizer_model.predict_proba([fertilizer_features])
+        fertilizer_pred = fertilizer_model.predict(df_for_prediction)
+        fertilizer_proba = fertilizer_model.predict_proba(df_for_prediction)
         
-        state.fertilizer_prediction = fertilizer_pred[0]
-        state.fertilizer_confidence = float(np.max(fertilizer_proba))
+        # Map numeric predictions to fertilizer types
+        fertilizer_type_map = {
+            0: "NPK",
+            1: "TSP"
+        }
         
-        logger.info(f"Fertilizer prediction: {state.fertilizer_prediction} (confidence: {state.fertilizer_confidence:.2f})")
+        # Convert numeric prediction to fertilizer type
+        fertilizer_type = fertilizer_type_map.get(fertilizer_pred[0], "UNKNOWN")
+        
+        state["fertilizer_prediction"] = fertilizer_type
+        state["fertilizer_confidence"] = float(np.max(fertilizer_proba))
+        
+        logger.info(f"Fertilizer prediction: {state['fertilizer_prediction']} (confidence: {state['fertilizer_confidence']:.2f})")
         return state
         
     except Exception as e:
         logger.error(f"Error in fertilizer prediction: {e}")
-        raise HTTPException(status_code=500, detail="Error in fertilizer prediction")
+        return state
 
 def generate_explanation_node(state: WorkflowState) -> WorkflowState:
     """Generate AI explanation and recommendations"""
     try:
         if llm is None:
             # Fallback explanation when LLM is not available
-            state.explanation = f"Your soil shows {state.fertility_prediction.lower()} fertility status with {state.fertility_confidence:.1%} confidence. The recommended fertilizer {state.fertilizer_prediction} will help improve nutrient availability for your {state.soil_data['crop_type']} crop based on the current nutrient levels (N: {state.soil_data['n']}, P: {state.soil_data['p']}, K: {state.soil_data['k']}) and pH: {state.soil_data['ph']}."
-            state.recommendations = [
-                f"Apply {state.fertilizer_prediction} according to package instructions",
+            state["explanation"] = f"Your soil shows {state['fertility_prediction'].lower() if state['fertility_prediction'] else 'unknown'} fertility status with {state['fertility_confidence']:.1%} confidence. The recommended fertilizer {state['fertilizer_prediction']} will help improve nutrient availability based on the current nutrient levels (N: {state['soil_data']['n']}, P: {state['soil_data']['p']}, K: {state['soil_data']['k']}) and pH: {state['soil_data']['ph']}."
+            state["recommendations"] = [
+                f"Apply {state['fertilizer_prediction']} according to package instructions",
                 "Monitor soil pH and adjust if needed (optimal range: 6.0-7.0)",
                 "Maintain proper soil moisture levels for optimal nutrient uptake",
-                f"Consider adding organic matter to improve {state.soil_data['simplified_texture'].lower()} soil structure",
-                f"Test soil nutrients again after 3-4 months to track improvement"
+                f"Consider adding organic matter to improve {state['soil_data']['simplified_texture'].lower()} soil structure",
+                "Test soil nutrients again after 3-4 months to track improvement"
             ]
             return state
         
@@ -192,22 +269,21 @@ def generate_explanation_node(state: WorkflowState) -> WorkflowState:
         Based on the following soil analysis and predictions, provide a clear explanation and practical recommendations:
         
         Soil Data:
-        - Soil Texture: {state.soil_data['simplified_texture']}
-        - pH: {state.soil_data['ph']}
-        - Nitrogen (N): {state.soil_data['n']}
-        - Phosphorus (P): {state.soil_data['p']}
-        - Potassium (K): {state.soil_data['k']}
-        - Organic Content (O): {state.soil_data['o']}
-        - Calcium (Ca): {state.soil_data['ca']}
-        - Magnesium (Mg): {state.soil_data['mg']}
-        - Copper (Cu): {state.soil_data['cu']}
-        - Iron (Fe): {state.soil_data['fe']}
-        - Zinc (Zn): {state.soil_data['zn']}
-        - Intended Crop: {state.soil_data['crop_type']}
+        - Soil Texture: {state['soil_data']['simplified_texture']}
+        - pH: {state['soil_data']['ph']}
+        - Nitrogen (N): {state['soil_data']['n']}
+        - Phosphorus (P): {state['soil_data']['p']}
+        - Potassium (K): {state['soil_data']['k']}
+        - Organic Content (O): {state['soil_data']['o']}
+        - Calcium (Ca): {state['soil_data']['ca']}
+        - Magnesium (Mg): {state['soil_data']['mg']}
+        - Copper (Cu): {state['soil_data']['cu']}
+        - Iron (Fe): {state['soil_data']['fe']}
+        - Zinc (Zn): {state['soil_data']['zn']}
         
         Predictions:
-        - Soil Fertility Status: {state.fertility_prediction} (Confidence: {state.fertility_confidence:.1%})
-        - Recommended Fertilizer: {state.fertilizer_prediction} (Confidence: {state.fertilizer_confidence:.1%})
+        - Soil Fertility Status: {state['fertility_prediction']} (Confidence: {state['fertility_confidence']:.1%})
+        - Recommended Fertilizer: {state['fertilizer_prediction']} (Confidence: {state['fertilizer_confidence']:.1%})
         
         Please provide:
         1. A simple explanation of what these results mean for the farmer
@@ -247,8 +323,8 @@ def generate_explanation_node(state: WorkflowState) -> WorkflowState:
             elif not in_recommendations:
                 explanation_lines.append(line)
         
-        state.explanation = ' '.join(explanation_lines) if explanation_lines else full_response
-        state.recommendations = recommendations if recommendations else [
+        state["explanation"] = ' '.join(explanation_lines) if explanation_lines else full_response
+        state["recommendations"] = recommendations if recommendations else [
             "Monitor soil moisture regularly",
             "Test soil pH monthly",
             "Apply organic matter to improve soil structure",
@@ -261,13 +337,16 @@ def generate_explanation_node(state: WorkflowState) -> WorkflowState:
         
     except Exception as e:
         logger.error(f"Error generating explanation: {e}")
-        # Provide fallback explanation
-        state.explanation = f"Your soil shows {state.fertility_prediction.lower()} fertility status. The recommended fertilizer {state.fertilizer_prediction} will help improve nutrient availability for your {state.soil_data['crop_type']} crop."
-        state.recommendations = [
-            "Apply the recommended fertilizer according to package instructions",
-            "Monitor soil pH and adjust if needed",
-            "Maintain proper soil moisture levels",
-            "Consider adding organic matter to improve soil health"
+        # Provide fallback explanation with None checks
+        fertility_status = state.get('fertility_prediction', 'unknown')
+        fertilizer_type = state.get('fertilizer_prediction', 'unknown')
+        state["explanation"] = f"Your soil shows {fertility_status.lower() if fertility_status else 'unknown'} fertility status. The recommended fertilizer {fertilizer_type} will help improve nutrient availability."
+        state["recommendations"] = [
+            "Monitor soil moisture regularly",
+            "Test soil pH monthly", 
+            "Apply organic matter to improve soil structure",
+            "Follow recommended fertilizer application rates",
+            "Consider crop rotation for soil health"
         ]
         return state
 
@@ -280,7 +359,7 @@ def create_workflow():
     workflow.add_node("predict_fertilizer", predict_fertilizer_node)
     workflow.add_node("generate_explanation", generate_explanation_node)
     
-    # Define edges using the new LangGraph API
+    # Define edges
     workflow.add_edge(START, "predict_fertility")
     workflow.add_edge("predict_fertility", "predict_fertilizer")
     workflow.add_edge("predict_fertilizer", "generate_explanation")
@@ -288,7 +367,9 @@ def create_workflow():
     
     return workflow.compile()
 
-# Initialize workflow
+# Initialize everything on startup
+initialize_models()
+initialize_llm()
 prediction_workflow = create_workflow()
 
 @app.get("/")
@@ -309,7 +390,12 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
-        "models_loaded": True,
+        "models_loaded": {
+            "fertility_model": fertility_model is not None,
+            "fertilizer_model": fertilizer_model is not None,
+            "fertility_preprocessor": fertility_preprocessor is not None,
+            "fertilizer_preprocessor": fertilizer_preprocessor is not None
+        },
         "llm_available": llm is not None
     }
 
@@ -320,30 +406,37 @@ async def predict_soil_fertility(soil_data: SoilData):
     """
     try:
         # Initialize workflow state
-        initial_state = WorkflowState(soil_data=soil_data.model_dump())
+        initial_state: WorkflowState = {
+            "soil_data": soil_data.model_dump(),
+            "fertility_prediction": None,
+            "fertility_confidence": None,
+            "fertilizer_prediction": None,
+            "fertilizer_confidence": None,
+            "explanation": None,
+            "recommendations": []
+        }
         
         # Run the workflow
         result = prediction_workflow.invoke(initial_state)
         
-        # Create response
+        # Access the result as a dictionary with proper None checks
         response = PredictionResponse(
-            soil_fertility_status=result.fertility_prediction,
-            soil_fertility_confidence=result.fertility_confidence,
-            fertilizer_recommendation=result.fertilizer_prediction,
-            fertilizer_confidence=result.fertilizer_confidence,
-            explanation=result.explanation,
-            recommendations=result.recommendations,
+            soil_fertility_status=result.get("fertility_prediction", "UNKNOWN"),
+            soil_fertility_confidence=result.get("fertility_confidence", 0.0),
+            fertilizer_recommendation=result.get("fertilizer_prediction", "UNKNOWN"),
+            fertilizer_confidence=result.get("fertilizer_confidence", 0.0),
+            explanation=result.get("explanation", "Unable to generate explanation"),
+            recommendations=result.get("recommendations", ["Consult with agricultural expert"]),
             timestamp=datetime.now().isoformat()
         )
         
-        logger.info(f"Prediction completed successfully for crop: {soil_data.crop_type}")
+        logger.info(f"Prediction completed successfully")
         return response
         
     except Exception as e:
         logger.error(f"Error in prediction pipeline: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Add a test endpoint for easier debugging
 @app.post("/test-predict")
 async def test_predict():
     """Test endpoint with sample data"""
@@ -359,7 +452,6 @@ async def test_predict():
         cu=2.5,
         fe=85.0,
         zn=5.2,
-        crop_type="Corn"
     )
     return await predict_soil_fertility(sample_data)
 
