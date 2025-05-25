@@ -128,17 +128,17 @@ def prepare_soil_dataframe(soil_data: Dict[str, Any]) -> pd.DataFrame:
     """Convert soil data dictionary to DataFrame with proper column names"""
     # Map API field names to expected DataFrame column names (matching your actual dataset)
     column_mapping = {
-        'simplified_texture': 'Simplied Texture (1)',
-        'ph': '   pH',    # Three spaces
-        'n': ' N',     
-        'p': ' P',     
-        'k': ' K',     
-        'o': '    O',    # Three spaces
-        'ca': ' Ca',    
-        'mg': ' Mg',    
-        'cu': ' Cu',    
-        'fe': ' Fe',    
-        'zn': '  Zn',   # Two spaces
+        'simplified_texture': 'simpliedtexture(1)',
+        'ph': 'ph',
+        'n': 'n',
+        'p': 'p',
+        'k': 'k',
+        'o': 'o',
+        'ca': 'ca',
+        'mg': 'mg',
+        'cu': 'cu',
+        'fe': 'fe',
+        'zn': 'zn'
     }
     
     # Create DataFrame with proper column names
@@ -167,7 +167,7 @@ def predict_fertility_node(state: WorkflowState) -> WorkflowState:
             df_processed = df
         
         # Extract features (exclude non-feature columns) and convert to DataFrame with proper column names
-        feature_columns = ['Simplied Texture (1)', '   pH', ' N', ' P', ' K', '    O', ' Ca', ' Mg', ' Cu', ' Fe', '  Zn']
+        feature_columns = ['simpliedtexture(1)', 'ph', 'n', 'p', 'k', 'o', 'ca', 'mg', 'cu', 'fe', 'zn']
         df_for_prediction = pd.DataFrame(df_processed[feature_columns], columns=feature_columns)
         
         # Make prediction
@@ -208,7 +208,7 @@ def predict_fertilizer_node(state: WorkflowState) -> WorkflowState:
         if state["fertility_prediction"] is None:
             raise ValueError("Fertility prediction is required for fertilizer recommendation")
             
-        df['Fertility Status'] = state["fertility_prediction"]
+        df['soilfertilitystatus'] = state["fertility_prediction"]
         
         # Apply preprocessing if preprocessor is available
         if fertilizer_preprocessor is not None:
@@ -219,9 +219,7 @@ def predict_fertilizer_node(state: WorkflowState) -> WorkflowState:
             df_processed = df
         
         # Extract features and convert to DataFrame with proper column names
-        #feature_columns = ['Simplied Texture (1)', '   pH', ' N', ' P', ' K', ' O', ' Ca', ' Mg', ' Cu', ' Fe', ' Zn', 'Fertility Status']
-        feature_columns = ['Simplied Texture (1)', '   pH', ' N', ' P', ' K', '    O', ' Ca', ' Mg', ' Cu', ' Fe', '  Zn', 'Soil Fertility Status']
-
+        feature_columns = ['simpliedtexture(1)', 'ph', 'n', 'p', 'k', 'o', 'ca', 'mg', 'cu', 'fe', 'zn', 'soilfertilitystatus']
         df_for_prediction = pd.DataFrame(df_processed[feature_columns], columns=feature_columns)
         
         # Make prediction
