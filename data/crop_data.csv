@@ -1,0 +1,16 @@
+crop_type  , nitrogen_req, phosphorus_req, potassium_req
+ALVS       ,           50,             30,            40
+ARROW ROOTS,           60,             40,            80
+BANANA     ,          150,             50,           200
+BEANS      ,           20,             40,            60
+CASSAVA    ,           80,             40,           120
+COTTON     ,           90,             50,            60
+MAIZE      ,          120,             60,            80
+MILLET     ,           40,             20,            30
+PAWPAW     ,          100,             50,            80
+PEANUT     ,           20,             50,            60
+PINEAPPLE  ,           50,             30,           100
+SESAME     ,           40,             20,            30
+SORGHUM    ,           60,             30,            40
+SOYBEAN    ,           25,             60,            80
+SUNFLOWER  ,           60,             40,            80
