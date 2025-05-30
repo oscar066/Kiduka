@@ -1,46 +1,53 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { Progress } from "@/components/ui/progress"
+import { Progress } from "@/components/ui/progress";
 
 interface NutrientGaugeProps {
-  name: string
-  value: number
-  unit: string
-  optimal: { min: number; max: number }
-  icon: React.ReactNode
+  name: string;
+  value: number;
+  unit: string;
+  optimal: { min: number; max: number };
+  icon: React.ReactNode;
 }
 
-export function NutrientGauge({ name, value, unit, optimal, icon }: NutrientGaugeProps) {
-  const percentage = Math.min((value / optimal.max) * 100, 100)
-  const status = value < optimal.min ? "low" : value > optimal.max ? "high" : "optimal"
+export function NutrientGauge({
+  name,
+  value,
+  unit,
+  optimal,
+  icon,
+}: NutrientGaugeProps) {
+  const percentage = Math.min((value / optimal.max) * 100, 100);
+  const status =
+    value < optimal.min ? "low" : value > optimal.max ? "high" : "optimal";
 
   const getStatusColor = () => {
     switch (status) {
       case "low":
-        return "bg-red-500"
+        return "bg-red-500";
       case "high":
-        return "bg-orange-500"
+        return "bg-orange-500";
       case "optimal":
-        return "bg-green-500"
+        return "bg-green-500";
       default:
-        return "bg-gray-500"
+        return "bg-gray-500";
     }
-  }
+  };
 
   const getStatusText = () => {
     switch (status) {
       case "low":
-        return "Below Optimal"
+        return "Below Optimal";
       case "high":
-        return "Above Optimal"
+        return "Above Optimal";
       case "optimal":
-        return "Optimal Range"
+        return "Optimal Range";
       default:
-        return "Unknown"
+        return "Unknown";
     }
-  }
+  };
 
   return (
     <div className="bg-white rounded-lg border border-amber-200 p-4 shadow-sm">
@@ -62,7 +69,11 @@ export function NutrientGauge({ name, value, unit, optimal, icon }: NutrientGaug
           </span>
           <span
             className={`font-medium ${
-              status === "optimal" ? "text-green-600" : status === "low" ? "text-red-600" : "text-orange-600"
+              status === "optimal"
+                ? "text-green-600"
+                : status === "low"
+                ? "text-red-600"
+                : "text-orange-600"
             }`}
           >
             {getStatusText()}
@@ -73,5 +84,5 @@ export function NutrientGauge({ name, value, unit, optimal, icon }: NutrientGaug
         </div>
       </div>
     </div>
-  )
+  );
 }

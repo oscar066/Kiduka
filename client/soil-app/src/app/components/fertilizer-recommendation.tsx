@@ -1,17 +1,21 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Sprout, Target, Calendar } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Sprout, Target, Calendar } from "lucide-react";
 
 interface FertilizerRecommendationProps {
-  fertilizer: string
-  confidence: number
-  timestamp: string
+  fertilizer: string;
+  confidence: number;
+  timestamp: string;
 }
 
-export function FertilizerRecommendation({ fertilizer, confidence, timestamp }: FertilizerRecommendationProps) {
+export function FertilizerRecommendation({
+  fertilizer,
+  confidence,
+  timestamp,
+}: FertilizerRecommendationProps) {
   return (
     <Card className="bg-gradient-to-br from-blue-50 to-green-50 border-blue-200">
       <CardHeader className="pb-3">
@@ -23,7 +27,9 @@ export function FertilizerRecommendation({ fertilizer, confidence, timestamp }: 
       <CardContent className="space-y-4">
         <div className="flex items-center justify-center">
           <div className="text-center space-y-2">
-            <Badge className="bg-blue-600 text-white text-lg px-4 py-2">{fertilizer}</Badge>
+            <Badge className="bg-blue-600 text-white text-lg px-4 py-2">
+              {fertilizer}
+            </Badge>
             <p className="text-sm text-gray-600">Recommended Fertilizer</p>
           </div>
         </div>
@@ -45,5 +51,5 @@ export function FertilizerRecommendation({ fertilizer, confidence, timestamp }: 
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

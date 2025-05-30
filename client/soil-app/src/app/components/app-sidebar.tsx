@@ -1,6 +1,15 @@
-"use client"
+"use client";
 
-import { Leaf, BarChart3, FileText, Settings, History, MapPin, Beaker, TrendingUp } from "lucide-react"
+import {
+  Leaf,
+  BarChart3,
+  FileText,
+  Settings,
+  History,
+  MapPin,
+  Beaker,
+  TrendingUp,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -13,7 +22,7 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 const navigationItems = [
   {
@@ -42,7 +51,7 @@ const navigationItems = [
     icon: History,
     url: "#",
   },
-]
+];
 
 const analyticsItems = [
   {
@@ -55,7 +64,7 @@ const analyticsItems = [
     icon: Leaf,
     url: "#",
   },
-]
+];
 
 export function AppSidebar() {
   return (
@@ -74,7 +83,9 @@ export function AppSidebar() {
 
       <SidebarContent className="p-2">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-green-700 font-medium">Main Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-green-700 font-medium">
+            Main Navigation
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems.map((item) => (
@@ -96,7 +107,9 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-green-700 font-medium">Analytics</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-green-700 font-medium">
+            Analytics
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {analyticsItems.map((item) => (
@@ -127,5 +140,5 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
