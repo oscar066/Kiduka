@@ -1,42 +1,64 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { AppSidebar } from "./app-sidebar"
-import { Navbar } from "./navbar"
-import { SoilHealthCard } from "./soil-health-card"
-import { FertilizerRecommendation } from "./fertilizer-recommendation"
-import { NutrientGauge } from "./nutrient-gauge"
-import { Beaker, Leaf, Zap, Droplets, Mountain, Atom, Sparkles, FileText, TrendingUp } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "./app-sidebar";
+import { Navbar } from "./navbar";
+import { SoilHealthCard } from "./soil-health-card";
+import { FertilizerRecommendation } from "./fertilizer-recommendation";
+import { NutrientGauge } from "./nutrient-gauge";
+import {
+  Beaker,
+  Leaf,
+  Zap,
+  Droplets,
+  Mountain,
+  Atom,
+  Sparkles,
+  FileText,
+  TrendingUp,
+} from "lucide-react";
 
 interface SoilInput {
-  simplified_texture: string
-  ph: number
-  n: number
-  p: number
-  k: number
-  o: number
-  ca: number
-  mg: number
-  cu: number
-  fe: number
-  zn: number
+  simplified_texture: string;
+  ph: number;
+  n: number;
+  p: number;
+  k: number;
+  o: number;
+  ca: number;
+  mg: number;
+  cu: number;
+  fe: number;
+  zn: number;
 }
 
 interface SoilOutput {
-  soil_fertility_status: string
-  soil_fertility_confidence: number
-  fertilizer_recommendation: string
-  fertilizer_confidence: number
-  explanation: string
-  recommendations: string[]
-  timestamp: string
+  soil_fertility_status: string;
+  soil_fertility_confidence: number;
+  fertilizer_recommendation: string;
+  fertilizer_confidence: number;
+  explanation: string;
+  recommendations: string[];
+  timestamp: string;
 }
 
 export default function SoilFertilityDashboard() {
@@ -52,53 +74,59 @@ export default function SoilFertilityDashboard() {
     cu: 0,
     fe: 0,
     zn: 0,
-  })
+  });
 
-  const [results, setResults] = useState<SoilOutput | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  
+  const [results, setResults] = useState<SoilOutput | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleInputChange = (field: keyof SoilInput, value: string | number) => {
+  const handleInputChange = (
+    field: keyof SoilInput,
+    value: string | number
+  ) => {
     setSoilData((prev) => ({
       ...prev,
       [field]: value,
-    }))
-  }
+    }));
+  };
 
   const handlePredict = async () => {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const response = await fetch('http://0.0.0.0:8000/predict', {
-        method: 'POST',
+      const response = await fetch("http://127.0.0.1:8000/predict", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(soilData),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const apiResults = await response.json()
-      
+      const apiResults = await response.json();
+
       // Add timestamp if not provided by API
       const resultsWithTimestamp: SoilOutput = {
         ...apiResults,
         timestamp: apiResults.timestamp || new Date().toISOString(),
-      }
+      };
 
-      setResults(resultsWithTimestamp)
+      setResults(resultsWithTimestamp);
     } catch (err) {
-      console.error('Error calling API:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred while analyzing soil data')
+      console.error("Error calling API:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred while analyzing soil data"
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const nutrientData = results
     ? [
@@ -145,7 +173,7 @@ export default function SoilFertilityDashboard() {
           icon: <Atom className="h-4 w-4 text-amber-600" />,
         },
       ]
-    : []
+    : [];
 
   return (
     <SidebarProvider>
@@ -155,8 +183,13 @@ export default function SoilFertilityDashboard() {
 
         <main className="flex-1 space-y-6 p-6 bg-gradient-to-br from-green-25 via-amber-25 to-green-25 min-h-screen">
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-green-800">Soil Fertility Analysis</h1>
-            <p className="text-green-600">Comprehensive soil health assessment and fertilizer recommendations</p>
+            <h1 className="text-3xl font-bold text-green-800">
+              Soil Fertility Analysis
+            </h1>
+            <p className="text-green-600">
+              Comprehensive soil health assessment and fertilizer
+              recommendations
+            </p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
@@ -185,7 +218,7 @@ export default function SoilFertilityDashboard() {
                         value="nutrients"
                         className="data-[state=active]:bg-green-600 data-[state=active]:text-white"
                       >
-                        Nutrients
+                        Macro
                       </TabsTrigger>
                       <TabsTrigger
                         value="micronutrients"
@@ -197,10 +230,17 @@ export default function SoilFertilityDashboard() {
 
                     <TabsContent value="basic" className="space-y-4 mt-4">
                       <div className="space-y-2">
-                        <Label htmlFor="texture" className="text-green-700 font-medium">
+                        <Label
+                          htmlFor="texture"
+                          className="text-green-700 font-medium"
+                        >
                           Soil Texture
                         </Label>
-                        <Select onValueChange={(value) => handleInputChange("simplified_texture", value)}>
+                        <Select
+                          onValueChange={(value) =>
+                            handleInputChange("simplified_texture", value)
+                          }
+                        >
                           <SelectTrigger className="border-amber-200 focus:border-green-500">
                             <SelectValue placeholder="Select soil texture" />
                           </SelectTrigger>
@@ -214,7 +254,10 @@ export default function SoilFertilityDashboard() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="ph" className="text-green-700 font-medium">
+                        <Label
+                          htmlFor="ph"
+                          className="text-green-700 font-medium"
+                        >
                           pH Level
                         </Label>
                         <Input
@@ -223,12 +266,20 @@ export default function SoilFertilityDashboard() {
                           step="0.1"
                           placeholder="6.8"
                           className="border-amber-200 focus:border-green-500"
-                          onChange={(e) => handleInputChange("ph", Number.parseFloat(e.target.value) || 0)}
+                          onChange={(e) =>
+                            handleInputChange(
+                              "ph",
+                              Number.parseFloat(e.target.value) || 0
+                            )
+                          }
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="organic" className="text-green-700 font-medium">
+                        <Label
+                          htmlFor="organic"
+                          className="text-green-700 font-medium"
+                        >
                           Organic Content (%)
                         </Label>
                         <Input
@@ -237,22 +288,42 @@ export default function SoilFertilityDashboard() {
                           step="0.1"
                           placeholder="2.5"
                           className="border-amber-200 focus:border-green-500"
-                          onChange={(e) => handleInputChange("o", Number.parseFloat(e.target.value) || 0)}
+                          onChange={(e) =>
+                            handleInputChange(
+                              "o",
+                              Number.parseFloat(e.target.value) || 0
+                            )
+                          }
                         />
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="nutrients" className="space-y-4 mt-4">
+                    <TabsContent
+                      value="nutrients"
+                      className="space-y-4 mt-4"
+                    >
                       <div className="grid grid-cols-1 gap-4">
                         {[
-                          { key: "n", label: "Nitrogen (N)", placeholder: "45.5" },
-                          { key: "p", label: "Phosphorus (P)", placeholder: "35.2" },
-                          { key: "k", label: "Potassium (K)", placeholder: "180.0" },
-                          { key: "ca", label: "Calcium (Ca)", placeholder: "1250" },
-                          { key: "mg", label: "Magnesium (Mg)", placeholder: "220" },
+                          {
+                            key: "n",
+                            label: "Nitrogen (N)",
+                            placeholder: "45.5",
+                          },
+                          {
+                            key: "p",
+                            label: "Phosphorus (P)",
+                            placeholder: "35.2",
+                          },
+                          {
+                            key: "k",
+                            label: "Potassium (K)",
+                            placeholder: "180.0",
+                          },
                         ].map((nutrient) => (
                           <div key={nutrient.key} className="space-y-2">
-                            <Label className="text-green-700 font-medium">{nutrient.label} (mg/kg)</Label>
+                            <Label className="text-green-700 font-medium">
+                              {nutrient.label} (mg/kg)
+                            </Label>
                             <Input
                               type="number"
                               step="0.1"
@@ -261,7 +332,7 @@ export default function SoilFertilityDashboard() {
                               onChange={(e) =>
                                 handleInputChange(
                                   nutrient.key as keyof SoilInput,
-                                  Number.parseFloat(e.target.value) || 0,
+                                  Number.parseFloat(e.target.value) || 0
                                 )
                               }
                             />
@@ -270,15 +341,41 @@ export default function SoilFertilityDashboard() {
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="micronutrients" className="space-y-4 mt-4">
+                    <TabsContent
+                      value="micronutrients"
+                      className="space-y-4 mt-4"
+                    >
                       <div className="grid grid-cols-1 gap-4">
                         {[
-                          { key: "cu", label: "Copper (Cu)", placeholder: "1.8" },
-                          { key: "fe", label: "Iron (Fe)", placeholder: "45.0" },
-                          { key: "zn", label: "Zinc (Zn)", placeholder: "2.2" },
+                          {
+                            key: "ca",
+                            label: "Calcium (Ca)",
+                            placeholder: "1250",
+                          },
+                          {
+                            key: "mg",
+                            label: "Magnesium (Mg)",
+                            placeholder: "220",
+                          },
+                          {
+                            key: "cu",
+                            label: "Copper (Cu)",
+                            placeholder: "1.8",
+                          },
+                          {
+                            key: "fe",
+                            label: "Iron (Fe)",
+                            placeholder: "45.0",
+                          },
+                          { key: "zn", 
+                            label: "Zinc (Zn)", 
+                            placeholder: "2.2" 
+                          },
                         ].map((micronutrient) => (
                           <div key={micronutrient.key} className="space-y-2">
-                            <Label className="text-green-700 font-medium">{micronutrient.label} (mg/kg)</Label>
+                            <Label className="text-green-700 font-medium">
+                              {micronutrient.label} (mg/kg)
+                            </Label>
                             <Input
                               type="number"
                               step="0.1"
@@ -287,7 +384,7 @@ export default function SoilFertilityDashboard() {
                               onChange={(e) =>
                                 handleInputChange(
                                   micronutrient.key as keyof SoilInput,
-                                  Number.parseFloat(e.target.value) || 0,
+                                  Number.parseFloat(e.target.value) || 0
                                 )
                               }
                             />
@@ -302,8 +399,14 @@ export default function SoilFertilityDashboard() {
                     className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white"
                     disabled={isLoading || !soilData.simplified_texture}
                   >
-                    {isLoading ? "Analyzing Soil..." : "Analyze Soil Health"}
+                    {isLoading ? "Analyzing Soil..." : "Analyze Soil Fertility"}
                   </Button>
+
+                  {error && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-red-700 text-sm">{error}</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -358,11 +461,15 @@ export default function SoilFertilityDashboard() {
                           <Beaker className="h-4 w-4" />
                           Soil Analysis Summary
                         </h4>
-                        <p className="text-blue-800 text-sm leading-relaxed">{results.explanation}</p>
+                        <p className="text-blue-800 text-sm leading-relaxed">
+                          {results.explanation}
+                        </p>
                       </div>
 
                       <div className="space-y-4">
-                        <h4 className="font-semibold text-green-800 text-lg">Action Items:</h4>
+                        <h4 className="font-semibold text-green-800 text-lg">
+                          Action Items:
+                        </h4>
                         <div className="grid gap-3">
                           {results.recommendations.map((rec, index) => (
                             <div
@@ -370,7 +477,9 @@ export default function SoilFertilityDashboard() {
                               className="bg-gradient-to-r from-amber-50 to-green-50 p-4 rounded-lg border border-amber-200 shadow-sm"
                             >
                               <p className="text-sm text-gray-700 leading-relaxed">
-                                {rec.replace(/\*\*(.*?)\*\*/g, "$1").replace(/^\d+\.\s*/, "")}
+                                {rec
+                                  .replace(/\*\*(.*?)\*\*/g, "$1")
+                                  .replace(/^\d+\.\s*/, "")}
                               </p>
                             </div>
                           ))}
@@ -385,8 +494,12 @@ export default function SoilFertilityDashboard() {
                     <div className="text-center space-y-4">
                       <Leaf className="h-12 w-12 text-green-400 mx-auto" />
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900">Ready for Analysis</h3>
-                        <p className="text-gray-500">Enter your soil parameters to get started</p>
+                        <h3 className="text-lg font-medium text-gray-900">
+                          Ready for Analysis
+                        </h3>
+                        <p className="text-gray-500">
+                          Enter your soil parameters to get started
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -397,5 +510,5 @@ export default function SoilFertilityDashboard() {
         </main>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }
