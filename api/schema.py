@@ -14,12 +14,15 @@ class SoilData(BaseModel):
     cu: float = Field(..., description="Copper content", ge=0)
     fe: float = Field(..., description="Iron content", ge=0)
     zn: float = Field(..., description="Zinc content", ge=0)
+    latitude: float = Field(..., description="Location latitude", ge=-90, le=90)
+    longitude: float = Field(..., description="Location longitude", ge=-180, le=180)
 
 class PredictionResponse(BaseModel):
     soil_fertility_status: str
     soil_fertility_confidence: float
     fertilizer_recommendation: str
     fertilizer_confidence: float
+    nearest_agrovets: List[Dict[str, Any]]
     explanation: str
     recommendations: List[str]
     timestamp: str
@@ -30,5 +33,6 @@ class WorkflowState(TypedDict):
     fertility_confidence: Optional[float]
     fertilizer_prediction: Optional[str]
     fertilizer_confidence: Optional[float]
+    nearest_agrovets: List[Dict[str, Any]]
     explanation: Optional[str]
     recommendations: List[str]

@@ -26,6 +26,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from preprocessing import SoilDataPreprocessor
 from schema import SoilData, PredictionResponse, WorkflowState
 from models import ModelLoader
+from agrovet import AgrovetLocator
 
 # Load environment variables
 load_dotenv()
@@ -62,6 +63,7 @@ fertility_preprocessor = None
 fertility_model = None
 fertilizer_preprocessor = None
 fertilizer_model = None
+agrovet_locator = None
 
 # Define mappings for predictions
 FERTILITY_STATUS_MAP = {0: "MODERATELY HEALTHY", 1: "POOR", 2: "VERY POOR"}
@@ -154,6 +156,19 @@ def initialize_llm():
     except Exception as e:
         logger.error(f"Error initializing OpenAI LLM: {e}")
 
+def initialize_agrovet_locator():
+    """Initialize AgrovetLocator with data"""
+    global agrovet_locator
+    try:
+        current_dir = Path(__file__).parent
+        data_path = current_dir.parent / "data" / "agrovet_data_cleaned.csv"
+        agrovet_locator = AgrovetLocator.load_from_csv(str(data_path))
+        logger.info("AgrovetLocator initialized successfully")
+        return True
+    except Exception as e:
+        logger.error(f"Error initializing AgrovetLocator: {e}")
+        return False
+    
 def prepare_soil_dataframe(soil_data: Dict[str, Any]) -> pd.DataFrame:
     """Convert soil data dictionary to DataFrame with proper column names"""
     logger.debug(f"Incoming soil_data: {soil_data}")
@@ -186,6 +201,7 @@ def validate_preprocessor_state(preprocessor, name):
         return False
     return True
 
+# fertility prediction node
 def predict_fertility_node(state: WorkflowState) -> WorkflowState:
     """Predict soil fertility status"""
     logger.info("Starting fertility prediction...")
@@ -201,10 +217,6 @@ def predict_fertility_node(state: WorkflowState) -> WorkflowState:
         # Apply preprocessing
         logger.debug("Applying fertility preprocessing...")
         df_processed = fertility_preprocessor.transform(df)
-        
-        logger.debug(f"Processed DataFrame shape: {df_processed.shape}")
-        logger.debug(f"Processed DataFrame columns: {df_processed.columns.tolist()}")
-        logger.debug(f"Processed DataFrame:\n{df_processed.to_string()}")
         
         # Check feature alignment
         expected_features = FERTILITY_FEATURE_COLUMNS
@@ -248,6 +260,7 @@ def predict_fertility_node(state: WorkflowState) -> WorkflowState:
         state["fertility_confidence"] = 0.0
         return state
 
+# fertilizer prediction node
 def predict_fertilizer_node(state: WorkflowState) -> WorkflowState:
     """Predict fertilizer recommendation"""
     logger.info("Starting fertilizer prediction...")
@@ -312,6 +325,45 @@ def predict_fertilizer_node(state: WorkflowState) -> WorkflowState:
         state["fertilizer_prediction"] = "UNKNOWN"
         state["fertilizer_confidence"] = 0.0
         return state
+
+# nearest agrovets node
+def find_nearest_agrovets_node(state: WorkflowState) -> WorkflowState:
+    """Find nearest agrovets based on location data"""
+    logger.info("Starting nearest agrovets search...")
+    
+    try:
+        if agrovet_locator is None:
+            raise ValueError("AgrovetLocator is not initialized")
+            
+        # Get location from soil data
+        soil_data = state["soil_data"]
+        if "latitude" not in soil_data or "longitude" not in soil_data:
+            logger.warning("Location data not provided in soil data")
+            state["nearest_agrovets"] = []
+            return state
+            
+        user_lat = float(soil_data["latitude"])
+        user_lon = float(soil_data["longitude"])
+        
+        # Find nearest agrovets
+        nearest_agrovets = agrovet_locator.find_nearest_agrovets(
+            user_lat=user_lat,
+            user_lon=user_lon,
+            top_k=5,  # Return top 5 nearest agrovets
+            max_distance_km=500  # Search within 50km radius
+        )
+        
+        # Add results to state
+        state["nearest_agrovets"] = nearest_agrovets
+        logger.info(f"Found {len(nearest_agrovets)} nearby agrovets")
+        return state
+        
+    except Exception as e:
+        logger.error(f"Error finding nearest agrovets: {e}")
+        logger.error("Exception details:", exc_info=True)
+        state["nearest_agrovets"] = []
+        return state
+
 
 def generate_fallback_response(state: WorkflowState) -> WorkflowState:
     """Generate fallback explanation when LLM is not available"""
@@ -430,12 +482,14 @@ def create_workflow():
     # Add nodes
     workflow.add_node("predict_fertility", predict_fertility_node)
     workflow.add_node("predict_fertilizer", predict_fertilizer_node)
+    workflow.add_node("find_nearest_agrovets", find_nearest_agrovets_node)
     workflow.add_node("generate_explanation", generate_explanation_node)
     
     # Define edges
     workflow.add_edge(START, "predict_fertility")
     workflow.add_edge("predict_fertility", "predict_fertilizer")
-    workflow.add_edge("predict_fertilizer", "generate_explanation")
+    workflow.add_edge("predict_fertilizer", "find_nearest_agrovets")
+    workflow.add_edge("find_nearest_agrovets", "generate_explanation")
     workflow.add_edge("generate_explanation", END)
     
     logger.info("Workflow created successfully")
@@ -448,6 +502,10 @@ if not models_loaded:
     logger.error("Failed to load models! Application may not work correctly.")
 else:
     logger.info("Models loaded successfully")
+
+agrovet_locator_loaded = initialize_agrovet_locator()
+if not agrovet_locator_loaded:
+    logger.error("Failed to initialize AgrovetLocator!")
 
 initialize_llm()
 prediction_workflow = create_workflow()
@@ -512,6 +570,7 @@ async def predict_soil_fertility(soil_data: SoilData):
             "fertility_confidence": None,
             "fertilizer_prediction": None,
             "fertilizer_confidence": None,
+            "nearest_agrovets": [],
             "explanation": None,
             "recommendations": []
         }
@@ -529,6 +588,7 @@ async def predict_soil_fertility(soil_data: SoilData):
             soil_fertility_confidence=result.get("fertility_confidence", 0.0),
             fertilizer_recommendation=result.get("fertilizer_prediction", "UNKNOWN"), 
             fertilizer_confidence=result.get("fertilizer_confidence", 0.0),
+            nearest_agrovets=result.get("nearest_agrovets", []),
             explanation=result.get("explanation", "Unable to generate explanation"),
             recommendations=result.get("recommendations", ["Consult with agricultural expert"]),
             timestamp=datetime.now().isoformat()
