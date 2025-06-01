@@ -35,7 +35,19 @@ import {
   Sparkles,
   FileText,
   TrendingUp,
+  AlertCircle,
 } from "lucide-react";
+import { LocationDetector } from "./location-detector";
+import { AgrovetsSection } from "./agrovets-section";
+
+interface Agrovet {
+  name: string;
+  latitude: number;
+  longitude: number;
+  products: string[];
+  prices: number[];
+  distance_km: number;
+}
 
 interface SoilInput {
   simplified_texture: string;
@@ -49,6 +61,8 @@ interface SoilInput {
   cu: number;
   fe: number;
   zn: number;
+  latitude: number;
+  longitude: number;
 }
 
 interface SoilOutput {
@@ -59,6 +73,7 @@ interface SoilOutput {
   explanation: string;
   recommendations: string[];
   timestamp: string;
+  nearest_agrovets: Agrovet[];
 }
 
 export default function SoilFertilityDashboard() {
@@ -74,11 +89,17 @@ export default function SoilFertilityDashboard() {
     cu: 0,
     fe: 0,
     zn: 0,
+    latitude: 0,
+    longitude: 0,
   });
 
   const [results, setResults] = useState<SoilOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   const handleInputChange = (
     field: keyof SoilInput,
@@ -87,6 +108,15 @@ export default function SoilFertilityDashboard() {
     setSoilData((prev) => ({
       ...prev,
       [field]: value,
+    }));
+  };
+
+  const handleLocationDetected = (lat: number, lng: number) => {
+    setUserLocation({ lat, lng });
+    setSoilData((prev) => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
     }));
   };
 
@@ -190,6 +220,10 @@ export default function SoilFertilityDashboard() {
               Comprehensive soil health assessment and fertilizer
               recommendations
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <LocationDetector onLocationDetected={handleLocationDetected} />
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
@@ -298,9 +332,9 @@ export default function SoilFertilityDashboard() {
                       </div>
                     </TabsContent>
 
-                    <TabsContent
-                      value="nutrients"
-                      className="space-y-4 mt-4"
+                    <TabsContent 
+                    value="nutrients" 
+                    className="space-y-4 mt-4"
                     >
                       <div className="grid grid-cols-1 gap-4">
                         {[
@@ -367,7 +401,7 @@ export default function SoilFertilityDashboard() {
                             label: "Iron (Fe)",
                             placeholder: "45.0",
                           },
-                          { key: "zn", 
+                          { key: "zn",
                             label: "Zinc (Zn)", 
                             placeholder: "2.2" 
                           },
@@ -397,14 +431,19 @@ export default function SoilFertilityDashboard() {
                   <Button
                     onClick={handlePredict}
                     className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white"
-                    disabled={isLoading || !soilData.simplified_texture}
+                    disabled={
+                      isLoading ||
+                      !soilData.simplified_texture ||
+                      !soilData.latitude ||
+                      !soilData.longitude
+                    }
                   >
-                    {isLoading ? "Analyzing Soil..." : "Analyze Soil Fertility"}
+                    {isLoading ? "Analyzing Soil..." : "Analyze Soil Health"}
                   </Button>
-
-                  {error && (
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-red-700 text-sm">{error}</p>
+                  {(!soilData.latitude || !soilData.longitude) && (
+                    <div className="mt-2 text-xs text-amber-600 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      <span>Location detection required for analysis</span>
                     </div>
                   )}
                 </CardContent>
@@ -487,6 +526,13 @@ export default function SoilFertilityDashboard() {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {results && results.nearest_agrovets && (
+                    <AgrovetsSection
+                      agrovets={results.nearest_agrovets}
+                      recommendedFertilizer={results.fertilizer_recommendation}
+                    />
+                  )}
                 </>
               ) : (
                 <Card className="border-amber-200 bg-white shadow-lg">
