@@ -6,7 +6,7 @@ import logging
 # Local imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from api.preprocessing import SoilDataPreprocessor 
+from api.utils.preprocessing import SoilDataPreprocessor 
 
 class ModelLoader:
     """
