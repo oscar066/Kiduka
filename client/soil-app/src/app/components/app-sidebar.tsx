@@ -75,7 +75,7 @@ export function AppSidebar() {
             <Leaf className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-green-800">SoilTech</h2>
+            <h2 className="text-lg font-semibold text-green-800">Kiduka</h2>
             <p className="text-xs text-green-600">Agricultural Analytics</p>
           </div>
         </div>
