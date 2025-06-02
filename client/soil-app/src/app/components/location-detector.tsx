@@ -74,7 +74,7 @@ export function LocationDetector({
       },
       {
         enableHighAccuracy: true,
-        timeout: 15000, // Increased timeout
+        timeout: 5000, // Increased timeout
         maximumAge: 300000, // 5 minutes
       }
     );
@@ -103,7 +103,7 @@ export function LocationDetector({
   if (status === "success" && location) {
     return (
       <Card className="border-green-200 bg-green-50">
-        <CardContent className="flex items-center justify-between p-3">
+        <CardContent className="flex items-center justify-between p-2">
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-green-600" />
             <span className="text-sm text-green-700">
