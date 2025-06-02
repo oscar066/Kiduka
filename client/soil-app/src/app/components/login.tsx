@@ -60,8 +60,8 @@ export default function LoginPage() {
       } else {
         setErrorMessage("Invalid email or password. Please try again.");
       }
-    } catch (error) {
-      console.error("Login failed:", error);
+    } catch (err) {
+      console.error("Login failed:", err);
       setErrorMessage("An unexpected error occurred. Please try again later.");
     } finally {
       setIsLoading(false);
@@ -85,7 +85,8 @@ export default function LoginPage() {
       );
 
       router.push("/dashboard");
-    } catch (error) {
+    } catch (err) {
+      console.error("Google sign-in failed:", err);
       setErrorMessage("Google sign-in failed. Please try again.");
     } finally {
       setIsLoading(false);

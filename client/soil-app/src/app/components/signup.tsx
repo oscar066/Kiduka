@@ -12,6 +12,17 @@ import { FaGoogle } from "react-icons/fa";
 import { BsEyeFill, BsEyeSlashFill } from "react-icons/bs";
 import { useRouter } from "next/navigation";
 
+// Define user type interface
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  password: string;
+  createdAt: string;
+  role: string;
+  provider?: string;
+}
+
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("");
@@ -67,11 +78,11 @@ export default function SignupPage() {
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Check if email already exists
-      const existingUsers = JSON.parse(
+      const existingUsers: User[] = JSON.parse(
         localStorage.getItem("soiltech_users") || "[]"
       );
       const emailExists = existingUsers.some(
-        (user: any) => user.email === email
+        (user: User) => user.email === email
       );
 
       if (emailExists) {
@@ -81,7 +92,7 @@ export default function SignupPage() {
       }
 
       // Create new user
-      const newUser = {
+      const newUser: User = {
         id: Date.now().toString(),
         username,
         email,
@@ -115,8 +126,8 @@ export default function SignupPage() {
 
       // Redirect to dashboard
       router.push("/dashboard");
-    } catch (error) {
-      console.error("Registration failed:", error);
+    } catch (err) {
+      console.error("Registration failed:", err);
       setErrorMessage("Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
@@ -130,7 +141,7 @@ export default function SignupPage() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Auto-create account with demo user
-      const newUser = {
+      const newUser: User = {
         id: Date.now().toString(),
         username: "Demo User",
         email: "demo.google@soiltech.com",
@@ -140,7 +151,7 @@ export default function SignupPage() {
         provider: "google",
       };
 
-      const existingUsers = JSON.parse(
+      const existingUsers: User[] = JSON.parse(
         localStorage.getItem("soiltech_users") || "[]"
       );
       const updatedUsers = [...existingUsers, newUser];
@@ -157,7 +168,8 @@ export default function SignupPage() {
       );
 
       router.push("/dashboard");
-    } catch (error) {
+    } catch (err) {
+      console.error("Google sign-up failed:", err);
       setErrorMessage("Google sign-up failed. Please try again.");
     } finally {
       setIsLoading(false);
