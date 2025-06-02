@@ -125,7 +125,7 @@ export default function SoilFertilityDashboard() {
     setError(null);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/predict", {
+      const response = await fetch("https://vast-oasis-53321-a0278e755744.herokuapp.com/predict", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
