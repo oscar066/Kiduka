@@ -23,10 +23,10 @@ from typing_extensions import TypedDict
 # Local imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from preprocessing import SoilDataPreprocessor
-from schema import SoilData, PredictionResponse, WorkflowState
+from api.utils.preprocessing import SoilDataPreprocessor
+from api.schema.schema import SoilData, PredictionResponse, WorkflowState
 from models import ModelLoader
-from agrovet import AgrovetLocator
+from api.utils.agrovet import AgrovetLocator
 
 # Load environment variables
 load_dotenv()

@@ -16,16 +16,16 @@ from langgraph.graph import StateGraph, START, END
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Import schemas
-from schema import SoilData, PredictionResponse, WorkflowState
+from api.schema.schema import SoilData, PredictionResponse, WorkflowState
 
 # Import modularized components
-from utils.config import AppConfig
-from utils.initialization import initialize_app_components
-from utils.logging_config import setup_logger
-from nodes.fertility_node import predict_fertility_node
-from nodes.fertilizer_node import predict_fertilizer_node  
-from nodes.agrovet_search_node import find_nearest_agrovets_node
-from nodes.generate_explanation_node import generate_explanation_node
+from api.utils.config import AppConfig
+from api.utils.initialization import initialize_app_components
+from api.utils.logging_config import setup_logger
+from api.nodes.fertility_node import predict_fertility_node
+from api.nodes.fertilizer_node import predict_fertilizer_node  
+from api.nodes.agrovet_search_node import find_nearest_agrovets_node
+from api.nodes.generate_explanation_node import generate_explanation_node
 
 # Load environment variables
 load_dotenv()
