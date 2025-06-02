@@ -7,8 +7,8 @@ from typing import Dict, Any
 # Local imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from utils.config import AppConfig
-from schema import WorkflowState
+from api.utils.config import AppConfig
+from api.schema.schema import WorkflowState
 
 logger = logging.getLogger(__name__)
 

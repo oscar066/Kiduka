@@ -7,7 +7,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from dotenv import load_dotenv
 
 # Load environment variables
-from schema import WorkflowState
+from api.schema.schema import WorkflowState
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ def generate_explanation_node(state: WorkflowState) -> WorkflowState:
         - Recommended Fertilizer: {state['fertilizer_prediction']} (Confidence: {state['fertilizer_confidence']:.1%})
         
         Please provide:
-        1. A simple explanation of what these results mean for the farmer
+        1. A brief simple explanation of what these results mean for the farmer
         2. Why this fertilizer was recommended based on the soil's nutrient profile
         3. 3-5 specific actionable recommendations for improving soil health and crop yield
         
@@ -107,6 +107,7 @@ def generate_explanation_node(state: WorkflowState) -> WorkflowState:
                 explanation_lines.append(line)
         
         state["explanation"] = ' '.join(explanation_lines) if explanation_lines else full_response
+
         state["recommendations"] = recommendations if recommendations else [
             "Monitor soil moisture regularly",
             "Test soil pH monthly",
