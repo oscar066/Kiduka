@@ -226,6 +226,32 @@ export default function SoilFertilityDashboard() {
             <LocationDetector onLocationDetected={handleLocationDetected} />
           </div>
 
+          {/* Error Display */}
+          {error && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 text-red-800">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">Error: {error}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Location Display */}
+          {userLocation && (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 text-blue-800">
+                  <span className="text-sm">
+                    Location: {userLocation.lat.toFixed(4)},{" "}
+                    {userLocation.lng.toFixed(4)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Input Section */}
             <div className="lg:col-span-1">
@@ -332,10 +358,7 @@ export default function SoilFertilityDashboard() {
                       </div>
                     </TabsContent>
 
-                    <TabsContent 
-                    value="nutrients" 
-                    className="space-y-4 mt-4"
-                    >
+                    <TabsContent value="nutrients" className="space-y-4 mt-4">
                       <div className="grid grid-cols-1 gap-4">
                         {[
                           {
@@ -401,10 +424,7 @@ export default function SoilFertilityDashboard() {
                             label: "Iron (Fe)",
                             placeholder: "45.0",
                           },
-                          { key: "zn",
-                            label: "Zinc (Zn)", 
-                            placeholder: "2.2" 
-                          },
+                          { key: "zn", label: "Zinc (Zn)", placeholder: "2.2" },
                         ].map((micronutrient) => (
                           <div key={micronutrient.key} className="space-y-2">
                             <Label className="text-green-700 font-medium">
