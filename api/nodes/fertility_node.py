@@ -1,11 +1,32 @@
+"""Fertility prediction node for the workflow"""
+import os
+import sys
+import logging
+import numpy as np
+from typing import Dict, Any
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# fertility prediction node
+from schema import WorkflowState
+from utils.config import AppConfig
+from utils.data_processing import prepare_soil_dataframe, validate_preprocessor_state, check_feature_alignment
+from utils.initialization import initialize_models
+
+logger = logging.getLogger(__name__)
+
 def predict_fertility_node(state: WorkflowState) -> WorkflowState:
     """Predict soil fertility status"""
     logger.info("Starting fertility prediction...")
     
     try:
+        # Get components from state
+        app_components = state.get("app_components", {})
+        fertility_preprocessor = app_components.get('fertility_preprocessor')
+        fertility_model = app_components.get('fertility_model')
+        
+        if not fertility_preprocessor or not fertility_model:
+            raise ValueError("Fertility preprocessor or model not available")
+        
         # Validate preprocessor
         if not validate_preprocessor_state(fertility_preprocessor, "Fertility"):
             raise ValueError("Fertility preprocessor is not properly fitted")
@@ -18,18 +39,11 @@ def predict_fertility_node(state: WorkflowState) -> WorkflowState:
         df_processed = fertility_preprocessor.transform(df)
         
         # Check feature alignment
-        expected_features = FERTILITY_FEATURE_COLUMNS
-        available_features = [col for col in expected_features if col in df_processed.columns]
-        missing_features = [col for col in expected_features if col not in df_processed.columns]
-        
-        logger.info(f"Expected features: {expected_features}")
-        logger.info(f"Available features: {available_features}")
-        if missing_features:
-            logger.warning(f"Missing features: {missing_features}")
-        
-        # Use available features for prediction
-        if not available_features:
-            raise ValueError("No expected features found in processed data")
+        available_features = check_feature_alignment(
+            df_processed, 
+            AppConfig.FERTILITY_FEATURE_COLUMNS, 
+            "fertility"
+        )
         
         df_for_prediction = df_processed[available_features].copy()
         logger.debug(f"Final prediction DataFrame shape: {df_for_prediction.shape}")
@@ -43,7 +57,7 @@ def predict_fertility_node(state: WorkflowState) -> WorkflowState:
         logger.debug(f"Raw fertility prediction: {prediction}")
         logger.debug(f"Fertility prediction probabilities: {probabilities}")
         
-        fertility_status = FERTILITY_STATUS_MAP.get(prediction[0], "UNKNOWN")
+        fertility_status = AppConfig.FERTILITY_STATUS_MAP.get(prediction[0], "UNKNOWN")
         fertility_confidence = float(np.max(probabilities))
         
         state["fertility_prediction"] = fertility_status

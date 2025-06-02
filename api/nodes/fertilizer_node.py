@@ -1,12 +1,31 @@
+"""Fertilizer prediction node for the workflow"""
+import os
+import sys
+import logging
+import numpy as np
+from typing import Dict, Any
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from schema import WorkflowState
+from utils.config import AppConfig
+from utils.data_processing import prepare_soil_dataframe, validate_preprocessor_state, check_feature_alignment
 
-# fertilizer prediction node
+logger = logging.getLogger(__name__)
+
 def predict_fertilizer_node(state: WorkflowState) -> WorkflowState:
     """Predict fertilizer recommendation"""
     logger.info("Starting fertilizer prediction...")
     
     try:
+        # Get components from state
+        app_components = state.get("app_components", {})
+        fertilizer_preprocessor = app_components.get('fertilizer_preprocessor')
+        fertilizer_model = app_components.get('fertilizer_model')
+        
+        if not fertilizer_preprocessor or not fertilizer_model:
+            raise ValueError("Fertilizer preprocessor or model not available")
+        
         # Validate preprocessor
         if not validate_preprocessor_state(fertilizer_preprocessor, "Fertilizer"):
             raise ValueError("Fertilizer preprocessor is not properly fitted")
@@ -27,18 +46,11 @@ def predict_fertilizer_node(state: WorkflowState) -> WorkflowState:
         logger.debug(f"Processed DataFrame for fertilizer prediction:\n{df_processed.to_string()}")
         
         # Check feature alignment
-        expected_features = FERTILIZER_FEATURE_COLUMNS
-        available_features = [col for col in expected_features if col in df_processed.columns]
-        missing_features = [col for col in expected_features if col not in df_processed.columns]
-        
-        logger.info(f"Expected fertilizer features: {expected_features}")
-        logger.info(f"Available fertilizer features: {available_features}")
-        if missing_features:
-            logger.warning(f"Missing fertilizer features: {missing_features}")
-        
-        # Use available features for prediction
-        if not available_features:
-            raise ValueError("No expected features found in processed fertilizer data")
+        available_features = check_feature_alignment(
+            df_processed, 
+            AppConfig.FERTILIZER_FEATURE_COLUMNS, 
+            "fertilizer"
+        )
         
         df_for_prediction = df_processed[available_features].copy()
         logger.debug(f"Final fertilizer prediction DataFrame:\n{df_for_prediction.to_string()}")
@@ -51,7 +63,7 @@ def predict_fertilizer_node(state: WorkflowState) -> WorkflowState:
         logger.debug(f"Raw fertilizer prediction: {prediction}")
         logger.debug(f"Fertilizer prediction probabilities: {probabilities}")
         
-        fertilizer_type = FERTILIZER_TYPE_MAP.get(prediction[0], "UNKNOWN")
+        fertilizer_type = AppConfig.FERTILIZER_TYPE_MAP.get(prediction[0], "UNKNOWN")
         fertilizer_confidence = float(np.max(probabilities))
         
         state["fertilizer_prediction"] = fertilizer_type

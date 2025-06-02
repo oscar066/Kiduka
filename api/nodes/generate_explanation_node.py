@@ -1,5 +1,15 @@
+import os
+import sys
+import logging
+from typing import Dict, Any
 
+from langchain_core.messages import HumanMessage, SystemMessage
+from dotenv import load_dotenv
 
+# Load environment variables
+from schema import WorkflowState
+
+logger = logging.getLogger(__name__)
 
 def generate_fallback_response(state: WorkflowState) -> WorkflowState:
     """Generate fallback explanation when LLM is not available"""
@@ -33,6 +43,10 @@ def generate_explanation_node(state: WorkflowState) -> WorkflowState:
     logger.info("Starting explanation generation...")
     
     try:
+        # Get components from state
+        app_components = state.get("app_components", {})
+        llm = app_components.get('llm')
+        
         if llm is None:
             logger.warning("LLM not available, using fallback response")
             return generate_fallback_response(state)

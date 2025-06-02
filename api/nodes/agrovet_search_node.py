@@ -1,13 +1,26 @@
+"""Agrovet search node for the workflow"""
+import os
+import sys
+import logging
+from typing import Dict, Any
 
+# Local imports
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from utils.config import AppConfig
+from schema import WorkflowState
 
-
+logger = logging.getLogger(__name__)
 
 def find_nearest_agrovets_node(state: WorkflowState) -> WorkflowState:
     """Find nearest agrovets based on location data"""
     logger.info("Starting nearest agrovets search...")
     
     try:
+        # Get components from state
+        app_components = state.get("app_components", {})
+        agrovet_locator = app_components.get('agrovet_locator')
+        
         if agrovet_locator is None:
             raise ValueError("AgrovetLocator is not initialized")
             
@@ -25,8 +38,8 @@ def find_nearest_agrovets_node(state: WorkflowState) -> WorkflowState:
         nearest_agrovets = agrovet_locator.find_nearest_agrovets(
             user_lat=user_lat,
             user_lon=user_lon,
-            top_k=5,  # Return top 5 nearest agrovets
-            max_distance_km=500  # Search within 50km radius
+            top_k=AppConfig.DEFAULT_AGROVET_COUNT,
+            max_distance_km=AppConfig.MAX_AGROVET_DISTANCE_KM
         )
         
         # Add results to state
