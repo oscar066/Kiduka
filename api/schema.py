@@ -29,6 +29,7 @@ class PredictionResponse(BaseModel):
 
 class WorkflowState(TypedDict):
     soil_data: Dict[str, Any]
+    app_components: Dict[str, Any]  # Add this line!
     fertility_prediction: Optional[str]
     fertility_confidence: Optional[float]
     fertilizer_prediction: Optional[str]
