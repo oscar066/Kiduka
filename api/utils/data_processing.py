@@ -8,8 +8,8 @@ from typing import Dict, Any, List
 # Local imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from utils.config import AppConfig
-from utils.logging_config import setup_logger
+from api.utils.config import AppConfig
+from api.utils.logging_config import setup_logger
 
 # Setup logging
 logger = setup_logger("my_app", level=logging.INFO, console_level=logging.INFO)

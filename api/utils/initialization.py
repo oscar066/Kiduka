@@ -13,9 +13,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 
 # Import local modules
 from models.model_loader import ModelLoader
-from agrovet import AgrovetLocator
-from utils.config import AppConfig
-from utils.logging_config import setup_logger
+from api.utils.agrovet import AgrovetLocator
+from api.utils.config import AppConfig
+from api.utils.logging_config import setup_logger
 
 # Setup logging
 logger = setup_logger("init_app", level=logging.INFO, console_level=logging.INFO)

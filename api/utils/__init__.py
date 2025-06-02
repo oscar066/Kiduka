@@ -6,6 +6,8 @@ from .config import AppConfig
 from .initialization import initialize_app_components, initialize_agrovet_locator, initialize_models, initialize_llm
 from .logging_config import setup_logger
 from .data_processing import prepare_soil_dataframe, validate_preprocessor_state, check_feature_alignment
+from .agrovet import AgrovetLocator, AgrovetInfo, AgrovetResponse, UserLocation
+from .preprocessing import SoilDataPreprocessor
 
 __all__ = [
     "AppConfig",
@@ -22,5 +24,14 @@ __all__ = [
     # Data processing utilities
     "prepare_soil_dataframe",
     "validate_preprocessor_state",
-    "check_feature_alignment"
+    "check_feature_alignment",
+
+    # Agrovet utilities
+    "AgrovetLocator",
+    "AgrovetInfo",
+    "AgrovetResponse",
+    "UserLocation",
+
+    # Preprocessing utilities
+    "SoilDataPreprocessor"
 ]
