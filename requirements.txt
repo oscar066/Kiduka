@@ -94,3 +94,4 @@ uvicorn==0.34.2
 wcwidth==0.2.13
 xxhash==3.5.0
 zstandard==0.23.0
+colorama==0.4.6
