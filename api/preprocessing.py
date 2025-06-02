@@ -72,7 +72,7 @@ class SoilDataPreprocessor:
         
         # Handle both categorical dtype and object dtype columns
         categorical_columns = df_encoded.select_dtypes(include=['category', 'object']).columns
-        self.logger.info(f"Found {len(categorical_columns)} categorical columns: {list(categorical_columns)}")
+        self.logger.debug(f"Found {len(categorical_columns)} categorical columns: {list(categorical_columns)}")
         
         if len(categorical_columns) == 0:
             self.logger.info("No categorical columns found, returning original DataFrame")
@@ -114,12 +114,12 @@ class SoilDataPreprocessor:
                         self.logger.info(f"Handled unseen categories in {col} by mapping to {most_frequent}")
 
         elif encoding_type == 'onehot':
-            self.logger.info("Applying one-hot encoding")
+            self.logger.debug("Applying one-hot encoding")
             original_shape = df_encoded.shape
             df_encoded = pd.get_dummies(df_encoded, columns=categorical_columns, drop_first=True)
-            self.logger.info(f"One-hot encoding changed shape from {original_shape} to {df_encoded.shape}")
+            self.logger.debug(f"One-hot encoding changed shape from {original_shape} to {df_encoded.shape}")
             new_columns = df_encoded.shape[1] - original_shape[1] + len(categorical_columns)
-            self.logger.info(f"Added {new_columns} new columns from one-hot encoding")
+            self.logger.debug(f"Added {new_columns} new columns from one-hot encoding")
         else:
             error_msg = "Unsupported encoding_type. Use 'label' or 'onehot'."
             self.logger.error(error_msg)
@@ -148,12 +148,12 @@ class SoilDataPreprocessor:
 
         # Select numeric columns
         numerical_columns = df_scaled.select_dtypes(include=['float64', 'float32']).columns
-        self.logger.info(f"Found {len(numerical_columns)} numerical columns: {list(numerical_columns)}")
+        self.logger.debug(f"Found {len(numerical_columns)} numerical columns: {list(numerical_columns)}")
         
         # Exclude target column if specified
         if target_column and target_column in numerical_columns:
             columns_to_scale = numerical_columns.drop(target_column)
-            self.logger.info(f"Excluding target column '{target_column}' from scaling")
+            self.logger.debug(f"Excluding target column '{target_column}' from scaling")
         else:
             columns_to_scale = numerical_columns
             if target_column:
