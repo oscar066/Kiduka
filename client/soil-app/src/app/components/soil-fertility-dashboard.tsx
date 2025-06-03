@@ -96,10 +96,6 @@ export default function SoilFertilityDashboard() {
   const [results, setResults] = useState<SoilOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [userLocation, setUserLocation] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
 
   const handleInputChange = (
     field: keyof SoilInput,
@@ -112,7 +108,6 @@ export default function SoilFertilityDashboard() {
   };
 
   const handleLocationDetected = (lat: number, lng: number) => {
-    setUserLocation({ lat, lng });
     setSoilData((prev) => ({
       ...prev,
       latitude: lat,
@@ -213,10 +208,10 @@ export default function SoilFertilityDashboard() {
 
         <main className="flex-1 space-y-6 p-6 bg-gradient-to-br from-green-25 via-amber-25 to-green-25 min-h-screen">
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-green-800">
+            <h1 className="text-3xl font-serif font-bold text-green-800">
               Soil Fertility Analysis
             </h1>
-            <p className="text-green-600">
+            <p className="text-green-600 font-serif">
               Comprehensive soil health assessment and fertilizer
               recommendations
             </p>
@@ -233,20 +228,6 @@ export default function SoilFertilityDashboard() {
                 <div className="flex items-center gap-2 text-red-800">
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm font-medium">Error: {error}</span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Location Display */}
-          {userLocation && (
-            <Card className="border-blue-200 bg-blue-50">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-blue-800">
-                  <span className="text-sm">
-                    Location: {userLocation.lat.toFixed(4)},{" "}
-                    {userLocation.lng.toFixed(4)}
-                  </span>
                 </div>
               </CardContent>
             </Card>
