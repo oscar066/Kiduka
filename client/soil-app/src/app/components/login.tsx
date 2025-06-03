@@ -27,7 +27,7 @@ export default function LoginPage() {
       name: "John Farmer",
     },
     { email: "admin@soiltech.com", password: "admin123", name: "Admin User" },
-    { email: "demo@soiltech.com", password: "demo123", name: "Demo User" },
+    { email: "demo@kiduka.com", password: "demo123", name: "Demo User" },
   ];
 
   async function onSubmit(event: React.SyntheticEvent) {
@@ -78,7 +78,7 @@ export default function LoginPage() {
       localStorage.setItem(
         "soiltech_user",
         JSON.stringify({
-          email: "demo@soiltech.com",
+          email: "demo@kiduka.com",
           name: "Demo User (Google)",
           loginTime: new Date().toISOString(),
         })
@@ -108,7 +108,7 @@ export default function LoginPage() {
                 </div>
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-green-600 to-amber-600 bg-clip-text text-transparent">
+              <span className="text-2xl font-serif font-bold bg-gradient-to-r from-green-600 to-amber-600 bg-clip-text text-transparent">
                 Kiduka
               </span>
             </Link>
@@ -125,7 +125,7 @@ export default function LoginPage() {
             <p className="text-xs text-blue-800 font-medium mb-1">
               Demo Credentials:
             </p>
-            <p className="text-xs text-blue-700">Email: demo@soiltech.com</p>
+            <p className="text-xs text-blue-700">Email: demo@kiduka.com</p>
             <p className="text-xs text-blue-700">Password: demo123</p>
           </div>
 

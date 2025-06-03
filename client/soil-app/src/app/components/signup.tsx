@@ -191,7 +191,7 @@ export default function SignupPage() {
                 </div>
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-green-600 to-amber-600 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold font-serif bg-gradient-to-r from-green-600 to-amber-600 bg-clip-text text-transparent">
                 Kiduka
               </span>
             </Link>
