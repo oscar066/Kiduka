@@ -1,13 +1,16 @@
 import os
 import sys
+import uuid
 from pathlib import Path
 from datetime import datetime
+from typing import Optional
 from dotenv import load_dotenv
 
 # FastAPI imports
 import logging
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 # LangGraph imports
 from langgraph.graph import StateGraph, START, END
@@ -48,7 +51,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global components (will be initialized on startup)
+# Add after existing middleware configuration
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET_KEY", "your-super-secret-key"),  # Use environment variable in production
+    session_cookie="soil_analysis_session",
+    max_age=3600  # 1 hour session
+)
+
+# Global components dictionary
 app_components = {}
 
 def create_workflow():
@@ -72,6 +83,34 @@ def create_workflow():
     
     logger.info("Workflow created successfully")
     return workflow.compile()
+
+
+class SessionManager:
+    def __init__(self):
+        self.active_sessions = {}
+
+    async def get_session(self, request: Request) -> dict:
+        session = request.session
+        session_id = session.get("session_id")
+        
+        if not session_id:
+            session_id = str(uuid.uuid4())
+            session["session_id"] = session_id
+            session["created_at"] = datetime.now().isoformat()
+            self.active_sessions[session_id] = {
+                "predictions": [],
+                "last_accessed": datetime.now().isoformat()
+            }
+        
+        return self.active_sessions.get(session_id, {})
+
+    async def update_session(self, request: Request, prediction_data: dict):
+        session = request.session
+        session_id = session.get("session_id")
+        
+        if session_id and session_id in self.active_sessions:
+            self.active_sessions[session_id]["predictions"].append(prediction_data)
+            self.active_sessions[session_id]["last_accessed"] = datetime.now().isoformat()
 
 # Initialize on startup
 logger.info("Initializing application...")
@@ -128,6 +167,7 @@ async def health_check():
 @app.post("/predict", response_model=PredictionResponse)
 async def predict_soil_fertility(soil_data: SoilData):
     """Predict soil fertility status and fertilizer recommendations based on soil data"""
+
     logger.info("Prediction endpoint accessed")
     logger.debug(f"Received soil data: {soil_data.model_dump()}")
     
@@ -146,9 +186,13 @@ async def predict_soil_fertility(soil_data: SoilData):
             "fertilizer_prediction": None,
             "fertilizer_confidence": None,
             "nearest_agrovets": [],
-            "explanation": None,
-            "recommendations": [],
-            "app_components": app_components
+            "app_components": app_components,
+            "detailed_explanation": None,
+            "categorized_recommendations": None,
+            "structured_response": None,
+            "fertilizer_justification": None,
+            "confidence_assessment": None,
+            "long_term_strategy": None
         }
         
         logger.debug(f"Initial workflow state: {initial_state}")
@@ -165,8 +209,7 @@ async def predict_soil_fertility(soil_data: SoilData):
             fertilizer_recommendation=result.get("fertilizer_prediction", "UNKNOWN"), 
             fertilizer_confidence=result.get("fertilizer_confidence", 0.0),
             nearest_agrovets=result.get("nearest_agrovets", []),
-            explanation=result.get("explanation", "Unable to generate explanation"),
-            recommendations=result.get("recommendations", ["Consult with agricultural expert"]),
+            structured_response=result.get("structured_response", None),
             timestamp=datetime.now().isoformat()
         )
         
