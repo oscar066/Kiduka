@@ -1,14 +1,20 @@
 import os
 import sys
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List
+from pydantic import BaseModel, Field
 
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.output_parsers import PydanticOutputParser
 from dotenv import load_dotenv
 
 # Load environment variables
-from api.schema.schema import WorkflowState
+from api.schema.schema import WorkflowState, SoilAnalysisResponse, Recommendation, SoilExplanation
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Configure logging
 logger = logging.getLogger(__name__)
 
 def generate_fallback_response(state: WorkflowState) -> WorkflowState:
@@ -19,28 +25,66 @@ def generate_fallback_response(state: WorkflowState) -> WorkflowState:
     fertilizer_type = state.get('fertilizer_prediction', 'unknown')
     soil_data = state['soil_data']
     
-    state["explanation"] = (
-        f"Your soil shows {fertility_status.lower()} fertility status "
-        f"with {state.get('fertility_confidence', 0):.1%} confidence. "
-        f"The recommended fertilizer {fertilizer_type} will help improve nutrient availability "
-        f"based on current levels (N: {soil_data['n']}, P: {soil_data['p']}, K: {soil_data['k']}) "
-        f"and pH: {soil_data['ph']}."
+    # Create structured fallback response
+    fallback_response = SoilAnalysisResponse(
+        explanation=SoilExplanation(
+            summary=f"Your soil shows {fertility_status.lower()} fertility status with {state.get('fertility_confidence', 0):.1%} confidence.",
+            fertility_analysis=f"The {fertility_status.lower()} fertility indicates your soil's current ability to support crop growth.",
+            nutrient_analysis=f"Current nutrient levels - Nitrogen: {soil_data['n']}, Phosphorus: {soil_data['p']}, Potassium: {soil_data['k']}",
+            ph_analysis=f"Soil pH is {soil_data['ph']}, which affects nutrient availability to plants."
+        ),
+        recommendations=[
+            Recommendation(
+                category="fertilizer",
+                priority="high",
+                action=f"Apply {fertilizer_type} according to package instructions",
+                reasoning="Addresses current nutrient deficiencies",
+                timeframe="immediate"
+            ),
+            Recommendation(
+                category="soil_management",
+                priority="medium",
+                action="Monitor soil pH and adjust if needed (optimal range: 6.0-7.0)",
+                reasoning="Proper pH ensures optimal nutrient uptake",
+                timeframe="monthly"
+            ),
+            Recommendation(
+                category="soil_management",
+                priority="medium",
+                action="Maintain proper soil moisture levels for optimal nutrient uptake",
+                reasoning="Moisture is essential for nutrient dissolution and plant uptake",
+                timeframe="immediate"
+            ),
+            Recommendation(
+                category="soil_improvement",
+                priority="low",
+                action=f"Consider adding organic matter to improve {soil_data['simplified_texture'].lower()} soil structure",
+                reasoning="Organic matter improves soil structure and water retention",
+                timeframe="seasonal"
+            ),
+            Recommendation(
+                category="monitoring",
+                priority="medium",
+                action="Test soil nutrients again after 3-4 months to track improvement",
+                reasoning="Regular testing helps track soil health improvements",
+                timeframe="seasonal"
+            )
+        ],
+        fertilizer_justification=f"The recommended {fertilizer_type} will help improve nutrient availability based on current nutrient levels and soil conditions.",
+        confidence_assessment=f"Predictions have {state.get('fertility_confidence', 0):.1%} confidence for fertility and {state.get('fertilizer_confidence', 0):.1%} for fertilizer recommendation."
     )
     
-    state["recommendations"] = [
-        f"Apply {fertilizer_type} according to package instructions",
-        "Monitor soil pH and adjust if needed (optimal range: 6.0-7.0)",
-        "Maintain proper soil moisture levels for optimal nutrient uptake",
-        f"Consider adding organic matter to improve {soil_data['simplified_texture'].lower()} soil structure",
-        "Test soil nutrients again after 3-4 months to track improvement"
-    ]
+    # Convert to dict for backward compatibility
+    state["structured_response"] = fallback_response.model_dump()
+    state["explanation"] = fallback_response.explanation.summary
+    state["recommendations"] = [rec.action for rec in fallback_response.recommendations]
     
-    logger.debug(f"Fallback explanation generated: {state['explanation']}")
+    logger.debug(f"Fallback structured response generated")
     return state
 
 def generate_explanation_node(state: WorkflowState) -> WorkflowState:
-    """Generate AI explanation and recommendations"""
-    logger.info("Starting explanation generation...")
+    """Generate AI explanation and recommendations with structured output"""
+    logger.info("Starting structured explanation generation...")
     
     try:
         # Get components from state
@@ -51,12 +95,15 @@ def generate_explanation_node(state: WorkflowState) -> WorkflowState:
             logger.warning("LLM not available, using fallback response")
             return generate_fallback_response(state)
         
-        # Create prompts
-        system_prompt = """You are an agricultural expert AI assistant. Explain soil analysis results and fertilizer recommendations in simple, farmer-friendly language. Provide practical advice and actionable recommendations."""
+        # Setup structured output parser
+        parser = PydanticOutputParser(pydantic_object=SoilAnalysisResponse)
+        
+        # Create prompts with structured output instructions
+        system_prompt = """You are an agricultural expert AI assistant. Analyze soil data and provide structured recommendations in the exact format specified. Use simple, farmer-friendly language while maintaining technical accuracy."""
         
         soil_data = state['soil_data']
         human_prompt = f"""
-        Based on the following soil analysis and predictions, provide a clear explanation and practical recommendations:
+        Based on the following soil analysis and predictions, provide a structured response:
         
         Soil Data:
         - Soil Texture: {soil_data['simplified_texture']}
@@ -70,15 +117,12 @@ def generate_explanation_node(state: WorkflowState) -> WorkflowState:
         - Soil Fertility Status: {state['fertility_prediction']} (Confidence: {state['fertility_confidence']:.1%})
         - Recommended Fertilizer: {state['fertilizer_prediction']} (Confidence: {state['fertilizer_confidence']:.1%})
         
-        Please provide:
-        1. A brief simple explanation of what these results mean for the farmer
-        2. Why this fertilizer was recommended based on the soil's nutrient profile
-        3. 3-5 specific actionable recommendations for improving soil health and crop yield
+        {parser.get_format_instructions()}
         
-        Keep the language simple and practical for farmers.
+        Provide a comprehensive analysis with practical recommendations categorized by type and priority.
         """
         
-        logger.debug(f"Sending prompt to LLM")
+        logger.debug(f"Sending structured prompt to LLM")
         
         messages = [
             SystemMessage(content=system_prompt),
@@ -86,40 +130,49 @@ def generate_explanation_node(state: WorkflowState) -> WorkflowState:
         ]
         
         response = llm.invoke(messages)
-        full_response = response.content
         
-        # Parse response to extract explanation and recommendations
-        lines = [line.strip() for line in full_response.split('\n') if line.strip()]
-        explanation_lines = []
-        recommendations = []
-        
-        in_recommendations = False
-        for line in lines:
-            if any(keyword in line.lower() for keyword in ['recommendation', '1.', '2.', '3.', '4.', '5.']) or line.startswith(('-', '•')):
-                in_recommendations = True
-                if line.lower().startswith(('1.', '2.', '3.', '4.', '5.')):
-                    recommendations.append(line)
-                elif line.startswith(('-', '•')):
-                    recommendations.append(line[1:].strip())
-                elif 'recommendation' not in line.lower():
-                    recommendations.append(line)
-            elif not in_recommendations:
-                explanation_lines.append(line)
-        
-        state["explanation"] = ' '.join(explanation_lines) if explanation_lines else full_response
-
-        state["recommendations"] = recommendations if recommendations else [
-            "Monitor soil moisture regularly",
-            "Test soil pH monthly",
-            "Apply organic matter to improve soil structure",
-            "Follow recommended fertilizer application rates",
-            "Consider crop rotation for soil health"
-        ]
-        
-        logger.info("AI explanation generated successfully")
-        return state
+        # Parse the structured response
+        try:
+            structured_response = parser.parse(response.content)
+            
+            # Store structured response in state
+            state["structured_response"] = structured_response.model_dump()
+            
+            # Add additional structured fields
+            state["detailed_explanation"] = {
+                "summary": structured_response.explanation.summary,
+                "fertility_analysis": structured_response.explanation.fertility_analysis,
+                "nutrient_analysis": structured_response.explanation.nutrient_analysis,
+                "ph_analysis": structured_response.explanation.ph_analysis,
+                "soil_texture_analysis": structured_response.explanation.soil_texture_analysis,
+                "overall_assessment": structured_response.explanation.overall_assessment
+            }
+            
+            state["categorized_recommendations"] = [
+                {
+                    "category": rec.category,
+                    "priority": rec.priority,
+                    "action": rec.action,
+                    "reasoning": rec.reasoning,
+                    "timeframe": rec.timeframe
+                }
+                for rec in structured_response.recommendations
+            ]
+            
+            state["fertilizer_justification"] = structured_response.fertilizer_justification
+            state["confidence_assessment"] = structured_response.confidence_assessment
+            state["long_term_strategy"] = structured_response.long_term_strategy
+            
+            logger.info("Structured AI explanation generated successfully")
+            return state
+            
+        except Exception as parse_error:
+            logger.warning(f"Failed to parse structured output: {parse_error}")
+            logger.info("Falling back to unstructured parsing...")
+            
+            return state
         
     except Exception as e:
-        logger.error(f"Error generating explanation: {e}")
+        logger.error(f"Error generating structured explanation: {e}")
         logger.error(f"Exception details:", exc_info=True)
         return generate_fallback_response(state)
