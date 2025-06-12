@@ -8,6 +8,8 @@ from .logging_config import setup_logger
 from .data_processing import prepare_soil_dataframe, validate_preprocessor_state, check_feature_alignment
 from .agrovet import AgrovetLocator, AgrovetInfo, AgrovetResponse, UserLocation
 from .preprocessing import SoilDataPreprocessor
+from .session import SessionManager
+from .dependencies import DependencyManager
 
 __all__ = [
     "AppConfig",
@@ -33,5 +35,11 @@ __all__ = [
     "UserLocation",
 
     # Preprocessing utilities
-    "SoilDataPreprocessor"
+    "SoilDataPreprocessor",
+
+    # Session management utilities
+    "SessionManager",
+
+    # Dependency management utilities
+    "DependencyManager"
 ]

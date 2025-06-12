@@ -12,7 +12,7 @@ from api.utils.config import AppConfig
 from api.utils.logging_config import setup_logger
 
 # Setup logging
-logger = setup_logger("my_app", level=logging.INFO, console_level=logging.INFO)
+logger = setup_logger("Data-Processing", level=logging.INFO, console_level=logging.INFO)
 
 def prepare_soil_dataframe(soil_data: Dict[str, Any]) -> pd.DataFrame:
     """Convert soil data dictionary to DataFrame with proper column names"""

@@ -1,3 +1,5 @@
+import os
+import sys
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler
@@ -6,6 +8,13 @@ import joblib
 import os
 import logging
 from typing import Tuple, Dict, Any
+from tqdm import tqdm
+import time
+
+# Local imports
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+from api.utils.logging_config import setup_logger
 
 class SoilDataPreprocessor:
     """
@@ -13,46 +22,46 @@ class SoilDataPreprocessor:
     This class ensures consistent preprocessing during both training and prediction.
     """
     
-    def __init__(self, log_level: str = 'INFO', log_file: str = None):
+    def __init__(self, log_level: str = 'INFO', console_level: str = None, use_progress_bars: bool = True):
         """
         Initialize the preprocessor with logging configuration.
         
         Parameters:
-            log_level (str): Logging level ('DEBUG', 'INFO', 'WARNING', 'ERROR')
-            log_file (str): Optional file path to save logs. If None, logs to console only.
+            log_level (str): Logging level ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+            console_level (str): Console logging level. If None, uses same as log_level
+            use_progress_bars (bool): Whether to show progress bars for operations
         """
         self.label_encoders = {}
         self.scaler = None
         self.feature_columns = None
         self.is_fitted = False
+        self.use_progress_bars = use_progress_bars
         
-        # Setup logging
-        self._setup_logging(log_level, log_file)
+        # Setup logging using your custom logger
+        self._setup_logging(log_level, console_level)
         self.logger.info("SoilDataPreprocessor initialized")
         
-    def _setup_logging(self, log_level: str, log_file: str = None):
-        """Setup logging configuration."""
-        self.logger = logging.getLogger(f"{self.__class__.__name__}")
-        self.logger.setLevel(getattr(logging, log_level.upper()))
+    def _setup_logging(self, log_level: str, console_level: str = None):
+        """Setup logging configuration using custom logger."""
+        # Convert string levels to logging constants
+        level_map = {
+            'DEBUG': logging.DEBUG,
+            'INFO': logging.INFO,
+            'WARNING': logging.WARNING,
+            'ERROR': logging.ERROR,
+            'CRITICAL': logging.CRITICAL
+        }
         
-        # Clear existing handlers to avoid duplicates
-        self.logger.handlers.clear()
+        # Get numeric levels
+        numeric_level = level_map.get(log_level.upper(), logging.INFO)
+        numeric_console_level = level_map.get(console_level.upper(), numeric_level) if console_level else numeric_level
         
-        # Create formatter
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        # Use your custom setup_logger function
+        self.logger = setup_logger(
+            name=f"{self.__class__.__name__}",
+            level=numeric_level,
+            console_level=numeric_console_level
         )
-        
-        # Console handler
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        self.logger.addHandler(console_handler)
-        
-        # File handler if specified
-        if log_file:
-            file_handler = logging.FileHandler(log_file)
-            file_handler.setFormatter(formatter)
-            self.logger.addHandler(file_handler)
             
     def encode_categorical_columns(self, df: pd.DataFrame, encoding_type: str = 'label') -> pd.DataFrame:
         """
@@ -79,7 +88,17 @@ class SoilDataPreprocessor:
             return df_encoded
         
         if encoding_type == 'label':
-            for col in categorical_columns:
+            # Progress bar for categorical encoding
+            pbar_desc = "Encoding categorical columns"
+            if self.use_progress_bars:
+                pbar = tqdm(categorical_columns, desc=pbar_desc, unit="column")
+            else:
+                pbar = categorical_columns
+                
+            for col in pbar:
+                if self.use_progress_bars:
+                    pbar.set_postfix({"current": col})
+                    
                 self.logger.debug(f"Processing column: {col}")
                 unique_values = df_encoded[col].nunique()
                 self.logger.debug(f"Column {col} has {unique_values} unique values")
@@ -112,11 +131,23 @@ class SoilDataPreprocessor:
                         )
                         df_encoded[col] = le.transform(df_encoded[col])
                         self.logger.info(f"Handled unseen categories in {col} by mapping to {most_frequent}")
+                
+                # Small delay for visual effect (remove in production if needed)
+                if self.use_progress_bars:
+                    time.sleep(0.1)
 
         elif encoding_type == 'onehot':
             self.logger.debug("Applying one-hot encoding")
             original_shape = df_encoded.shape
-            df_encoded = pd.get_dummies(df_encoded, columns=categorical_columns, drop_first=True)
+            
+            # Progress bar for one-hot encoding
+            if self.use_progress_bars:
+                with tqdm(total=1, desc="Applying one-hot encoding", unit="operation") as pbar:
+                    df_encoded = pd.get_dummies(df_encoded, columns=categorical_columns, drop_first=True)
+                    pbar.update(1)
+            else:
+                df_encoded = pd.get_dummies(df_encoded, columns=categorical_columns, drop_first=True)
+                
             self.logger.debug(f"One-hot encoding changed shape from {original_shape} to {df_encoded.shape}")
             new_columns = df_encoded.shape[1] - original_shape[1] + len(categorical_columns)
             self.logger.debug(f"Added {new_columns} new columns from one-hot encoding")
@@ -147,7 +178,7 @@ class SoilDataPreprocessor:
         df_scaled = df.copy()
 
         # Select numeric columns
-        numerical_columns = df_scaled.select_dtypes(include=['float64', 'float32']).columns
+        numerical_columns = df_scaled.select_dtypes(include=['float64', 'float32', 'int64', 'int32']).columns
         self.logger.debug(f"Found {len(numerical_columns)} numerical columns: {list(numerical_columns)}")
         
         # Exclude target column if specified
@@ -168,23 +199,53 @@ class SoilDataPreprocessor:
         if not self.is_fitted:
             # Fit scaler during training
             self.logger.info("Fitting scaler (training mode)")
-            if scaling_type == 'standard':
-                self.scaler = StandardScaler()
-                self.logger.debug("Using StandardScaler")
-            elif scaling_type == 'minmax':
-                self.scaler = MinMaxScaler()
-                self.logger.debug("Using MinMaxScaler")
+            
+            # Progress bar for scaler fitting
+            if self.use_progress_bars:
+                with tqdm(total=3, desc="Fitting scaler", unit="step") as pbar:
+                    # Step 1: Initialize scaler
+                    if scaling_type == 'standard':
+                        self.scaler = StandardScaler()
+                        self.logger.debug("Using StandardScaler")
+                    elif scaling_type == 'minmax':
+                        self.scaler = MinMaxScaler()
+                        self.logger.debug("Using MinMaxScaler")
+                    else:
+                        error_msg = "Unsupported scaling_type. Use 'standard' or 'minmax'."
+                        self.logger.error(error_msg)
+                        raise ValueError(error_msg)
+                    pbar.update(1)
+                    pbar.set_postfix({"step": "Scaler initialized"})
+                    
+                    # Step 2: Log pre-scaling statistics
+                    for col in columns_to_scale:
+                        self.logger.debug(f"Before scaling - {col}: mean={df_scaled[col].mean():.4f}, std={df_scaled[col].std():.4f}")
+                    pbar.update(1)
+                    pbar.set_postfix({"step": "Pre-scaling stats logged"})
+                    
+                    # Step 3: Fit and transform
+                    df_scaled[columns_to_scale] = self.scaler.fit_transform(df_scaled[columns_to_scale])
+                    self.feature_columns = columns_to_scale
+                    pbar.update(1)
+                    pbar.set_postfix({"step": "Scaling completed"})
             else:
-                error_msg = "Unsupported scaling_type. Use 'standard' or 'minmax'."
-                self.logger.error(error_msg)
-                raise ValueError(error_msg)
-            
-            # Log statistics before scaling
-            for col in columns_to_scale:
-                self.logger.debug(f"Before scaling - {col}: mean={df_scaled[col].mean():.4f}, std={df_scaled[col].std():.4f}")
-            
-            df_scaled[columns_to_scale] = self.scaler.fit_transform(df_scaled[columns_to_scale])
-            self.feature_columns = columns_to_scale
+                if scaling_type == 'standard':
+                    self.scaler = StandardScaler()
+                    self.logger.debug("Using StandardScaler")
+                elif scaling_type == 'minmax':
+                    self.scaler = MinMaxScaler()
+                    self.logger.debug("Using MinMaxScaler")
+                else:
+                    error_msg = "Unsupported scaling_type. Use 'standard' or 'minmax'."
+                    self.logger.error(error_msg)
+                    raise ValueError(error_msg)
+                
+                # Log statistics before scaling
+                for col in columns_to_scale:
+                    self.logger.debug(f"Before scaling - {col}: mean={df_scaled[col].mean():.4f}, std={df_scaled[col].std():.4f}")
+                
+                df_scaled[columns_to_scale] = self.scaler.fit_transform(df_scaled[columns_to_scale])
+                self.feature_columns = columns_to_scale
             
             # Log statistics after scaling
             for col in columns_to_scale:
@@ -207,7 +268,14 @@ class SoilDataPreprocessor:
             available_cols = [col for col in self.feature_columns if col in df_scaled.columns]
             self.logger.debug(f"Scaling {len(available_cols)} available columns: {available_cols}")
             
-            df_scaled[available_cols] = self.scaler.transform(df_scaled[available_cols])
+            # Progress bar for applying scaler
+            if self.use_progress_bars:
+                with tqdm(total=1, desc="Applying fitted scaler", unit="operation") as pbar:
+                    df_scaled[available_cols] = self.scaler.transform(df_scaled[available_cols])
+                    pbar.update(1)
+            else:
+                df_scaled[available_cols] = self.scaler.transform(df_scaled[available_cols])
+                
             self.logger.info(f"Applied fitted scaler to {len(available_cols)} columns")
 
         self.logger.info(f"Numerical scaling completed. Output shape: {df_scaled.shape}")
@@ -244,9 +312,31 @@ class SoilDataPreprocessor:
         self.logger.debug(f"Feature matrix shape: {X.shape}")
         self.logger.debug(f"Target vector shape: {y.shape}")
 
-        smote = SMOTE(random_state=42)
-        self.logger.debug("Applying SMOTE transformation...")
-        X_resampled, y_resampled = smote.fit_resample(X, y)
+        # Progress bar for SMOTE application
+        if self.use_progress_bars:
+            with tqdm(total=3, desc="Applying SMOTE", unit="step") as pbar:
+                # Step 1: Initialize SMOTE
+                smote = SMOTE(random_state=42)
+                pbar.update(1)
+                pbar.set_postfix({"step": "SMOTE initialized"})
+                
+                # Step 2: Apply SMOTE transformation
+                self.logger.debug("Applying SMOTE transformation...")
+                X_resampled, y_resampled = smote.fit_resample(X, y)
+                pbar.update(1)
+                pbar.set_postfix({"step": "SMOTE applied"})
+                
+                # Step 3: Convert back to DataFrame
+                X_resampled = pd.DataFrame(X_resampled, columns=X.columns)
+                y_resampled = pd.Series(y_resampled, name=target_column)
+                pbar.update(1)
+                pbar.set_postfix({"step": "Conversion completed"})
+        else:
+            smote = SMOTE(random_state=42)
+            self.logger.debug("Applying SMOTE transformation...")
+            X_resampled, y_resampled = smote.fit_resample(X, y)
+            X_resampled = pd.DataFrame(X_resampled, columns=X.columns)
+            y_resampled = pd.Series(y_resampled, name=target_column)
 
         # Log class distribution after SMOTE
         y_resampled_counts = pd.Series(y_resampled).value_counts().sort_index()
@@ -255,11 +345,6 @@ class SoilDataPreprocessor:
             self.logger.info(f"  Class {class_label}: {count} samples ({count/len(y_resampled)*100:.2f}%)")
 
         self.logger.info(f"SMOTE increased dataset from {len(y)} to {len(y_resampled)} samples")
-
-        # Convert back to DataFrame
-        X_resampled = pd.DataFrame(X_resampled, columns=X.columns)
-        y_resampled = pd.Series(y_resampled, name=target_column)
-
         self.logger.info("SMOTE balancing completed successfully")
         return X_resampled, y_resampled
     
@@ -292,10 +377,22 @@ class SoilDataPreprocessor:
             else:
                 self.logger.info(f"Target range: {df[target_column].min()} to {df[target_column].max()}")
         
+        # Calculate total steps for overall progress
+        total_steps = 2  # encoding + scaling
+        if apply_smote and target_column:
+            total_steps += 1
+            
+        # Overall progress bar
+        if self.use_progress_bars:
+            overall_pbar = tqdm(total=total_steps, desc="Overall Progress", unit="step", position=0)
+        
         # Step 1: Encode categorical columns
         self.logger.info("-" * 40)
         self.logger.info("STEP 1: Categorical Encoding")
         df_processed = self.encode_categorical_columns(df, encoding_type)
+        if self.use_progress_bars:
+            overall_pbar.update(1)
+            overall_pbar.set_postfix({"current_step": "Encoding completed"})
         
         # Step 2: Scale numerical columns
         self.logger.info("-" * 40)
@@ -303,6 +400,9 @@ class SoilDataPreprocessor:
         df_processed = self.scale_dataset(df_processed, target_column, scaling_type)
         self.is_fitted = True
         self.logger.info("Preprocessor marked as fitted")
+        if self.use_progress_bars:
+            overall_pbar.update(1)
+            overall_pbar.set_postfix({"current_step": "Scaling completed"})
         
         # Step 3: Apply SMOTE if requested
         if apply_smote and target_column:
@@ -311,8 +411,14 @@ class SoilDataPreprocessor:
             X_resampled, y_resampled = self.balance_with_smote(df_processed, target_column)
             df_processed = pd.concat([X_resampled, y_resampled], axis=1)
             self.logger.info(f"Final DataFrame shape after SMOTE: {df_processed.shape}")
+            if self.use_progress_bars:
+                overall_pbar.update(1)
+                overall_pbar.set_postfix({"current_step": "SMOTE completed"})
         elif apply_smote and not target_column:
             self.logger.warning("SMOTE requested but no target column specified, skipping SMOTE")
+        
+        if self.use_progress_bars:
+            overall_pbar.close()
         
         self.logger.info("="*60)
         self.logger.info(f"fit_transform completed successfully. Final shape: {df_processed.shape}")
@@ -329,7 +435,6 @@ class SoilDataPreprocessor:
         Returns:
             pd.DataFrame: Preprocessed DataFrame
         """
-        self.logger.info("="*60)
         self.logger.info("Starting transform process (prediction mode)")
         self.logger.info(f"Input DataFrame shape: {df.shape}")
         
@@ -338,16 +443,25 @@ class SoilDataPreprocessor:
             self.logger.error(error_msg)
             raise ValueError(error_msg)
         
+        # Overall progress bar for transform
+        if self.use_progress_bars:
+            overall_pbar = tqdm(total=2, desc="Transform Progress", unit="step")
+        
         # Apply same transformations as during training
-        self.logger.info("-" * 40)
         self.logger.info("STEP 1: Categorical Encoding")
         df_processed = self.encode_categorical_columns(df, 'label')
+        if self.use_progress_bars:
+            overall_pbar.update(1)
+            overall_pbar.set_postfix({"current_step": "Encoding completed"})
         
-        self.logger.info("-" * 40)
         self.logger.info("STEP 2: Numerical Scaling")
         df_processed = self.scale_dataset(df_processed)
-        
-        self.logger.info("="*60)
+        self.logger.info("Preprocessor is fitted, applying existing scaler")
+        if self.use_progress_bars:
+            overall_pbar.update(1)
+            overall_pbar.set_postfix({"current_step": "Scaling completed"})
+            overall_pbar.close()
+            
         self.logger.info(f"Transform completed successfully. Final shape: {df_processed.shape}")
         
         return df_processed
@@ -366,7 +480,13 @@ class SoilDataPreprocessor:
             'is_fitted': self.is_fitted
         }
         
-        joblib.dump(save_data, filepath)
+        # Progress bar for saving
+        if self.use_progress_bars:
+            with tqdm(total=1, desc="Saving preprocessor", unit="file") as pbar:
+                joblib.dump(save_data, filepath)
+                pbar.update(1)
+        else:
+            joblib.dump(save_data, filepath)
         
         self.logger.info(f"Preprocessor saved successfully")
         self.logger.debug(f"Saved components: {list(save_data.keys())}")
@@ -384,7 +504,14 @@ class SoilDataPreprocessor:
             raise FileNotFoundError(error_msg)
         
         try:
-            data = joblib.load(filepath)
+            # Progress bar for loading
+            if self.use_progress_bars:
+                with tqdm(total=1, desc="Loading preprocessor", unit="file") as pbar:
+                    data = joblib.load(filepath)
+                    pbar.update(1)
+            else:
+                data = joblib.load(filepath)
+                
             self.label_encoders = data['label_encoders']
             self.scaler = data['scaler']
             self.feature_columns = data['feature_columns']
@@ -401,14 +528,3 @@ class SoilDataPreprocessor:
             error_msg = f"Error loading preprocessor: {str(e)}"
             self.logger.error(error_msg)
             raise RuntimeError(error_msg)
-
-# Example usage with different logging levels
-if __name__ == "__main__":
-    # Example 1: Console logging with INFO level
-    preprocessor = SoilDataPreprocessor(log_level='INFO')
-    
-    # Example 2: File logging with DEBUG level
-    # preprocessor = SoilDataPreprocessor(log_level='DEBUG', log_file='preprocessing.log')
-    
-    # Example 3: Minimal logging with WARNING level
-    # preprocessor = SoilDataPreprocessor(log_level='WARNING')
