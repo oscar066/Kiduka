@@ -25,7 +25,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from api.utils.preprocessing import SoilDataPreprocessor
 from api.schema.schema import SoilData, PredictionResponse, WorkflowState
-from models import ModelLoader
+from ML import ModelLoader
 from api.utils.agrovet import AgrovetLocator
 
 # Load environment variables
