@@ -8,6 +8,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from api.utils.preprocessing import SoilDataPreprocessor 
 
+# logger import
+from api.utils.logging_config import setup_logger
+
 class ModelLoader:
     """
     Model loader class to handle loading of trained models and preprocessors
@@ -22,17 +25,14 @@ class ModelLoader:
             log_level (str): Logging level
         """
         self.models_dir = models_dir
-        self.logger = logging.getLogger(f"{self.__class__.__name__}")
-        self.logger.setLevel(getattr(logging, log_level.upper()))
         
-        # Setup console handler if no handlers exist
-        if not self.logger.handlers:
-            console_handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
-            console_handler.setFormatter(formatter)
-            self.logger.addHandler(console_handler)
+        # Use the setup_logger function with colorized output
+        log_level_int = getattr(logging, log_level.upper())
+        self.logger = setup_logger(
+            name=self.__class__.__name__,
+            level=log_level_int,
+            console_level=log_level_int
+        )
     
     def load_model(self, filename: str):
         """Load a trained model from joblib file"""
@@ -98,5 +98,5 @@ class ModelLoader:
             return []
         
         model_files = [f for f in os.listdir(self.models_dir) if f.endswith('.joblib')]
-        self.logger.info(f"Available model files: {model_files}")
+        self.logger.debug(f"Available model files: {model_files}")
         return model_files
