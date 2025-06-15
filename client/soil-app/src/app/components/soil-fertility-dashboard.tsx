@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -36,6 +38,8 @@ import {
   FileText,
   TrendingUp,
   AlertCircle,
+  Loader2,
+  Lock,
 } from "lucide-react";
 import { LocationDetector } from "./location-detector";
 import { AgrovetsSection } from "./agrovets-section";
@@ -77,6 +81,9 @@ interface SoilOutput {
 }
 
 export default function SoilFertilityDashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
   const [soilData, setSoilData] = useState<SoilInput>({
     simplified_texture: "",
     ph: 0,
@@ -97,6 +104,64 @@ export default function SoilFertilityDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (status === "loading") return; // Still loading session
+
+    if (status === "unauthenticated") {
+      router.push("/auth/login");
+    }
+  }, [status, router]);
+
+  // Show loading screen while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-25 via-amber-25 to-green-25">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-green-800">Loading...</h3>
+            <p className="text-green-600">Checking authentication status</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied for unauthenticated users (fallback)
+  if (status === "unauthenticated") {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-25 via-amber-25 to-green-25">
+        <Card className="w-full max-w-md border-red-200 bg-white shadow-lg">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <Lock className="h-6 w-6 text-red-600" />
+            </div>
+            <CardTitle className="text-red-800">Access Denied</CardTitle>
+            <CardDescription className="text-red-600">
+              You need to be logged in to access the soil analysis dashboard.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              onClick={() => router.push("/auth/login")}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              Sign In
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/")}
+              className="w-full border-green-200 text-green-700 hover:bg-green-50"
+            >
+              Go Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const handleInputChange = (
     field: keyof SoilInput,
     value: string | number
@@ -116,19 +181,29 @@ export default function SoilFertilityDashboard() {
   };
 
   const handlePredict = async () => {
+    if (!session?.accessToken) {
+      setError("Authentication token not found. Please sign in again.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch("https://vast-oasis-53321-a0278e755744.herokuapp.com/predict", {
+      const response = await fetch("http://127.0.0.1:8000/predict", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          // Include auth token if your FastAPI backend requires it
+          Authorization: `Bearer ${session.accessToken}`,
         },
         body: JSON.stringify(soilData),
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Authentication failed. Please sign in again.");
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -148,6 +223,13 @@ export default function SoilFertilityDashboard() {
           ? err.message
           : "An error occurred while analyzing soil data"
       );
+
+      // If authentication error, redirect to login
+      if (err instanceof Error && err.message.includes("Authentication")) {
+        setTimeout(() => {
+          signOut({ callbackUrl: "/auth/login" });
+        }, 2000);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -200,6 +282,7 @@ export default function SoilFertilityDashboard() {
       ]
     : [];
 
+  // Only render the dashboard if user is authenticated
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -439,7 +522,14 @@ export default function SoilFertilityDashboard() {
                       !soilData.longitude
                     }
                   >
-                    {isLoading ? "Analyzing Soil..." : "Analyze Soil Health"}
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Analyzing Soil...
+                      </>
+                    ) : (
+                      "Analyze Soil Health"
+                    )}
                   </Button>
                   {(!soilData.latitude || !soilData.longitude) && (
                     <div className="mt-2 text-xs text-amber-600 flex items-center gap-1">
