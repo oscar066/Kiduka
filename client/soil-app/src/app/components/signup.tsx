@@ -11,53 +11,48 @@ import Link from "next/link";
 import { FaGoogle } from "react-icons/fa";
 import { BsEyeFill, BsEyeSlashFill } from "react-icons/bs";
 import { useRouter } from "next/navigation";
-
-// Define user type interface
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  password: string;
-  createdAt: string;
-  role: string;
-  provider?: string;
-}
+import { signIn, useSession } from "next-auth/react";
+import { apiClient } from "@/lib/api-client";
 
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("");
   const [email, setEmail] = useState<string>("");
+  const [fullName, setFullName] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] =
     useState<boolean>(false);
   const router = useRouter();
+  const { data: session, status } = useSession();
 
-  // Check if user is already logged in
+  // Redirect if already authenticated
   useEffect(() => {
-    const user = localStorage.getItem("soiltech_user");
-    if (user) {
+    if (status === "authenticated") {
       router.push("/dashboard");
     }
-  }, [router]);
+  }, [status, router]);
 
   async function onSubmit(event: React.SyntheticEvent) {
     event.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
+    setSuccessMessage(null);
 
-    if (!username || !email || !password || !confirmPassword) {
+    // Validation
+    if (!username || !email || !password || !confirmPassword || !fullName) {
       setErrorMessage("All fields are required.");
       setIsLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
-      setIsLoading(false);
       setErrorMessage("Passwords do not match");
+      setIsLoading(false);
       return;
     }
 
@@ -74,61 +69,36 @@ export default function SignupPage() {
     }
 
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Check if email already exists
-      const existingUsers: User[] = JSON.parse(
-        localStorage.getItem("soiltech_users") || "[]"
-      );
-      const emailExists = existingUsers.some(
-        (user: User) => user.email === email
-      );
-
-      if (emailExists) {
-        setErrorMessage("An account with this email already exists");
-        setIsLoading(false);
-        return;
-      }
-
-      // Create new user
-      const newUser: User = {
-        id: Date.now().toString(),
+      // Register user via FastAPI backend using apiClient
+      await apiClient.register({
         username,
         email,
-        password, // In real app, this would be hashed
-        createdAt: new Date().toISOString(),
-        role: "farmer",
-      };
+        password,
+        full_name: fullName,
+      });
 
-      // Save to localStorage (demo purposes)
-      const updatedUsers = [...existingUsers, newUser];
-      localStorage.setItem("soiltech_users", JSON.stringify(updatedUsers));
+      // Registration successful, now sign in
+      setSuccessMessage("Account created successfully! Signing you in...");
 
       // Auto-login after successful registration
-      localStorage.setItem(
-        "soiltech_user",
-        JSON.stringify({
-          email: newUser.email,
-          name: newUser.username,
-          loginTime: new Date().toISOString(),
-        })
-      );
+      const signInResult = await signIn("credentials", {
+        username_or_email: email,
+        password: password,
+        redirect: false,
+      });
 
-      console.log("Registration successful:", newUser);
-
-      // Clear form
-      setUsername("");
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
-      setTermsAccepted(false);
-
-      // Redirect to dashboard
-      router.push("/dashboard");
-    } catch (err) {
+      if (signInResult?.ok) {
+        router.push("/dashboard");
+      } else {
+        // Registration was successful but auto-login failed
+        setSuccessMessage("Account created successfully! Please log in.");
+        setTimeout(() => {
+          router.push("/auth/login");
+        }, 2000);
+      }
+    } catch (err: any) {
       console.error("Registration failed:", err);
-      setErrorMessage("Registration failed. Please try again.");
+      setErrorMessage(err.message || "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -136,38 +106,17 @@ export default function SignupPage() {
 
   const handleGoogleSignup = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
+
     try {
-      // Simulate Google OAuth
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const result = await signIn("google", {
+        redirect: false,
+        callbackUrl: "/dashboard",
+      });
 
-      // Auto-create account with demo user
-      const newUser: User = {
-        id: Date.now().toString(),
-        username: "Demo User",
-        email: "demo.google@soiltech.com",
-        password: "google_auth",
-        createdAt: new Date().toISOString(),
-        role: "farmer",
-        provider: "google",
-      };
-
-      const existingUsers: User[] = JSON.parse(
-        localStorage.getItem("soiltech_users") || "[]"
-      );
-      const updatedUsers = [...existingUsers, newUser];
-      localStorage.setItem("soiltech_users", JSON.stringify(updatedUsers));
-
-      // Auto-login
-      localStorage.setItem(
-        "soiltech_user",
-        JSON.stringify({
-          email: newUser.email,
-          name: newUser.username,
-          loginTime: new Date().toISOString(),
-        })
-      );
-
-      router.push("/dashboard");
+      if (result?.error) {
+        setErrorMessage("Google sign-up failed. Please try again.");
+      }
     } catch (err) {
       console.error("Google sign-up failed:", err);
       setErrorMessage("Google sign-up failed. Please try again.");
@@ -175,6 +124,18 @@ export default function SignupPage() {
       setIsLoading(false);
     }
   };
+
+  // Show loading state while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-25 via-amber-25 to-green-25">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin text-green-600" />
+          <span className="text-green-800">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-25 via-amber-25 to-green-25">
@@ -202,14 +163,41 @@ export default function SignupPage() {
               Enter your details below to create your account
             </p>
           </div>
+
           {errorMessage && (
-            <p className="text-red-600 text-center mb-4 text-sm">
-              {errorMessage}
-            </p>
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-center text-sm">{errorMessage}</p>
+            </div>
           )}
+
+          {successMessage && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-green-600 text-center text-sm">
+                {successMessage}
+              </p>
+            </div>
+          )}
+
           <div className="grid gap-6">
             <form onSubmit={onSubmit}>
               <div className="grid gap-2">
+                <div className="grid gap-1">
+                  <Label className="sr-only" htmlFor="fullName">
+                    Full Name
+                  </Label>
+                  <Input
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Full Name"
+                    type="text"
+                    autoCapitalize="words"
+                    autoComplete="name"
+                    autoCorrect="off"
+                    disabled={isLoading}
+                    className="border-amber-200 focus:border-green-500"
+                  />
+                </div>
                 <div className="grid gap-1">
                   <Label className="sr-only" htmlFor="username">
                     Username
@@ -220,7 +208,7 @@ export default function SignupPage() {
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Username"
                     type="text"
-                    autoCapitalize="words"
+                    autoCapitalize="none"
                     autoComplete="username"
                     autoCorrect="off"
                     disabled={isLoading}
@@ -252,7 +240,7 @@ export default function SignupPage() {
                     id="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
+                    placeholder="Password (min. 6 characters)"
                     type={showPassword ? "text" : "password"}
                     autoCapitalize="none"
                     autoComplete="new-password"
@@ -365,7 +353,7 @@ export default function SignupPage() {
           <p className="mt-6 text-center text-sm text-gray-600">
             Already have an account?{" "}
             <Link
-              href="/login"
+              href="/auth/login"
               className="text-green-600 hover:text-green-700 underline underline-offset-4"
             >
               Sign in

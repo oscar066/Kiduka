@@ -1,8 +1,9 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { signIn, getSession, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,47 +19,43 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const router = useRouter();
+  const { data: session, status } = useSession();
 
-  // Dummy user data for authentication
-  const dummyUsers = [
-    {
-      email: "farmer@soiltech.com",
-      password: "password123",
-      name: "John Farmer",
-    },
-    { email: "admin@soiltech.com", password: "admin123", name: "Admin User" },
-    { email: "demo@kiduka.com", password: "demo123", name: "Demo User" },
-  ];
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/dashboard");
+    }
+  }, [status, router]);
 
   async function onSubmit(event: React.SyntheticEvent) {
     event.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
 
+    if (!email || !password) {
+      setErrorMessage("Please enter both email/username and password.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const result = await signIn("credentials", {
+        username_or_email: email,
+        password: password,
+        redirect: false,
+      });
 
-      // Check dummy credentials
-      const user = dummyUsers.find(
-        (u) => u.email === email && u.password === password
-      );
-
-      if (user) {
-        // Store user session in localStorage (for demo purposes)
-        localStorage.setItem(
-          "soiltech_user",
-          JSON.stringify({
-            email: user.email,
-            name: user.name,
-            loginTime: new Date().toISOString(),
-          })
+      if (result?.error) {
+        setErrorMessage(
+          "Invalid email/username or password. Please try again."
         );
-
-        // Redirect to dashboard
-        router.push("/dashboard");
-      } else {
-        setErrorMessage("Invalid email or password. Please try again.");
+      } else if (result?.ok) {
+        // Get the session to ensure user is properly logged in
+        const session = await getSession();
+        if (session) {
+          router.push("/dashboard");
+        }
       }
     } catch (err) {
       console.error("Login failed:", err);
@@ -70,21 +67,17 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
+
     try {
-      // Simulate Google OAuth
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const result = await signIn("google", {
+        redirect: false,
+        callbackUrl: "/dashboard",
+      });
 
-      // Auto-login with demo user
-      localStorage.setItem(
-        "soiltech_user",
-        JSON.stringify({
-          email: "demo@kiduka.com",
-          name: "Demo User (Google)",
-          loginTime: new Date().toISOString(),
-        })
-      );
-
-      router.push("/dashboard");
+      if (result?.error) {
+        setErrorMessage("Google sign-in failed. Please try again.");
+      }
     } catch (err) {
       console.error("Google sign-in failed:", err);
       setErrorMessage("Google sign-in failed. Please try again.");
@@ -92,6 +85,18 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  // Show loading state while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-25 via-amber-25 to-green-25">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin text-green-600" />
+          <span className="text-green-800">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-25 via-amber-25 to-green-25">
@@ -120,19 +125,10 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Demo Credentials Info */}
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs text-blue-800 font-medium mb-1">
-              Demo Credentials:
-            </p>
-            <p className="text-xs text-blue-700">Email: demo@kiduka.com</p>
-            <p className="text-xs text-blue-700">Password: demo123</p>
-          </div>
-
           {errorMessage && (
-            <p className="text-red-600 text-center mb-4 text-sm">
-              {errorMessage}
-            </p>
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-center text-sm">{errorMessage}</p>
+            </div>
           )}
 
           <div className="grid gap-6">
@@ -140,14 +136,14 @@ export default function LoginPage() {
               <div className="grid gap-2">
                 <div className="grid gap-1">
                   <Label className="sr-only" htmlFor="email">
-                    Email
+                    Email or Username
                   </Label>
                   <Input
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    type="email"
+                    placeholder="Email or Username"
+                    type="text"
                     autoCapitalize="none"
                     autoComplete="email"
                     autoCorrect="off"
