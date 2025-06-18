@@ -4,6 +4,7 @@ import uuid
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
 # FastAPI imports
@@ -41,11 +42,58 @@ load_dotenv()
 # Setup logging
 logger = setup_logger("API", level=logging.INFO, console_level=logging.INFO)
 
-# Initialize FastAPI app
+# Global components dictionary
+app_components = {}
+prediction_workflow = None
+session_manager = SessionManager()
+
+# Initialize app configuration
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle application lifespan events"""
+    # Startup
+    logger.info("Initializing application...")
+    
+    # Initialize app components (models, preprocessors, etc.)
+    global app_components, prediction_workflow
+    app_components = initialize_app_components()
+    prediction_workflow = create_prediction_workflow()
+    
+    # Set dependencies in dependency manager
+    dependency_manager.set_components(app_components)
+    dependency_manager.set_workflow(prediction_workflow)
+    dependency_manager.set_session_manager(session_manager)
+    
+    # Create database tables
+    try:
+        await db_manager.create_tables()
+        logger.info("Database tables initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        raise
+    
+    logger.info("Application initialization completed")
+    
+    yield  # This is where the application runs
+    
+    # Shutdown
+    logger.info("Shutting down application...")
+    
+    try:
+        await db_manager.close()
+        logger.info("Database connections closed")
+    except Exception as e:
+        logger.error(f"Error during shutdown: {e}")
+    
+    logger.info("Application shutdown completed")
+
+
+# Initialize FastAPI app with lifespan
 app = FastAPI(
     title="Agricultural Prediction API", 
     description="Soil fertility prediction and fertilizer recommendation system with AI explanations and user management",
-    version="2.0.0"
+    version="2.0.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -69,11 +117,6 @@ app.include_router(auth_router)
 app.include_router(predictions_router)
 app.include_router(predict_router)
 
-# Global components dictionary
-app_components = {}
-
-# Initialize session manager
-session_manager = SessionManager()
 
 # Make components and session manager available globally for routers
 def get_app_components():
@@ -85,44 +128,6 @@ def get_prediction_workflow():
 def get_session_manager():
     return session_manager
 
-# Initialize on startup
-@app.on_event("startup")
-async def startup_event():
-    """Initialize application components on startup"""
-    logger.info("Initializing application...")
-    
-    # Initialize app components (models, preprocessors, etc.)
-    global app_components, prediction_workflow
-    app_components = initialize_app_components()
-    prediction_workflow = create_prediction_workflow()
-    
-    # Set dependencies in dependency manager
-    dependency_manager.set_components(app_components)
-    dependency_manager.set_workflow(prediction_workflow)
-    dependency_manager.set_session_manager(session_manager)
-    
-    # Create database tables
-    try:
-        await db_manager.create_tables()
-        logger.info("Database tables initialized")
-    except Exception as e:
-        logger.error(f"Failed to initialize database: {e}")
-        raise
-    
-    logger.info("Application initialization completed")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on application shutdown"""
-    logger.info("Shutting down application...")
-    
-    try:
-        await db_manager.close()
-        logger.info("Database connections closed")
-    except Exception as e:
-        logger.error(f"Error during shutdown: {e}")
-    
-    logger.info("Application shutdown completed")
 
 @app.get("/")
 async def root():
