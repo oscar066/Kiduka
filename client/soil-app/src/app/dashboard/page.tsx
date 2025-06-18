@@ -1,7 +1,7 @@
 
 import React from "react"
-import SoilFertilityDashboard from "../components/soil-fertility-dashboard";
+import MainDashboard from "../components/dashboard";
 
 export default function Page() {
-  return <SoilFertilityDashboard />
+  return <MainDashboard />
 }
