@@ -1,4 +1,5 @@
 // types/soil-analysis.ts
+
 export interface AgrovetInfo {
   id?: string;
   name: string;
@@ -60,4 +61,32 @@ export interface SoilData {
   agrovets?: AgrovetInfo[];
   created_at?: string;
   updated_at?: string;
+}
+
+export interface SoilInput {
+  simplified_texture: string;
+  ph: number;
+  n: number;
+  p: number;
+  k: number;
+  o: number;
+  ca: number;
+  mg: number;
+  cu: number;
+  fe: number;
+  zn: number;
+  latitude: number;
+  longitude: number;
+}
+
+export interface SoilOutput {
+  soil_fertility_status: string;
+  soil_fertility_confidence: number;
+  fertilizer_recommendation: string;
+  fertilizer_confidence: number;
+  explanation?: string;
+  recommendations?: string[];
+  structured_response?: StructuredResponse;
+  timestamp: string;
+  nearest_agrovets: any[];
 }
