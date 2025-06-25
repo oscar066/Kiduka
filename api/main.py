@@ -1,51 +1,99 @@
 import os
 import sys
+import uuid
 from pathlib import Path
-
-# data processing imports
-import numpy as np
-import pandas as pd
+from datetime import datetime
+from typing import Optional
+from contextlib import asynccontextmanager
+from dotenv import load_dotenv
 
 # FastAPI imports
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict, Any, List, Optional
-
-# LangGraph and LangChain imports
-from langgraph.graph import StateGraph, START, END
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
-from datetime import datetime
 import logging
-from dotenv import load_dotenv
-from typing_extensions import TypedDict
+from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Local imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from preprocessing import SoilDataPreprocessor
-from schema import SoilData, PredictionResponse, WorkflowState
-from models import ModelLoader
+# Import schemas
+from api.schema.schema import WorkflowState
+
+# Import modularized components
+from api.utils.config import AppConfig
+from api.utils.initialization import initialize_app_components
+from api.utils.logging_config import setup_logger
+from api.utils.dependencies import dependency_manager
+from api.utils.session import SessionManager
+from api.workflow.prediction_workflow import create_prediction_workflow
+
+# Import database components
+from api.db.connection import db_manager, get_db
+
+# Import routes
+from api.routers.auth_router import router as auth_router
+from api.routers.predictions_router import router as predictions_router
+from api.routers.predict_router import router as predict_router
 
 # Load environment variables
 load_dotenv()
 
-# Configure logging with more detailed formatting
-logging.basicConfig(
-    level=logging.INFO,  # Changed to DEBUG for more detailed logging
-    format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        #logging.FileHandler('agricultural_api.log')
-    ]
-)
-logger = logging.getLogger(__name__)
+# Setup logging
+logger = setup_logger("API", level=logging.INFO, console_level=logging.INFO)
 
-# Initialize FastAPI app
+# Global components dictionary
+app_components = {}
+prediction_workflow = None
+session_manager = SessionManager()
+
+# Initialize app configuration
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle application lifespan events"""
+    # Startup
+    logger.info("Initializing application...")
+    
+    # Initialize app components (models, preprocessors, etc.)
+    global app_components, prediction_workflow
+    app_components = initialize_app_components()
+    prediction_workflow = create_prediction_workflow()
+    
+    # Set dependencies in dependency manager
+    dependency_manager.set_components(app_components)
+    dependency_manager.set_workflow(prediction_workflow)
+    dependency_manager.set_session_manager(session_manager)
+    
+    # Create database tables
+    try:
+        await db_manager.create_tables()
+        logger.info("Database tables initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        raise
+    
+    logger.info("Application initialization completed")
+    
+    yield  # This is where the application runs
+    
+    # Shutdown
+    logger.info("Shutting down application...")
+    
+    try:
+        await db_manager.close()
+        logger.info("Database connections closed")
+    except Exception as e:
+        logger.error(f"Error during shutdown: {e}")
+    
+    logger.info("Application shutdown completed")
+
+
+# Initialize FastAPI app with lifespan
 app = FastAPI(
     title="Agricultural Prediction API", 
-    description="Soil fertility prediction and fertilizer recommendation system with AI explanations",
-    version="1.0.0"
+    description="Soil fertility prediction and fertilizer recommendation system with AI explanations and user management",
+    version="2.0.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -56,418 +104,55 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global variables
-llm = None
-fertility_preprocessor = None
-fertility_model = None
-fertilizer_preprocessor = None
-fertilizer_model = None
+# Add session middleware
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET_KEY"),
+    session_cookie="soil_analysis_session",
+    max_age=3600  # 1 hour session
+)
 
-# Define mappings for predictions
-FERTILITY_STATUS_MAP = {0: "MODERATELY HEALTHY", 1: "POOR", 2: "VERY POOR"}
-FERTILIZER_TYPE_MAP = {0: "NPK", 1: "TSP"}
+# Include routers
+app.include_router(auth_router)
+app.include_router(predictions_router)
+app.include_router(predict_router)
 
-# Define column mappings to match training data
-COLUMN_MAPPING = {
-    'simplified_texture': 'simpliedtexture(1)', 
-    'ph': 'ph', 
-    'n': 'n', 
-    'p': 'p', 
-    'k': 'k', 
-    'o': 'o',
-    'ca': 'ca', 
-    'mg': 'mg', 
-    'cu': 'cu', 
-    'fe': 'fe', 
-    'zn': 'zn'
-}
 
-# Expected feature columns after preprocessing (adjust based on your training data)
-FERTILITY_FEATURE_COLUMNS = ['simpliedtexture(1)', 'ph', 'n', 'p', 'k', 'o', 'ca', 'mg', 'cu', 'fe', 'zn']
-FERTILIZER_FEATURE_COLUMNS = ['simpliedtexture(1)', 'ph', 'n', 'p', 'k', 'o', 'ca', 'mg', 'cu', 'fe', 'zn', 'soilfertilitystatus']
+# Make components and session manager available globally for routers
+def get_app_components():
+    return app_components
 
-def initialize_models():
-    """Initialize and load all models and preprocessors"""
-    global fertility_preprocessor, fertility_model, fertilizer_preprocessor, fertilizer_model
-    
-    try:
-        logger.info("Initializing model loader...")
-        # Get the absolute path to the models directory
-        current_dir = Path(__file__).parent
-        models_dir = current_dir.parent / "models"
-        
-        # Create ModelLoader instance with specific models directory
-        loader = ModelLoader(models_dir=str(models_dir))
-        
-        # List available models for debugging
-        available_models = loader.list_available_models()
-        logger.info(f"Available model files: {available_models}")
-        
-        if not available_models:
-            logger.error(f"No model files found in {models_dir}")
-            return False
-        
-        # Load fertility components
-        logger.info("Loading fertility preprocessor...")
-        fertility_preprocessor = loader.load_preprocessor('soil_fertility_status_preprocessor.joblib')
-        logger.info(f"Fertility preprocessor loaded. Is fitted: {fertility_preprocessor.is_fitted}")
-        logger.info(f"Fertility preprocessor encoders: {list(fertility_preprocessor.label_encoders.keys())}")
-        logger.info(f"Fertility preprocessor feature columns: {fertility_preprocessor.feature_columns}")
-        
-        logger.info("Loading fertility model...")
-        fertility_model = loader.load_model('Soil_Status_randomForest_Classifier_Model.joblib')
-        logger.info(f"Fertility model loaded: {type(fertility_model)}")
-        
-        # Load fertilizer components
-        logger.info("Loading fertilizer preprocessor...")
-        fertilizer_preprocessor = loader.load_preprocessor('soil_fertilizer_recommendation_preprocessor.joblib')
-        logger.info(f"Fertilizer preprocessor loaded. Is fitted: {fertilizer_preprocessor.is_fitted}")
-        logger.info(f"Fertilizer preprocessor encoders: {list(fertilizer_preprocessor.label_encoders.keys())}")
-        logger.info(f"Fertilizer preprocessor feature columns: {fertilizer_preprocessor.feature_columns}")
-        
-        logger.info("Loading fertilizer model...")
-        fertilizer_model = loader.load_model('Fertilizers_xgb_Classifier_Model.joblib')
-        logger.info(f"Fertilizer model loaded: {type(fertilizer_model)}")
-        
-        logger.info("All models and preprocessors loaded successfully!")
-        return True
-        
-    except Exception as e:
-        logger.error(f"Error loading models: {e}")
-        logger.error(f"Exception details:", exc_info=True)
-        return False
+def get_prediction_workflow():
+    return prediction_workflow
 
-def initialize_llm():
-    """Initialize OpenAI LLM"""
-    global llm
-    try:
-        openai_api_key = os.getenv("OPENAI_API_KEY")
-        if openai_api_key and openai_api_key != "your-openai-api-key-here":
-            llm = ChatOpenAI(
-                model="gpt-4o-mini", 
-                temperature=0.3, 
-                api_key=openai_api_key
-            )
-            logger.info("OpenAI LLM initialized successfully")
-        else:
-            logger.warning("OpenAI API key not found or invalid")
-    except Exception as e:
-        logger.error(f"Error initializing OpenAI LLM: {e}")
+def get_session_manager():
+    return session_manager
 
-def prepare_soil_dataframe(soil_data: Dict[str, Any]) -> pd.DataFrame:
-    """Convert soil data dictionary to DataFrame with proper column names"""
-    logger.debug(f"Incoming soil_data: {soil_data}")
-    
-    # Map column names to match training data
-    mapped_data = {}
-    for k, v in soil_data.items():
-        mapped_key = COLUMN_MAPPING.get(k, k)
-        mapped_data[mapped_key] = v
-        logger.debug(f"Mapped {k} -> {mapped_key}: {v}")
-    
-    df = pd.DataFrame([mapped_data])
-    logger.debug(f"Created DataFrame with shape: {df.shape}")
-    logger.debug(f"DataFrame columns: {df.columns.tolist()}")
-    logger.debug(f"DataFrame dtypes:\n{df.dtypes}")
-    logger.debug(f"DataFrame values:\n{df.to_string()}")
-    
-    return df
-
-def validate_preprocessor_state(preprocessor, name):
-    """Validate preprocessor state and log details"""
-    logger.info(f"Validating {name} preprocessor state:")
-    logger.info(f"  Is fitted: {preprocessor.is_fitted}")
-    logger.info(f"  Label encoders: {list(preprocessor.label_encoders.keys()) if preprocessor.label_encoders else 'None'}")
-    logger.info(f"  Scaler: {type(preprocessor.scaler).__name__ if preprocessor.scaler else 'None'}")
-    logger.info(f"  Feature columns: {preprocessor.feature_columns}")
-    
-    if not preprocessor.is_fitted:
-        logger.error(f"{name} preprocessor is not fitted!")
-        return False
-    return True
-
-def predict_fertility_node(state: WorkflowState) -> WorkflowState:
-    """Predict soil fertility status"""
-    logger.info("Starting fertility prediction...")
-    
-    try:
-        # Validate preprocessor
-        if not validate_preprocessor_state(fertility_preprocessor, "Fertility"):
-            raise ValueError("Fertility preprocessor is not properly fitted")
-        
-        df = prepare_soil_dataframe(state["soil_data"])
-        logger.debug(f"Original DataFrame for fertility prediction:\n{df.to_string()}")
-        
-        # Apply preprocessing
-        logger.debug("Applying fertility preprocessing...")
-        df_processed = fertility_preprocessor.transform(df)
-        
-        logger.debug(f"Processed DataFrame shape: {df_processed.shape}")
-        logger.debug(f"Processed DataFrame columns: {df_processed.columns.tolist()}")
-        logger.debug(f"Processed DataFrame:\n{df_processed.to_string()}")
-        
-        # Check feature alignment
-        expected_features = FERTILITY_FEATURE_COLUMNS
-        available_features = [col for col in expected_features if col in df_processed.columns]
-        missing_features = [col for col in expected_features if col not in df_processed.columns]
-        
-        logger.info(f"Expected features: {expected_features}")
-        logger.info(f"Available features: {available_features}")
-        if missing_features:
-            logger.warning(f"Missing features: {missing_features}")
-        
-        # Use available features for prediction
-        if not available_features:
-            raise ValueError("No expected features found in processed data")
-        
-        df_for_prediction = df_processed[available_features].copy()
-        logger.debug(f"Final prediction DataFrame shape: {df_for_prediction.shape}")
-        logger.debug(f"Final prediction DataFrame:\n{df_for_prediction.to_string()}")
-        
-        # Make prediction
-        logger.debug("Making fertility prediction...")
-        prediction = fertility_model.predict(df_for_prediction)
-        probabilities = fertility_model.predict_proba(df_for_prediction)
-        
-        logger.debug(f"Raw fertility prediction: {prediction}")
-        logger.debug(f"Fertility prediction probabilities: {probabilities}")
-        
-        fertility_status = FERTILITY_STATUS_MAP.get(prediction[0], "UNKNOWN")
-        fertility_confidence = float(np.max(probabilities))
-        
-        state["fertility_prediction"] = fertility_status
-        state["fertility_confidence"] = fertility_confidence
-        
-        logger.info(f"Fertility prediction completed: {fertility_status} (confidence: {fertility_confidence:.2f})")
-        return state
-        
-    except Exception as e:
-        logger.error(f"Error in fertility prediction: {e}")
-        logger.error(f"Exception details:", exc_info=True)
-        state["fertility_prediction"] = "UNKNOWN"
-        state["fertility_confidence"] = 0.0
-        return state
-
-def predict_fertilizer_node(state: WorkflowState) -> WorkflowState:
-    """Predict fertilizer recommendation"""
-    logger.info("Starting fertilizer prediction...")
-    
-    try:
-        # Validate preprocessor
-        if not validate_preprocessor_state(fertilizer_preprocessor, "Fertilizer"):
-            raise ValueError("Fertilizer preprocessor is not properly fitted")
-        
-        if not state["fertility_prediction"] or state["fertility_prediction"] == "UNKNOWN":
-            raise ValueError("Valid fertility prediction is required for fertilizer recommendation")
-        
-        df = prepare_soil_dataframe(state["soil_data"])
-        
-        # Add fertility status to the dataframe
-        df['soilfertilitystatus'] = state["fertility_prediction"]
-        logger.debug(f"DataFrame with fertility status added:\n{df.to_string()}")
-        
-        # Apply preprocessing
-        logger.debug("Applying fertilizer preprocessing...")
-        df_processed = fertilizer_preprocessor.transform(df)
-        
-        logger.debug(f"Processed DataFrame for fertilizer prediction:\n{df_processed.to_string()}")
-        
-        # Check feature alignment
-        expected_features = FERTILIZER_FEATURE_COLUMNS
-        available_features = [col for col in expected_features if col in df_processed.columns]
-        missing_features = [col for col in expected_features if col not in df_processed.columns]
-        
-        logger.info(f"Expected fertilizer features: {expected_features}")
-        logger.info(f"Available fertilizer features: {available_features}")
-        if missing_features:
-            logger.warning(f"Missing fertilizer features: {missing_features}")
-        
-        # Use available features for prediction
-        if not available_features:
-            raise ValueError("No expected features found in processed fertilizer data")
-        
-        df_for_prediction = df_processed[available_features].copy()
-        logger.debug(f"Final fertilizer prediction DataFrame:\n{df_for_prediction.to_string()}")
-        
-        # Make prediction
-        logger.debug("Making fertilizer prediction...")
-        prediction = fertilizer_model.predict(df_for_prediction)
-        probabilities = fertilizer_model.predict_proba(df_for_prediction)
-        
-        logger.debug(f"Raw fertilizer prediction: {prediction}")
-        logger.debug(f"Fertilizer prediction probabilities: {probabilities}")
-        
-        fertilizer_type = FERTILIZER_TYPE_MAP.get(prediction[0], "UNKNOWN")
-        fertilizer_confidence = float(np.max(probabilities))
-        
-        state["fertilizer_prediction"] = fertilizer_type
-        state["fertilizer_confidence"] = fertilizer_confidence
-        
-        logger.info(f"Fertilizer prediction completed: {fertilizer_type} (confidence: {fertilizer_confidence:.2f})")
-        return state
-        
-    except Exception as e:
-        logger.error(f"Error in fertilizer prediction: {e}")
-        logger.error(f"Exception details:", exc_info=True)
-        state["fertilizer_prediction"] = "UNKNOWN"
-        state["fertilizer_confidence"] = 0.0
-        return state
-
-def generate_fallback_response(state: WorkflowState) -> WorkflowState:
-    """Generate fallback explanation when LLM is not available"""
-    logger.info("Generating fallback response...")
-    
-    fertility_status = state.get('fertility_prediction', 'unknown')
-    fertilizer_type = state.get('fertilizer_prediction', 'unknown')
-    soil_data = state['soil_data']
-    
-    state["explanation"] = (
-        f"Your soil shows {fertility_status.lower()} fertility status "
-        f"with {state.get('fertility_confidence', 0):.1%} confidence. "
-        f"The recommended fertilizer {fertilizer_type} will help improve nutrient availability "
-        f"based on current levels (N: {soil_data['n']}, P: {soil_data['p']}, K: {soil_data['k']}) "
-        f"and pH: {soil_data['ph']}."
-    )
-    
-    state["recommendations"] = [
-        f"Apply {fertilizer_type} according to package instructions",
-        "Monitor soil pH and adjust if needed (optimal range: 6.0-7.0)",
-        "Maintain proper soil moisture levels for optimal nutrient uptake",
-        f"Consider adding organic matter to improve {soil_data['simplified_texture'].lower()} soil structure",
-        "Test soil nutrients again after 3-4 months to track improvement"
-    ]
-    
-    logger.debug(f"Fallback explanation generated: {state['explanation']}")
-    return state
-
-def generate_explanation_node(state: WorkflowState) -> WorkflowState:
-    """Generate AI explanation and recommendations"""
-    logger.info("Starting explanation generation...")
-    
-    try:
-        if llm is None:
-            logger.warning("LLM not available, using fallback response")
-            return generate_fallback_response(state)
-        
-        # Create prompts
-        system_prompt = """You are an agricultural expert AI assistant. Explain soil analysis results and fertilizer recommendations in simple, farmer-friendly language. Provide practical advice and actionable recommendations."""
-        
-        soil_data = state['soil_data']
-        human_prompt = f"""
-        Based on the following soil analysis and predictions, provide a clear explanation and practical recommendations:
-        
-        Soil Data:
-        - Soil Texture: {soil_data['simplified_texture']}
-        - pH: {soil_data['ph']}
-        - Nitrogen (N): {soil_data['n']}, Phosphorus (P): {soil_data['p']}, Potassium (K): {soil_data['k']}
-        - Organic Content (O): {soil_data['o']}
-        - Calcium (Ca): {soil_data['ca']}, Magnesium (Mg): {soil_data['mg']}
-        - Copper (Cu): {soil_data['cu']}, Iron (Fe): {soil_data['fe']}, Zinc (Zn): {soil_data['zn']}
-        
-        Predictions:
-        - Soil Fertility Status: {state['fertility_prediction']} (Confidence: {state['fertility_confidence']:.1%})
-        - Recommended Fertilizer: {state['fertilizer_prediction']} (Confidence: {state['fertilizer_confidence']:.1%})
-        
-        Please provide:
-        1. A simple explanation of what these results mean for the farmer
-        2. Why this fertilizer was recommended based on the soil's nutrient profile
-        3. 3-5 specific actionable recommendations for improving soil health and crop yield
-        
-        Keep the language simple and practical for farmers.
-        """
-        
-        logger.debug(f"Sending prompt to LLM")
-        
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=human_prompt)
-        ]
-        
-        response = llm.invoke(messages)
-        full_response = response.content
-        
-        # Parse response to extract explanation and recommendations
-        lines = [line.strip() for line in full_response.split('\n') if line.strip()]
-        explanation_lines = []
-        recommendations = []
-        
-        in_recommendations = False
-        for line in lines:
-            if any(keyword in line.lower() for keyword in ['recommendation', '1.', '2.', '3.', '4.', '5.']) or line.startswith(('-', '•')):
-                in_recommendations = True
-                if line.lower().startswith(('1.', '2.', '3.', '4.', '5.')):
-                    recommendations.append(line)
-                elif line.startswith(('-', '•')):
-                    recommendations.append(line[1:].strip())
-                elif 'recommendation' not in line.lower():
-                    recommendations.append(line)
-            elif not in_recommendations:
-                explanation_lines.append(line)
-        
-        state["explanation"] = ' '.join(explanation_lines) if explanation_lines else full_response
-        state["recommendations"] = recommendations if recommendations else [
-            "Monitor soil moisture regularly",
-            "Test soil pH monthly",
-            "Apply organic matter to improve soil structure",
-            "Follow recommended fertilizer application rates",
-            "Consider crop rotation for soil health"
-        ]
-        
-        logger.info("AI explanation generated successfully")
-        return state
-        
-    except Exception as e:
-        logger.error(f"Error generating explanation: {e}")
-        logger.error(f"Exception details:", exc_info=True)
-        return generate_fallback_response(state)
-
-def create_workflow():
-    """Create and compile LangGraph workflow"""
-    logger.info("Creating workflow...")
-    
-    workflow = StateGraph(WorkflowState)
-    
-    # Add nodes
-    workflow.add_node("predict_fertility", predict_fertility_node)
-    workflow.add_node("predict_fertilizer", predict_fertilizer_node)
-    workflow.add_node("generate_explanation", generate_explanation_node)
-    
-    # Define edges
-    workflow.add_edge(START, "predict_fertility")
-    workflow.add_edge("predict_fertility", "predict_fertilizer")
-    workflow.add_edge("predict_fertilizer", "generate_explanation")
-    workflow.add_edge("generate_explanation", END)
-    
-    logger.info("Workflow created successfully")
-    return workflow.compile()
-
-# Initialize on startup
-logger.info("Initializing application...")
-models_loaded = initialize_models()
-if not models_loaded:
-    logger.error("Failed to load models! Application may not work correctly.")
-else:
-    logger.info("Models loaded successfully")
-
-initialize_llm()
-prediction_workflow = create_workflow()
-logger.info("Application initialization completed")
 
 @app.get("/")
 async def root():
+    """Root endpoint with API information"""
     logger.info("Root endpoint accessed")
     return {
         "message": "Agricultural Prediction API",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "status": "running",
+        "features": {
+            "user_authentication": True,
+            "prediction_history": True,
+            "agrovet_recommendations": True,
+            "ai_explanations": True
+        },
         "models_loaded": {
-            "fertility_model": fertility_model is not None,
-            "fertility_preprocessor": fertility_preprocessor is not None,
-            "fertilizer_model": fertilizer_model is not None,
-            "fertilizer_preprocessor": fertilizer_preprocessor is not None
+            "fertility_model": app_components.get('fertility_model') is not None,
+            "fertility_preprocessor": app_components.get('fertility_preprocessor') is not None,
+            "fertilizer_model": app_components.get('fertilizer_model') is not None,
+            "fertilizer_preprocessor": app_components.get('fertilizer_preprocessor') is not None
         },
         "endpoints": {
             "predict": "/predict - POST soil data for predictions",
+            "auth": "/auth - Authentication endpoints",
+            "predictions": "/predictions - Prediction history management",
             "health": "/health - Health check",
             "docs": "/docs - API documentation"
         }
@@ -475,75 +160,96 @@ async def root():
 
 @app.get("/health")
 async def health_check():
+    """Health check endpoint"""
     logger.info("Health check endpoint accessed")
     
+    # Check database connectivity
+    db_healthy = False
+    try:
+        async for session in get_db():
+            # Simple query to check connection
+            await session.execute("SELECT 1")
+            db_healthy = True
+            break
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+    
     health_status = {
-        "status": "healthy" if all([fertility_model, fertility_preprocessor, fertilizer_model, fertilizer_preprocessor]) else "degraded",
+        "status": "healthy" if all([
+            app_components.get('fertility_model'),
+            app_components.get('fertility_preprocessor'),
+            app_components.get('fertilizer_model'),
+            app_components.get('fertilizer_preprocessor'),
+            db_healthy
+        ]) else "degraded",
         "timestamp": datetime.now().isoformat(),
+        "database": "healthy" if db_healthy else "degraded",
         "models_available": {
-            "fertility_model": fertility_model is not None,
-            "fertility_preprocessor": fertility_preprocessor is not None and fertility_preprocessor.is_fitted,
-            "fertilizer_model": fertilizer_model is not None,
-            "fertilizer_preprocessor": fertilizer_preprocessor is not None and fertilizer_preprocessor.is_fitted
+            "fertility_model": app_components.get('fertility_model') is not None,
+            "fertility_preprocessor": (app_components.get('fertility_preprocessor') is not None and 
+                                    getattr(app_components.get('fertility_preprocessor'), 'is_fitted', False)),
+            "fertilizer_model": app_components.get('fertilizer_model') is not None,
+            "fertilizer_preprocessor": (app_components.get('fertilizer_preprocessor') is not None and 
+                                      getattr(app_components.get('fertilizer_preprocessor'), 'is_fitted', False))
         },
-        "llm_available": llm is not None
+        "llm_available": app_components.get('llm') is not None,
+        "active_sessions": session_manager.get_session_count()
     }
     
     logger.debug(f"Health status: {health_status}")
     return health_status
 
-
-@app.post("/predict", response_model=PredictionResponse)
-async def predict_soil_fertility(soil_data: SoilData):
-    """Predict soil fertility status and fertilizer recommendations based on soil data"""
-    logger.info("Prediction endpoint accessed")
-    logger.debug(f"Received soil data: {soil_data.model_dump()}")
-    
-    # Check if models are loaded
-    if not all([fertility_model, fertility_preprocessor, fertilizer_model, fertilizer_preprocessor]):
-        logger.error("One or more models/preprocessors not loaded")
-        raise HTTPException(status_code=500, detail="Models not properly loaded")
+@app.get("/session")
+async def get_session_info(request: Request):
+    """Get current session information (for non-authenticated users)"""
+    logger.info("Session info endpoint accessed")
     
     try:
-        # Initialize workflow state
-        initial_state: WorkflowState = {
-            "soil_data": soil_data.model_dump(),
-            "fertility_prediction": None,
-            "fertility_confidence": None,
-            "fertilizer_prediction": None,
-            "fertilizer_confidence": None,
-            "explanation": None,
-            "recommendations": []
+        session_data = await session_manager.get_session(request)
+        return {
+            "session_id": request.session.get("session_id"),
+            "created_at": request.session.get("created_at"),
+            "predictions_count": len(session_data.get("predictions", [])),
+            "last_accessed": session_data.get("last_accessed")
+        }
+    except Exception as e:
+        logger.error(f"Error getting session info: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get session info")
+
+@app.get("/stats")
+async def get_api_stats():
+    """Get API usage statistics"""
+    logger.info("API stats endpoint accessed")
+    
+    try:
+        # Get basic stats
+        stats = {
+            "total_active_sessions": session_manager.get_session_count(),
+            "api_version": "2.0.0",
+            "uptime": "Available via health endpoint",
+            "features": {
+                "authentication": True,
+                "prediction_history": True,
+                "session_management": True,
+                "agrovet_search": True,
+                "ai_explanations": True
+            }
         }
         
-        logger.debug(f"Initial workflow state: {initial_state}")
-        
-        # Run the workflow
-        logger.info("Running prediction workflow...")
-        result = prediction_workflow.invoke(initial_state)
-        logger.debug(f"Workflow result keys: {result.keys()}")
-        
-        # Create response with proper None checks
-        response = PredictionResponse(
-            soil_fertility_status=result.get("fertility_prediction", "UNKNOWN"),
-            soil_fertility_confidence=result.get("fertility_confidence", 0.0),
-            fertilizer_recommendation=result.get("fertilizer_prediction", "UNKNOWN"), 
-            fertilizer_confidence=result.get("fertilizer_confidence", 0.0),
-            explanation=result.get("explanation", "Unable to generate explanation"),
-            recommendations=result.get("recommendations", ["Consult with agricultural expert"]),
-            timestamp=datetime.now().isoformat()
-        )
-        
-        logger.info("Prediction completed successfully")
-        logger.info(f"Results - Fertility: {response.soil_fertility_status} ({response.soil_fertility_confidence:.2f}), Fertilizer: {response.fertilizer_recommendation} ({response.fertilizer_confidence:.2f})")
-        return response
+        return stats
         
     except Exception as e:
-        logger.error(f"Error in prediction pipeline: {e}")
-        logger.error(f"Exception details:", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error getting API stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get API stats")
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info("Starting uvicorn server...")
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    port = int(os.environ.get("PORT", 8000))  # Use Heroku's PORT or default to 8000
+    logger.info(f"Starting uvicorn server on port {port}...")
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=port, 
+        log_level="info",
+        reload=os.getenv("ENVIRONMENT") == "development"
+    )
