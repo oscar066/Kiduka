@@ -178,7 +178,7 @@ class SoilDataPreprocessor:
         df_scaled = df.copy()
 
         # Select numeric columns
-        numerical_columns = df_scaled.select_dtypes(include=['float64', 'float32', 'int64', 'int32']).columns
+        numerical_columns = df_scaled.select_dtypes(include=['float64', 'float32']).columns
         self.logger.debug(f"Found {len(numerical_columns)} numerical columns: {list(numerical_columns)}")
         
         # Exclude target column if specified
