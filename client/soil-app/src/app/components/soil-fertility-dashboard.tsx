@@ -888,6 +888,55 @@ export default function SoilFertilityDashboard() {
                       </CardContent>
                     </Card>
                   )}
+<<<<<<< HEAD
+=======
+
+                  {/* Legacy fallback for old format */}
+                  {!results.structured_response && results.explanation && (
+                    <Card className="border-amber-200 bg-white shadow-lg">
+                      <CardHeader className="bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200">
+                        <CardTitle className="flex items-center gap-2 text-green-800">
+                          <FileText className="h-5 w-5" />
+                          Detailed Analysis & Recommendations (Legacy)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6 space-y-6">
+                        <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg border border-blue-200">
+                          <h4 className="text-blue-900 font-semibold mb-2 flex items-center gap-2">
+                            <Beaker className="h-4 w-4" />
+                            Soil Analysis Summary
+                          </h4>
+                          <p className="text-blue-800 text-sm leading-relaxed">
+                            {results.explanation}
+                          </p>
+                        </div>
+
+                        {results.recommendations && (
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-green-800 text-lg">
+                              Action Items:
+                            </h4>
+                            <div className="grid gap-3">
+                              {results.recommendations.map((rec, index) => (
+                                <div
+                                  key={index}
+                                  className="bg-gradient-to-r from-amber-50 to-green-50 p-4 rounded-lg border border-amber-200 shadow-sm"
+                                >
+                                  <p className="text-sm text-gray-700 leading-relaxed">
+                                    {rec
+                                      .replace(/\*\*(.*?)\*\*/g, "$1")
+                                      .replace(/^\d+\.\s*/, "")}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+>>>>>>> 914bdb2a0fd0d580106dc088eb30dc234ff3f755
                   {results && results.nearest_agrovets && (
                     <AgrovetsSection
                       agrovets={results.nearest_agrovets}

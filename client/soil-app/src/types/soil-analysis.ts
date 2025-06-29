@@ -1,5 +1,4 @@
 // types/soil-analysis.ts
-
 export interface AgrovetInfo {
   id?: string;
   name: string;

@@ -56,8 +56,13 @@ export default function SignupPage() {
       return;
     }
 
+<<<<<<< HEAD
     if (password.length < 8) {
       setErrorMessage("Password must be at least 8 characters long");
+=======
+    if (password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters long");
+>>>>>>> 914bdb2a0fd0d580106dc088eb30dc234ff3f755
       setIsLoading(false);
       return;
     }
