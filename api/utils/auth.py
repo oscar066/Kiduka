@@ -16,8 +16,10 @@ from sqlalchemy import select
 from api.db.connection import get_db
 from api.models.database import User
 from api.schema.auth_schema import TokenData
+from api.utils.logging_config import setup_logger
 
-logger = logging.getLogger(__name__)
+# Setup logging
+logger = setup_logger("AuthManager", level=logging.INFO, console_level=logging.INFO)
 
 # Security configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")

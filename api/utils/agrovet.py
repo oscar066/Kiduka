@@ -1,3 +1,4 @@
+import sys
 import os
 import math
 import pandas as pd
@@ -6,9 +7,13 @@ import logging
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Local imports
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from api.utils.logging_config import setup_logger
+
+# Setup logging
+logger = setup_logger("AgrovetLocator", level=logging.INFO, console_level=logging.INFO)
 
 class UserLocation(BaseModel):
     latitude: float = Field(..., ge=-90, le=90, description="User latitude")
@@ -190,12 +195,12 @@ def load_agrovet_data(csv_path: str = None) -> Optional[pd.DataFrame]:
         for path in possible_paths:
             if os.path.exists(path):
                 df = pd.read_csv(path)
-                logger.info(f"Loaded agrovet data from {path}: {len(df)} records")
-                logger.info(f"Original columns: {df.columns.tolist()}")
+                logger.debug(f"Loaded agrovet data from {path}: {len(df)} records")
+                logger.debug(f"Original columns: {df.columns.tolist()}")
                 
-                # FIXED: Correct way to normalize column names
+                # Correct way to normalize column names
                 df.columns = df.columns.str.strip().str.lower()
-                logger.info(f"Normalized columns: {df.columns.tolist()}")
+                logger.debug(f"Normalized columns: {df.columns.tolist()}")
                 
                 # Map common column name variations to standard names
                 column_mapping = {}
@@ -213,8 +218,8 @@ def load_agrovet_data(csv_path: str = None) -> Optional[pd.DataFrame]:
                 
                 if column_mapping:
                     df = df.rename(columns=column_mapping)
-                    logger.info(f"Mapped columns: {column_mapping}")
-                    logger.info(f"Final columns: {df.columns.tolist()}")
+                    logger.debug(f"Mapped columns: {column_mapping}")
+                    logger.debug(f"Final columns: {df.columns.tolist()}")
                 
                 return df
         

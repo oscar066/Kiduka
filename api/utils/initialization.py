@@ -133,5 +133,5 @@ def initialize_app_components() -> Dict[str, Any]:
     if agrovet_locator:
         components['agrovet_locator'] = agrovet_locator
     
-    logger.info(f"Initialized components: {list(components.keys())}")
+    logger.debug(f"Initialized components: {list(components.keys())}")
     return components
