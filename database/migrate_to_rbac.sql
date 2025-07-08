@@ -75,7 +75,7 @@ INSERT INTO users (email, username, hashed_password, full_name, role, is_active,
 SELECT 
     'superadmin@agricultural-api.com',
     'superadmin',
-    '$2b$12$E/lqk3wLE3tMSj9T6iUuwu0g.RSaU/yjRr7iLwsuuMFG8S5/yDPDi', -- password: 'password123' updated
+    '$2b$12$E/lqk3wLE3tMSj9T6iUuwu0g.RSaU/yjRr7iLwsuuMFG8S5/yDPDi',
     'Super Administrator',
     'super_admin',
     TRUE,
