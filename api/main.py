@@ -35,6 +35,11 @@ from api.db.connection import db_manager, get_db
 from api.routers.auth_router import router as auth_router
 from api.routers.predictions_router import router as predictions_router
 from api.routers.predict_router import router as predict_router
+from api.routers.admin_router import router as admin_router  # New admin router
+
+# Import auth utilities for role checking
+from api.utils.auth import get_current_user_optional, get_current_admin_user
+from api.models.database import User
 
 # Load environment variables
 load_dotenv()
@@ -52,7 +57,7 @@ session_manager = SessionManager()
 async def lifespan(app: FastAPI):
     """Handle application lifespan events"""
     # Startup
-    logger.info("Initializing application...")
+    logger.info("Initializing application with role-based authentication...")
     
     # Initialize app components (models, preprocessors, etc.)
     global app_components, prediction_workflow
@@ -72,7 +77,7 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to initialize database: {e}")
         raise
     
-    logger.info("Application initialization completed")
+    logger.info("Application initialization completed with admin features enabled")
     
     yield  # This is where the application runs
     
@@ -91,8 +96,8 @@ async def lifespan(app: FastAPI):
 # Initialize FastAPI app with lifespan
 app = FastAPI(
     title="Agricultural Prediction API", 
-    description="Soil fertility prediction and fertilizer recommendation system with AI explanations and user management",
-    version="2.0.0",
+    description="Soil fertility prediction and fertilizer recommendation system with AI explanations, user management, and admin features",
+    version="2.1.0",
     lifespan=lifespan
 )
 
@@ -116,7 +121,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(predictions_router)
 app.include_router(predict_router)
-
+app.include_router(admin_router)  # New admin router
 
 # Make components and session manager available globally for routers
 def get_app_components():
@@ -130,18 +135,24 @@ def get_session_manager():
 
 
 @app.get("/")
-async def root():
-    """Root endpoint with API information"""
+async def root(
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
+    """Root endpoint with API information and role-based features"""
     logger.info("Root endpoint accessed")
-    return {
+    
+    # Base response
+    response = {
         "message": "Agricultural Prediction API",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "status": "running",
         "features": {
             "user_authentication": True,
+            "role_based_access": True,
             "prediction_history": True,
             "agrovet_recommendations": True,
-            "ai_explanations": True
+            "ai_explanations": True,
+            "admin_panel": True
         },
         "models_loaded": {
             "fertility_model": app_components.get('fertility_model') is not None,
@@ -157,6 +168,28 @@ async def root():
             "docs": "/docs - API documentation"
         }
     }
+    
+    # Add user-specific information if authenticated
+    if current_user:
+        response["user"] = {
+            "id": str(current_user.id),
+            "username": current_user.username,
+            "role": current_user.role.value,
+            "is_admin": current_user.is_admin()
+        }
+        
+        # Add admin endpoints if user is admin
+        if current_user.is_admin():
+            response["endpoints"]["admin"] = "/admin - Admin management endpoints"
+            response["admin_features"] = {
+                "user_management": True,
+                "prediction_management": True,
+                "audit_logs": True,
+                "dashboard": True,
+                "agrovet_management": True
+            }
+    
+    return response
 
 @app.get("/health")
 async def health_check():
@@ -193,7 +226,12 @@ async def health_check():
                                       getattr(app_components.get('fertilizer_preprocessor'), 'is_fitted', False))
         },
         "llm_available": app_components.get('llm') is not None,
-        "active_sessions": session_manager.get_session_count()
+        "active_sessions": session_manager.get_session_count(),
+        "features": {
+            "role_based_auth": True,
+            "admin_panel": True,
+            "audit_logging": True
+        }
     }
     
     logger.debug(f"Health status: {health_status}")
@@ -217,24 +255,36 @@ async def get_session_info(request: Request):
         raise HTTPException(status_code=500, detail="Failed to get session info")
 
 @app.get("/stats")
-async def get_api_stats():
+async def get_api_stats(
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
     """Get API usage statistics"""
     logger.info("API stats endpoint accessed")
     
     try:
-        # Get basic stats
+        # Basic stats available to everyone
         stats = {
             "total_active_sessions": session_manager.get_session_count(),
-            "api_version": "2.0.0",
+            "api_version": "2.1.0",
             "uptime": "Available via health endpoint",
             "features": {
                 "authentication": True,
+                "role_based_access": True,
                 "prediction_history": True,
                 "session_management": True,
                 "agrovet_search": True,
-                "ai_explanations": True
+                "ai_explanations": True,
+                "admin_panel": True
             }
         }
+        
+        # Add user-specific stats if authenticated
+        if current_user:
+            stats["user_info"] = {
+                "role": current_user.role.value,
+                "is_admin": current_user.is_admin(),
+                "username": current_user.username
+            }
         
         return stats
         
@@ -242,10 +292,25 @@ async def get_api_stats():
         logger.error(f"Error getting API stats: {e}")
         raise HTTPException(status_code=500, detail="Failed to get API stats")
 
+@app.get("/admin-check")
+async def admin_check(
+    current_admin: User = Depends(get_current_admin_user)
+):
+    """Simple endpoint to check admin access (useful for frontend auth checks)"""
+    return {
+        "message": "Admin access confirmed",
+        "user": {
+            "id": str(current_admin.id),
+            "username": current_admin.username,
+            "role": current_admin.role.value,
+            "is_super_admin": current_admin.is_super_admin()
+        }
+    }
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))  # Use Heroku's PORT or default to 8000
-    logger.info(f"Starting uvicorn server on port {port}...")
+    logger.info(f"Starting uvicorn server on port {port} with role-based authentication...")
     uvicorn.run(
         app, 
         host="0.0.0.0", 
