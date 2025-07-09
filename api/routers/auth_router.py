@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
 from api.db.connection import get_db
-from api.models.database import User, UserRole
+from api.db.models.database import User, UserRole
 from api.schema.auth_schema import (
     UserCreate, UserLogin, UserResponse, UserUpdate, 
     Token, PasswordChange, UserRoleEnum

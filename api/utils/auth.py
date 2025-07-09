@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, update, func
 
 from api.db.connection import get_db
-from api.models.database import User, AdminAuditLog, UserRole
+from api.db.models.database import User, AdminAuditLog, UserRole
 from api.schema.auth_schema import TokenData, UserRoleEnum
 
 logger = logging.getLogger(__name__)

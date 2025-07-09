@@ -16,7 +16,7 @@ from api.utils.dependencies import dependency_manager
 
 # Import database components
 from api.db.connection import get_db
-from api.models.database import User
+from api.db.models.database import User
 
 # Import prediction save function
 from api.routers.predictions_router import save_prediction_to_db

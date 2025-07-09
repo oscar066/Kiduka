@@ -10,7 +10,7 @@ from sqlalchemy import select, desc, func
 from sqlalchemy.orm import selectinload
 
 from api.db.connection import get_db
-from api.models.database import User, SoilPrediction, Agrovet
+from api.db.models.database import User, SoilPrediction, Agrovet
 from api.schema.schema import (
     SoilData, PredictionResponse, PredictionHistory, 
     PredictionListResponse, AgrovetInfo, SoilAnalysisResponse

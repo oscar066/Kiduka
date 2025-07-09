@@ -39,7 +39,7 @@ from api.routers.admin_router import router as admin_router  # New admin router
 
 # Import auth utilities for role checking
 from api.utils.auth import get_current_user_optional, get_current_admin_user
-from api.models.database import User
+from api.db.models.database import User
 
 # Load environment variables
 load_dotenv()

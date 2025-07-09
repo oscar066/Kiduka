@@ -10,7 +10,7 @@ from sqlalchemy import select, desc, func, or_, and_, update, delete
 from sqlalchemy.orm import selectinload
 
 from api.db.connection import get_db
-from api.models.database import User, SoilPrediction, Agrovet, AdminAuditLog, UserRole
+from api.db.models.database import User, SoilPrediction, Agrovet, AdminAuditLog, UserRole
 from api.schema.auth_schema import (
     AdminUserCreate, AdminUserResponse, AdminUserUpdate, UserListResponse,
     UserStatsResponse, AuditLogResponse, AuditLogEntry, AdminPasswordReset,
