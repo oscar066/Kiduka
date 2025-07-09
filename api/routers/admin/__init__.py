@@ -2,12 +2,12 @@
 Admin routes module with organized sub-routers
 """
 from fastapi import APIRouter
-from .dashboard import router as dashboard_router
-from .users import router as users_router
-from .predictions import router as predictions_router
-from .audit_logs import router as audit_logs_router
-from .statistics import router as statistics_router
-from .agrovets import router as agrovets_router
+from .dashboard_routers import router as dashboard_router
+from .users_routers import router as users_router
+from .predictions_routers import router as predictions_router
+from .audit_logs_routers import router as audit_logs_router
+from .statistics_routers import router as statistics_router
+from .agrovets_routers import router as agrovets_router
 
 # Main admin router that includes all sub-routers
 router = APIRouter(prefix="/admin", tags=["admin"])
