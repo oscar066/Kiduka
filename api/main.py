@@ -32,10 +32,10 @@ from api.workflow.prediction_workflow import create_prediction_workflow
 from api.db.connection import db_manager, get_db
 
 # Import routes
-from api.routers.auth_router import router as auth_router
+from api.routers.auth.auth_routers import router as auth_router
 from api.routers.predictions_router import router as predictions_router
 from api.routers.predict_router import router as predict_router
-from api.routers.admin_router import router as admin_router  # New admin router
+from api.routers.admin import router as admin_router  # New admin router
 
 # Import auth utilities for role checking
 from api.utils.auth import get_current_user_optional, get_current_admin_user
