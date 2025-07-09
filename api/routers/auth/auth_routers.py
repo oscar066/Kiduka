@@ -16,7 +16,7 @@ from api.utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/auth", tags=["authentication"])
+router = APIRouter()
 
 # Dependency to get auth service
 async def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:
