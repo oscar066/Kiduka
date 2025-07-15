@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "./app-sidebar";
+import UnifiedSidebar from "./UnifiedSidebar";
 import { Navbar } from "./navbar";
 import { SoilHealthCard } from "./soil-health-card";
 import { FertilizerRecommendation } from "./fertilizer-recommendation";
@@ -220,15 +220,18 @@ export default function SoilFertilityDashboard() {
     setError(null);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/predict", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Include auth token if your FastAPI backend requires it
-          Authorization: `Bearer ${session.accessToken}`,
-        },
-        body: JSON.stringify(soilData),
-      });
+      const response = await fetch(
+        "http://127.0.0.1:8000/predictions/predict",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // Include auth token if your FastAPI backend requires it
+            Authorization: `Bearer ${session.accessToken}`,
+          },
+          body: JSON.stringify(soilData),
+        }
+      );
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -380,7 +383,7 @@ export default function SoilFertilityDashboard() {
   // Only render the dashboard if user is authenticated
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <UnifiedSidebar />
       <SidebarInset>
         <Navbar />
 
@@ -888,8 +891,6 @@ export default function SoilFertilityDashboard() {
                       </CardContent>
                     </Card>
                   )}
-<<<<<<< HEAD
-=======
 
                   {/* Legacy fallback for old format */}
                   {!results.structured_response && results.explanation && (
@@ -936,7 +937,6 @@ export default function SoilFertilityDashboard() {
                     </Card>
                   )}
 
->>>>>>> 914bdb2a0fd0d580106dc088eb30dc234ff3f755
                   {results && results.nearest_agrovets && (
                     <AgrovetsSection
                       agrovets={results.nearest_agrovets}

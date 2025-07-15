@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "./app-sidebar";
+import UnifiedSidebar from "./UnifiedSidebar";
 import { Navbar } from "./navbar";
 import {
   Beaker,
@@ -430,7 +430,7 @@ export default function ReportsPage() {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <UnifiedSidebar />
       <SidebarInset>
         <Navbar />
 

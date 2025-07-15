@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "./app-sidebar";
+import UnifiedSidebar from "./UnifiedSidebar";
 import { Navbar } from "./navbar";
 import { LocationDetector } from "./location-detector";
 
@@ -23,7 +23,7 @@ import { ActionPlanRecommendations } from "./soil-analysis/actionPlanRecommendat
 import { NutrientDisplay } from "./soil-analysis/nutrientDisplay";
 import { AgrovetsDisplay } from "./soil-analysis/agrovetDisplay";
 import { StatusSummaryCards } from "./soil-analysis/statusSummaryCard";
-import { SoilInputForm} from "./soil-analysis/soil-inputForm";
+import { SoilInputForm } from "./soil-analysis/soil-inputForm";
 
 import { Leaf, AlertCircle, Loader2, Lock } from "lucide-react";
 
@@ -139,14 +139,17 @@ export default function SoilFertilityDashboard() {
     setError(null);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/predict", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.accessToken}`,
-        },
-        body: JSON.stringify(soilData),
-      });
+      const response = await fetch(
+        "http://127.0.0.1:8000/predictions/predict",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.accessToken}`,
+          },
+          body: JSON.stringify(soilData),
+        }
+      );
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -207,7 +210,7 @@ export default function SoilFertilityDashboard() {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <UnifiedSidebar />
       <SidebarInset>
         <Navbar />
 

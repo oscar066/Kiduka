@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "./app-sidebar";
+import UnifiedSidebar from "./UnifiedSidebar";
 import { Navbar } from "./navbar";
 import {
   User,
@@ -205,7 +205,7 @@ export default function UserProfileComponent() {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <UnifiedSidebar />
       <SidebarInset>
         <Navbar />
 

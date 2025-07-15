@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "./app-sidebar";
+import UnifiedSidebar from "./UnifiedSidebar";
 import { Navbar } from "./navbar";
 
 // Import shared components
@@ -108,7 +108,7 @@ export default function ReportsPage() {
       });
 
       const response = await fetch(
-        `http://127.0.0.1:8000/predictions?${params}`,
+        `http://127.0.0.1:8000/predictions/history?${params}`,
         {
           method: "GET",
           headers: {
@@ -158,7 +158,7 @@ export default function ReportsPage() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/predictions/${reportId}`,
+        `http://127.0.0.1:8000/predictions/history${reportId}`,
         {
           method: "DELETE",
           headers: {
@@ -245,7 +245,7 @@ export default function ReportsPage() {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <UnifiedSidebar />
       <SidebarInset>
         <Navbar />
 
