@@ -43,7 +43,7 @@ class User(Base):
     
     # Role-based fields
     role = Column(
-        Enum(UserRole, name="userrole", values_callable=lambda obj: [e.value for e in obj]),
+        Enum(UserRole, name="user_role", values_callable=lambda obj: [e.value for e in obj]),
         nullable=False, 
         default=UserRole.USER
     )
