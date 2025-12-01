@@ -3,8 +3,8 @@
 import React from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import UnifiedSidebar from "../UnifiedSidebar"; // Make sure this path is correct
-import { Navbar } from "../navbar"; // Make sure this path is correct
+import UnifiedSidebar from "../UnifiedSidebar";
+import { Navbar } from "../navbar";
 import { Loader2, AlertCircle, Shield, ArrowLeft } from "lucide-react";
 
 interface RoleBasedLayoutProps {
@@ -59,7 +59,7 @@ export function RoleBasedLayout({ children }: RoleBasedLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="h-screen flex bg-gradient-to-br from-green-50 via-white to-amber-50">
+      <div className="h-screen w-full flex bg-gradient-to-br from-green-50 via-white to-amber-50">
         <UnifiedSidebar />
         <SidebarInset className="flex-1 flex flex-col">
           <Navbar />
@@ -118,7 +118,7 @@ export function AdminLayout({ children }: RoleBasedLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="h-screen flex bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+      <div className="h-screen w-full flex bg-gradient-to-br from-purple-50 via-white to-indigo-50">
         <UnifiedSidebar />
         <SidebarInset className="flex-1 flex flex-col">
           <Navbar />
