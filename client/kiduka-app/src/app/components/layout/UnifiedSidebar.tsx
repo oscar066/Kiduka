@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import navigationItems, { NavItem } from "./navigation/navigationItems";
+import navigationItems, { NavItem } from "../navigation/navigationItems";
 import {
   Sidebar,
   SidebarContent,

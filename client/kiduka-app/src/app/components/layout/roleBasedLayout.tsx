@@ -3,8 +3,8 @@
 import { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import UnifiedSidebar from "../UnifiedSidebar";
-import { Navbar } from "../navbar";
+import UnifiedSidebar from "./UnifiedSidebar";
+import { Navbar } from "./navbar";
 import { Loader2, AlertCircle, Shield, ArrowLeft } from "lucide-react";
 
 interface RoleBasedLayoutProps {

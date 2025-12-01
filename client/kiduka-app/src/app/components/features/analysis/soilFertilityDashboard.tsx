@@ -13,9 +13,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import UnifiedSidebar from "./UnifiedSidebar";
-import { Navbar } from "./navbar";
-import { LocationDetector } from "./location-detector";
+import UnifiedSidebar from "../../layout/UnifiedSidebar";
+import { Navbar } from "../../layout/navbar";
+import { LocationDetector } from "../../shared/location-detector";
 
 // Import shared components
 import { ComprehensiveAnalysis } from "./soil-analysis/comprehensiveAnalysis";

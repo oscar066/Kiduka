@@ -18,8 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import UnifiedSidebar from "./UnifiedSidebar";
-import { Navbar } from "./navbar";
+import UnifiedSidebar from "../../layout/UnifiedSidebar";
+import { Navbar } from "../../layout/navbar";
 import {
   User,
   Mail,

@@ -21,15 +21,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import UnifiedSidebar from "./UnifiedSidebar";
-import { Navbar } from "./navbar";
+import UnifiedSidebar from "../../layout/UnifiedSidebar";
+import { Navbar } from "../../layout/navbar";
 
 // Import shared components
-import { ComprehensiveAnalysis } from "./soil-analysis/comprehensiveAnalysis";
-import { ActionPlanRecommendations } from "./soil-analysis/actionPlanRecommendation";
-import { NutrientDisplay } from "./soil-analysis/nutrientDisplay";
-import { AgrovetsDisplay } from "./soil-analysis/agrovetDisplay";
-import { StatusSummaryCards } from "./soil-analysis/statusSummaryCard";
+import { ComprehensiveAnalysis } from "../analysis/soil-analysis/comprehensiveAnalysis";
+import { ActionPlanRecommendations } from "../analysis/soil-analysis/actionPlanRecommendation";
+import { NutrientDisplay } from "../analysis/soil-analysis/nutrientDisplay";
+import { AgrovetsDisplay } from "../analysis/soil-analysis/agrovetDisplay";
+import { StatusSummaryCards } from "../analysis/soil-analysis/statusSummaryCard";
 
 import {
   Beaker,
