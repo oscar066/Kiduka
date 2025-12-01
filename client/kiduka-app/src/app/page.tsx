@@ -1,9 +1,6 @@
-// import SoilFertilityDashboard from "./components/dashboard";
-// import SoilFertilityDashboard from "./components/soil-fertility-dashboard"
-
 import React from "react";
-import LoginPage from "./components/auth/login";
+import LandingPage from "./components/landing/LandingPage";
 
-export default function Login() {
-  return <LoginPage />;
+export default function Home() {
+  return <LandingPage />;
 }
