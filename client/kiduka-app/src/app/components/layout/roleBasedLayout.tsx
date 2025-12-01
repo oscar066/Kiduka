@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../UnifiedSidebar";
@@ -8,7 +8,7 @@ import { Navbar } from "../navbar";
 import { Loader2, AlertCircle, Shield, ArrowLeft } from "lucide-react";
 
 interface RoleBasedLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 // Layout for regular authenticated users
@@ -82,10 +82,10 @@ export function AdminLayout({ children }: RoleBasedLayoutProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-amber-50">
         <div className="text-center space-y-4">
-          <Loader2 className="relative h-12 w-12 animate-spin text-purple-600 mx-auto" />
-          <h3 className="text-lg font-serif font-semibold text-purple-800">
+          <Loader2 className="relative h-12 w-12 animate-spin text-green-600 mx-auto" />
+          <h3 className="text-lg font-serif font-semibold text-green-800">
             Loading Admin Panel
           </h3>
         </div>
@@ -118,27 +118,10 @@ export function AdminLayout({ children }: RoleBasedLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="h-screen w-full flex bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+      <div className="h-screen w-full flex bg-gradient-to-br from-green-50 via-white to-amber-50">
         <UnifiedSidebar />
         <SidebarInset className="flex-1 flex flex-col">
           <Navbar />
-
-          {/* Optional Admin Header */}
-          <div className="relative bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 shadow-lg px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center space-x-4">
-              <div className="h-12 w-12 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center">
-                <Shield className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-serif font-bold text-white">
-                  Administrative Panel
-                </h1>
-                <p className="text-purple-100 font-serif text-sm">
-                  Manage users, monitor system activity, and configure settings
-                </p>
-              </div>
-            </div>
-          </div>
 
           {/* 
             CORRECTED ADMIN MAIN CONTENT AREA:
