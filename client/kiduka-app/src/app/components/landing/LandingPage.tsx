@@ -1,31 +1,221 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Leaf, BarChart3, MapPin, CheckCircle, ArrowRight, Sprout, TestTube, TrendingUp } from "lucide-react";
+import { 
+  Leaf, 
+  CheckCircle, 
+  ArrowRight, 
+  Sprout, 
+  TestTube, 
+  TrendingUp,
+  Menu,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  Quote,
+  ChevronDown,
+  Mail,
+  Phone,
+  MapPin as MapPinIcon
+} from "lucide-react";
 
 export default function LandingPage() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [openFAQ, setOpenFAQ] = useState<number | null>(null);
+
+  // Handle scroll for navbar background
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Auto-play carousel
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % carouselItems.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Smooth scroll to section
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+      setIsMenuOpen(false);
+    }
+  };
+
+  const carouselItems = [
+    {
+      title: "Accurate Soil Analysis",
+      description: "Get precise nutrient assessments powered by AI technology",
+      image: "🌱",
+    },
+    {
+      title: "Personalized Recommendations",
+      description: "Receive tailored fertilizer suggestions for optimal yields",
+      image: "📊",
+    },
+    {
+      title: "Track Your Progress",
+      description: "Monitor soil health improvements over time",
+      image: "📈",
+    },
+  ];
+
+  const testimonials = [
+    {
+      name: "John Kamau",
+      role: "Maize Farmer, Nakuru",
+      content: "Kiduka has transformed my farming! The soil analysis helped me increase my yield by 40% in just one season.",
+      rating: 5,
+    },
+    {
+      name: "Sarah Wanjiru",
+      role: "Agronomist, Kisumu",
+      content: "The fertilizer recommendations are spot-on. I now advise all my clients to use Kiduka for soil testing.",
+      rating: 5,
+    },
+    {
+      name: "David Omondi",
+      role: "Vegetable Farmer, Kiambu",
+      content: "Easy to use and very accurate. The reports are detailed and help me make better farming decisions.",
+      rating: 5,
+    },
+  ];
+
+  const faqs = [
+    {
+      question: "How accurate is the soil analysis?",
+      answer: "Our AI-powered analysis uses advanced machine learning algorithms trained on thousands of soil samples. The accuracy rate is over 95% for nutrient assessment and soil fertility predictions.",
+    },
+    {
+      question: "How do I collect soil samples?",
+      answer: "You can collect soil samples from different parts of your farm at a depth of 6-8 inches. Mix them together and take a representative sample for testing. Detailed instructions are provided in your dashboard.",
+    },
+    {
+      question: "What information do I need to provide?",
+      answer: "You'll need to input basic soil properties like pH, nitrogen (N), phosphorus (P), potassium (K), and other macro and micro nutrients. Our system guides you through the entire process.",
+    },
+    {
+      question: "Is there a free trial available?",
+      answer: "Yes! New users get 3 free soil analyses to try out the platform. After that, you can choose from our flexible pricing plans based on your needs.",
+    },
+    {
+      question: "Can I track multiple farms?",
+      answer: "Absolutely! Our platform allows you to manage multiple farm locations and track soil health separately for each plot or field.",
+    },
+    {
+      question: "How quickly do I get results?",
+      answer: "Results are instant! Once you input your soil data, our AI analyzes it immediately and provides comprehensive reports and recommendations within seconds.",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-amber-50">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
-          <div className="text-center space-y-8">
-            {/* Logo/Brand */}
-            <div className="flex justify-center mb-8">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 bg-green-600 rounded-2xl">
-                  <Leaf className="h-10 w-10 text-white" />
-                </div>
-                <h1 className="text-4xl sm:text-5xl font-serif font-bold text-green-800">
-                  Kiduka Labs
-                </h1>
+      {/* Sticky Navigation Bar */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled ? "bg-white shadow-md" : "bg-white/80 backdrop-blur-sm"
+      }`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => scrollToSection("home")}>
+              <div className="p-2 bg-green-600 rounded-lg">
+                <Leaf className="h-6 w-6 text-white" />
               </div>
+              <span className="text-xl font-serif font-bold text-green-800">Kiduka Labs</span>
             </div>
 
-            {/* Headline */}
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-8">
+              <button onClick={() => scrollToSection("home")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
+                Home
+              </button>
+              <button onClick={() => scrollToSection("features")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
+                Features
+              </button>
+              <button onClick={() => scrollToSection("how-it-works")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
+                How It Works
+              </button>
+              <button onClick={() => scrollToSection("testimonials")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
+                Testimonials
+              </button>
+              <button onClick={() => scrollToSection("faq")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
+                FAQ
+              </button>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="hidden md:flex items-center space-x-4">
+              <Link href="/auth/login">
+                <Button variant="ghost" className="text-green-700 hover:text-green-800">
+                  Login
+                </Button>
+              </Link>
+              <Link href="/auth/signup">
+                <Button className="bg-green-600 hover:bg-green-700 text-white">
+                  Sign Up
+                </Button>
+              </Link>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+            >
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden bg-white border-t">
+            <div className="px-4 py-2 space-y-2">
+              <button onClick={() => scrollToSection("home")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
+                Home
+              </button>
+              <button onClick={() => scrollToSection("features")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
+                Features
+              </button>
+              <button onClick={() => scrollToSection("how-it-works")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
+                How It Works
+              </button>
+              <button onClick={() => scrollToSection("testimonials")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
+                Testimonials
+              </button>
+              <button onClick={() => scrollToSection("faq")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
+                FAQ
+              </button>
+              <div className="pt-4 space-y-2">
+                <Link href="/auth/login" className="block">
+                  <Button variant="outline" className="w-full">Login</Button>
+                </Link>
+                <Link href="/auth/signup" className="block">
+                  <Button className="w-full bg-green-600 hover:bg-green-700">Sign Up</Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </nav>
+
+      {/* Hero Section */}
+      <section id="home" className="relative overflow-hidden pt-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+          <div className="text-center space-y-8">
             <div className="space-y-4">
               <h2 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-bold text-green-900 leading-tight">
                 Smart Soil Analysis
@@ -37,7 +227,6 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
               <Link href="/auth/login">
                 <Button 
@@ -59,7 +248,6 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Trust Indicator */}
             <div className="pt-8 flex items-center justify-center gap-2 text-green-600">
               <CheckCircle className="h-5 w-5" />
               <p className="text-sm font-medium">Trusted by farmers and agronomists worldwide</p>
@@ -67,13 +255,61 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Decorative Elements */}
         <div className="absolute top-0 left-0 w-64 h-64 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
         <div className="absolute bottom-0 right-0 w-64 h-64 bg-amber-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
       </section>
 
+      {/* Carousel Section */}
+      <section className="py-12 bg-white/50 backdrop-blur-sm">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative bg-gradient-to-br from-green-100 to-amber-100 rounded-2xl overflow-hidden shadow-xl">
+            <div className="relative h-96 flex items-center justify-center">
+              {carouselItems.map((item, index) => (
+                <div
+                  key={index}
+                  className={`absolute inset-0 flex flex-col items-center justify-center p-8 transition-opacity duration-500 ${
+                    index === currentSlide ? "opacity-100" : "opacity-0"
+                  }`}
+                >
+                  <div className="text-8xl mb-6">{item.image}</div>
+                  <h3 className="text-3xl font-serif font-bold text-green-800 mb-4">{item.title}</h3>
+                  <p className="text-xl text-gray-700 text-center max-w-2xl">{item.description}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Carousel Controls */}
+            <button
+              onClick={() => setCurrentSlide((prev) => (prev - 1 + carouselItems.length) % carouselItems.length)}
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full shadow-lg hover:bg-white transition-colors"
+            >
+              <ChevronLeft className="h-6 w-6 text-green-600" />
+            </button>
+            <button
+              onClick={() => setCurrentSlide((prev) => (prev + 1) % carouselItems.length)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full shadow-lg hover:bg-white transition-colors"
+            >
+              <ChevronRight className="h-6 w-6 text-green-600" />
+            </button>
+
+            {/* Carousel Indicators */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+              {carouselItems.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`w-3 h-3 rounded-full transition-colors ${
+                    index === currentSlide ? "bg-green-600" : "bg-white/50"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
-      <section className="py-20 bg-white/50 backdrop-blur-sm">
+      <section id="features" className="py-20 bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h3 className="text-3xl sm:text-4xl font-serif font-bold text-green-800 mb-4">
@@ -85,7 +321,6 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
             <Card className="border-amber-200 hover:shadow-xl transition-shadow">
               <CardContent className="p-8 text-center space-y-4">
                 <div className="inline-flex p-4 bg-green-100 rounded-2xl">
@@ -100,7 +335,6 @@ export default function LandingPage() {
               </CardContent>
             </Card>
 
-            {/* Feature 2 */}
             <Card className="border-amber-200 hover:shadow-xl transition-shadow">
               <CardContent className="p-8 text-center space-y-4">
                 <div className="inline-flex p-4 bg-amber-100 rounded-2xl">
@@ -115,7 +349,6 @@ export default function LandingPage() {
               </CardContent>
             </Card>
 
-            {/* Feature 3 */}
             <Card className="border-amber-200 hover:shadow-xl transition-shadow">
               <CardContent className="p-8 text-center space-y-4">
                 <div className="inline-flex p-4 bg-blue-100 rounded-2xl">
@@ -134,7 +367,7 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20">
+      <section id="how-it-works" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h3 className="text-3xl sm:text-4xl font-serif font-bold text-green-800 mb-4">
@@ -146,7 +379,6 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-12">
-            {/* Step 1 */}
             <div className="text-center space-y-4">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 text-white rounded-full text-2xl font-bold font-serif">
                 1
@@ -159,7 +391,6 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Step 2 */}
             <div className="text-center space-y-4">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-600 text-white rounded-full text-2xl font-bold font-serif">
                 2
@@ -172,7 +403,6 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Step 3 */}
             <div className="text-center space-y-4">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-full text-2xl font-bold font-serif">
                 3
@@ -184,6 +414,81 @@ export default function LandingPage() {
                 Receive personalized fertilizer recommendations and actionable insights to improve your soil health.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section id="testimonials" className="py-20 bg-white/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h3 className="text-3xl sm:text-4xl font-serif font-bold text-green-800 mb-4">
+              What Our Users Say
+            </h3>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Join thousands of satisfied farmers and agronomists who trust Kiduka
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="border-amber-200 hover:shadow-xl transition-shadow">
+                <CardContent className="p-8 space-y-4">
+                  <div className="flex items-center justify-center">
+                    <Quote className="h-12 w-12 text-green-200" />
+                  </div>
+                  <div className="flex justify-center space-x-1">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <p className="text-gray-700 italic text-center">
+                    "{testimonial.content}"
+                  </p>
+                  <div className="text-center pt-4 border-t border-gray-100">
+                    <p className="font-semibold text-green-800">{testimonial.name}</p>
+                    <p className="text-sm text-gray-600">{testimonial.role}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h3 className="text-3xl sm:text-4xl font-serif font-bold text-green-800 mb-4">
+              Frequently Asked Questions
+            </h3>
+            <p className="text-lg text-gray-600">
+              Everything you need to know about Kiduka
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <Card key={index} className="border-amber-200 overflow-hidden">
+                <button
+                  onClick={() => setOpenFAQ(openFAQ === index ? null : index)}
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <h4 className="text-lg font-semibold text-green-800 text-left">{faq.question}</h4>
+                  <ChevronDown
+                    className={`h-5 w-5 text-green-600 transition-transform ${
+                      openFAQ === index ? "transform rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {openFAQ === index && (
+                  <div className="px-6 py-4 bg-green-50/50 border-t border-amber-100">
+                    <p className="text-gray-700">{faq.answer}</p>
+                  </div>
+                )}
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -224,7 +529,6 @@ export default function LandingPage() {
       <footer className="bg-green-900 text-green-100 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Brand */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <Leaf className="h-6 w-6 text-green-400" />
@@ -235,24 +539,27 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Quick Links */}
             <div className="space-y-4">
               <h5 className="text-white font-semibold">Quick Links</h5>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link href="/auth/login" className="hover:text-white transition-colors">
-                    Login
-                  </Link>
+                  <button onClick={() => scrollToSection("features")} className="hover:text-white transition-colors">
+                    Features
+                  </button>
                 </li>
                 <li>
-                  <Link href="/auth/signup" className="hover:text-white transition-colors">
-                    Sign Up
-                  </Link>
+                  <button onClick={() => scrollToSection("testimonials")} className="hover:text-white transition-colors">
+                    Testimonials
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection("faq")} className="hover:text-white transition-colors">
+                    FAQ
+                  </button>
                 </li>
               </ul>
             </div>
 
-            {/* Contact */}
             <div className="space-y-4">
               <h5 className="text-white font-semibold">Contact</h5>
               <p className="text-green-200 text-sm">
