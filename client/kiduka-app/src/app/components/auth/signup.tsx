@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, UserPlus, Leaf } from "lucide-react";
+import { Loader2, UserPlus, Leaf, ArrowRight, CheckCircle, Shield } from "lucide-react";
 import Link from "next/link";
 import { FaGoogle } from "react-icons/fa";
 import { BsEyeFill, BsEyeSlashFill } from "react-icons/bs";
@@ -25,12 +25,10 @@ export default function SignupPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (status === "authenticated") {
       router.push("/dashboard");
@@ -43,7 +41,6 @@ export default function SignupPage() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    // Validation
     if (!username || !email || !password || !confirmPassword || !fullName) {
       setErrorMessage("All fields are required.");
       setIsLoading(false);
@@ -69,7 +66,6 @@ export default function SignupPage() {
     }
 
     try {
-      // Register user via FastAPI backend using apiClient
       await apiClient.register({
         username,
         email,
@@ -77,10 +73,8 @@ export default function SignupPage() {
         full_name: fullName,
       });
 
-      // Registration successful, now sign in
       setSuccessMessage("Account created successfully! Signing you in...");
 
-      // Auto-login after successful registration
       const signInResult = await signIn("credentials", {
         username_or_email: email,
         password: password,
@@ -90,7 +84,6 @@ export default function SignupPage() {
       if (signInResult?.ok) {
         router.push("/dashboard");
       } else {
-        // Registration was successful but auto-login failed
         setSuccessMessage("Account created successfully! Please log in.");
         setTimeout(() => {
           router.push("/auth/login");
@@ -125,240 +118,302 @@ export default function SignupPage() {
     }
   };
 
-  // Show loading state while checking authentication
   if (status === "loading") {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-25 via-amber-25 to-green-25">
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-amber-50">
         <div className="flex items-center space-x-2">
           <Loader2 className="h-6 w-6 animate-spin text-green-600" />
-          <span className="text-green-800">Loading...</span>
+          <span className="text-green-800 font-serif">Loading...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-25 via-amber-25 to-green-25">
-      <div className="w-full max-w-md px-4 py-8 flex-col">
-        <div className="bg-white p-8 rounded-lg shadow-lg border border-amber-200">
-          <div className="flex flex-col space-y-2 text-center mb-6">
-            <Link
-              href="/"
-              className="flex items-center justify-center space-x-2"
-            >
-              <div className="relative">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600">
-                  <Leaf className="h-5 w-5 text-white" />
-                </div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
-              </div>
-              <span className="text-2xl font-bold font-serif bg-gradient-to-r from-green-600 to-amber-600 bg-clip-text text-transparent">
-                Kiduka
-              </span>
-            </Link>
-            <h1 className="text-2xl font-semibold tracking-tight text-green-800">
-              Create an account
-            </h1>
-            <p className="text-sm text-green-600">
-              Enter your details below to create your account
-            </p>
-          </div>
-
-          {errorMessage && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-center text-sm">{errorMessage}</p>
+    <div className="min-h-screen w-full flex bg-gradient-to-br from-green-50 via-white to-amber-50 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-amber-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
+      
+      {/* Left Panel - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-green-600 via-emerald-600 to-green-700 p-12 flex-col justify-between relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItNHYyczIgMCAyIDJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-10"></div>
+        
+        <div className="relative z-10">
+          <Link href="/" className="flex items-center space-x-3">
+            <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm border border-white/30">
+              <Leaf className="h-8 w-8 text-white" />
             </div>
-          )}
+            <span className="text-3xl font-serif font-bold text-white">Kiduka Labs</span>
+          </Link>
+        </div>
 
-          {successMessage && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-green-600 text-center text-sm">
-                {successMessage}
+        <div className="relative z-10 space-y-8">
+          <h2 className="text-4xl font-serif font-bold text-white leading-tight">
+            Join thousands of<br />successful farmers
+          </h2>
+          <p className="text-xl text-green-100 leading-relaxed">
+            Start your journey to optimized soil fertility and improved crop yields with our AI-powered platform.
+          </p>
+          
+          <div className="space-y-4 pt-8">
+            {[
+              "Free soil analysis tools",
+              "Instant AI recommendations",
+              "24/7 access to your data"
+            ].map((feature, index) => (
+              <div key={index} className="flex items-center space-x-3">
+                <div className="flex-shrink-0 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <CheckCircle className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-green-100">{feature}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative z-10 flex items-center space-x-2 text-green-200 text-sm">
+          <Shield className="h-4 w-4" />
+          <span>Your data is secure and encrypted</span>
+        </div>
+      </div>
+
+      {/* Right Panel - Signup Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative z-10">
+        <div className="w-full max-w-md">
+          <div className="bg-white/80 backdrop-blur-sm p-8 lg:p-10 rounded-2xl shadow-2xl border border-amber-200">
+            {/* Mobile Logo */}
+            <div className="lg:hidden flex flex-col space-y-2 text-center mb-8">
+              <Link href="/" className="flex items-center justify-center space-x-2">
+                <div className="relative">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-600">
+                    <Leaf className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
+                </div>
+                <span className="text-2xl font-serif font-bold bg-gradient-to-r from-green-600 to-amber-600 bg-clip-text text-transparent">
+                  Kiduka Labs
+                </span>
+              </Link>
+            </div>
+
+            <div className="space-y-2 mb-8">
+              <h1 className="text-3xl font-serif font-bold text-green-800">
+                Create account
+              </h1>
+              <p className="text-gray-600">
+                Get started with your free account today
               </p>
             </div>
-          )}
 
-          <div className="grid gap-6">
-            <form onSubmit={onSubmit}>
-              <div className="grid gap-2">
-                <div className="grid gap-1">
-                  <Label className="sr-only" htmlFor="fullName">
-                    Full Name
-                  </Label>
-                  <Input
-                    id="fullName"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Full Name"
-                    type="text"
-                    autoCapitalize="words"
-                    autoComplete="name"
-                    autoCorrect="off"
-                    disabled={isLoading}
-                    className="border-amber-200 focus:border-green-500"
-                  />
-                </div>
-                <div className="grid gap-1">
-                  <Label className="sr-only" htmlFor="username">
-                    Username
-                  </Label>
-                  <Input
-                    id="username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Username"
-                    type="text"
-                    autoCapitalize="none"
-                    autoComplete="username"
-                    autoCorrect="off"
-                    disabled={isLoading}
-                    className="border-amber-200 focus:border-green-500"
-                  />
-                </div>
-                <div className="grid gap-1">
-                  <Label className="sr-only" htmlFor="email">
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    type="email"
-                    autoCapitalize="none"
-                    autoComplete="email"
-                    autoCorrect="off"
-                    disabled={isLoading}
-                    className="border-amber-200 focus:border-green-500"
-                  />
-                </div>
-                <div className="grid gap-1 relative">
-                  <Label className="sr-only" htmlFor="password">
-                    Password
-                  </Label>
+            {errorMessage && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl animate-in fade-in slide-in-from-top-2">
+                <p className="text-red-700 text-sm flex items-center">
+                  <span className="mr-2">⚠️</span>
+                  {errorMessage}
+                </p>
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl animate-in fade-in slide-in-from-top-2">
+                <p className="text-green-700 text-sm flex items-center">
+                  <span className="mr-2">✓</span>
+                  {successMessage}
+                </p>
+              </div>
+            )}
+
+            <form onSubmit={onSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">
+                  Full Name
+                </Label>
+                <Input
+                  id="fullName"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="John Doe"
+                  type="text"
+                  autoCapitalize="words"
+                  autoComplete="name"
+                  disabled={isLoading}
+                  className="h-11 border-amber-200 focus-visible:ring-green-500 focus-visible:border-green-500 transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-sm font-medium text-gray-700">
+                  Username
+                </Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="johndoe"
+                  type="text"
+                  autoCapitalize="none"
+                  autoComplete="username"
+                  disabled={isLoading}
+                  className="h-11 border-amber-200 focus-visible:ring-green-500 focus-visible:border-green-500 transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="john@example.com"
+                  type="email"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  disabled={isLoading}
+                  className="h-11 border-amber-200 focus-visible:ring-green-500 focus-visible:border-green-500 transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Password
+                </Label>
+                <div className="relative">
                   <Input
                     id="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password (min. 6 characters)"
+                    placeholder="Min. 8 characters"
                     type={showPassword ? "text" : "password"}
                     autoCapitalize="none"
                     autoComplete="new-password"
-                    autoCorrect="off"
                     disabled={isLoading}
-                    className="border-amber-200 focus:border-green-500"
+                    className="h-11 pr-10 border-amber-200 focus-visible:ring-green-500 focus-visible:border-green-500 transition-all"
                   />
-                  <div
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
+                  <button
+                    type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
                   >
                     {showPassword ? (
-                      <BsEyeFill className="text-gray-500" />
+                      <BsEyeFill className="h-5 w-5" />
                     ) : (
-                      <BsEyeSlashFill className="text-gray-500" />
+                      <BsEyeSlashFill className="h-5 w-5" />
                     )}
-                  </div>
+                  </button>
                 </div>
-                <div className="grid gap-1 relative">
-                  <Label className="sr-only" htmlFor="confirm-password">
-                    Confirm Password
-                  </Label>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                  Confirm Password
+                </Label>
+                <div className="relative">
                   <Input
-                    id="confirm-password"
+                    id="confirmPassword"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm Password"
+                    placeholder="Re-enter password"
                     type={showConfirmPassword ? "text" : "password"}
                     autoCapitalize="none"
                     autoComplete="new-password"
-                    autoCorrect="off"
                     disabled={isLoading}
-                    className={`border-amber-200 focus:border-green-500 ${
+                    className={`h-11 pr-10 transition-all ${
                       password !== confirmPassword && confirmPassword
-                        ? "border-red-500"
-                        : ""
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : "border-amber-200 focus-visible:ring-green-500 focus-visible:border-green-500"
                     }`}
                   />
-                  <div
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
+                  <button
+                    type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
                   >
                     {showConfirmPassword ? (
-                      <BsEyeFill className="text-gray-500" />
+                      <BsEyeFill className="h-5 w-5" />
                     ) : (
-                      <BsEyeSlashFill className="text-gray-500" />
+                      <BsEyeSlashFill className="h-5 w-5" />
                     )}
-                  </div>
+                  </button>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="terms"
-                    checked={termsAccepted}
-                    onCheckedChange={(checked) =>
-                      setTermsAccepted(checked as boolean)
-                    }
-                    className="border-amber-300 data-[state=checked]:bg-green-600"
-                  />
-                  <label
-                    htmlFor="terms"
-                    className="text-sm font-medium leading-none text-gray-600"
-                  >
-                    I agree to the{" "}
-                    <Link
-                      href="/terms"
-                      className="text-green-600 underline hover:text-green-700"
-                    >
-                      terms and conditions
-                    </Link>
-                  </label>
-                </div>
-                <Button
-                  disabled={isLoading}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <UserPlus className="mr-2 h-4 w-4" />
-                  )}
-                  Sign Up
-                </Button>
               </div>
+
+              <div className="flex items-start space-x-2 pt-2">
+                <Checkbox
+                  id="terms"
+                  checked={termsAccepted}
+                  onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                  className="mt-0.5 border-amber-300 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                />
+                <label htmlFor="terms" className="text-sm text-gray-600 leading-snug">
+                  I agree to the{" "}
+                  <Link href="/terms" className="text-green-600 hover:text-green-700 underline font-medium">
+                    terms and conditions
+                  </Link>
+                  {" "}and{" "}
+                  <Link href="/privacy" className="text-green-600 hover:text-green-700 underline font-medium">
+                    privacy policy
+                  </Link>
+                </label>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  <>
+                    Create Account
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </>
+                )}
+              </Button>
             </form>
-            <div className="relative">
+
+            <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-amber-200" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">
+                <span className="bg-white/80 px-3 text-gray-500 font-medium">
                   Or continue with
                 </span>
               </div>
             </div>
+
             <Button
               variant="outline"
               type="button"
               disabled={isLoading}
               onClick={handleGoogleSignup}
-              className="border-amber-200 hover:bg-green-50"
+              className="w-full h-12 border-amber-200 hover:bg-green-50 hover:border-green-300 transition-all"
             >
               {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
               ) : (
-                <FaGoogle className="mr-2 h-4 w-4" />
+                <FaGoogle className="mr-2 h-5 w-5 text-red-500" />
               )}
-              Google
+              <span className="font-medium">Google</span>
             </Button>
+
+            <p className="mt-8 text-center text-sm text-gray-600">
+              Already have an account?{" "}
+              <Link
+                href="/auth/login"
+                className="font-semibold text-green-600 hover:text-green-700 hover:underline transition-colors"
+              >
+                Sign in
+              </Link>
+            </p>
           </div>
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Already have an account?{" "}
-            <Link
-              href="/auth/login"
-              className="text-green-600 hover:text-green-700 underline underline-offset-4"
-            >
-              Sign in
-            </Link>
-          </p>
         </div>
       </div>
     </div>
