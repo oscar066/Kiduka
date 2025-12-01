@@ -13,20 +13,14 @@ import {
   TrendingUp,
   Menu,
   X,
-  ChevronLeft,
-  ChevronRight,
   Star,
   Quote,
-  ChevronDown,
-  Mail,
-  Phone,
-  MapPin as MapPinIcon
+  ChevronDown
 } from "lucide-react";
 
 export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
 
   // Handle scroll for navbar background
@@ -38,13 +32,7 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Auto-play carousel
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % carouselItems.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
+
 
   // Smooth scroll to section
   const scrollToSection = (sectionId: string) => {
@@ -55,23 +43,7 @@ export default function LandingPage() {
     }
   };
 
-  const carouselItems = [
-    {
-      title: "Accurate Soil Analysis",
-      description: "Get precise nutrient assessments powered by AI technology",
-      image: "🌱",
-    },
-    {
-      title: "Personalized Recommendations",
-      description: "Receive tailored fertilizer suggestions for optimal yields",
-      image: "📊",
-    },
-    {
-      title: "Track Your Progress",
-      description: "Monitor soil health improvements over time",
-      image: "📈",
-    },
-  ];
+
 
   const testimonials = [
     {
@@ -122,7 +94,7 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-amber-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-amber-50" suppressHydrationWarning>
       {/* Sticky Navigation Bar */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled ? "bg-white shadow-md" : "bg-white/80 backdrop-blur-sm"
@@ -259,54 +231,7 @@ export default function LandingPage() {
         <div className="absolute bottom-0 right-0 w-64 h-64 bg-amber-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
       </section>
 
-      {/* Carousel Section */}
-      <section className="py-12 bg-white/50 backdrop-blur-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative bg-gradient-to-br from-green-100 to-amber-100 rounded-2xl overflow-hidden shadow-xl">
-            <div className="relative h-96 flex items-center justify-center">
-              {carouselItems.map((item, index) => (
-                <div
-                  key={index}
-                  className={`absolute inset-0 flex flex-col items-center justify-center p-8 transition-opacity duration-500 ${
-                    index === currentSlide ? "opacity-100" : "opacity-0"
-                  }`}
-                >
-                  <div className="text-8xl mb-6">{item.image}</div>
-                  <h3 className="text-3xl font-serif font-bold text-green-800 mb-4">{item.title}</h3>
-                  <p className="text-xl text-gray-700 text-center max-w-2xl">{item.description}</p>
-                </div>
-              ))}
-            </div>
 
-            {/* Carousel Controls */}
-            <button
-              onClick={() => setCurrentSlide((prev) => (prev - 1 + carouselItems.length) % carouselItems.length)}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full shadow-lg hover:bg-white transition-colors"
-            >
-              <ChevronLeft className="h-6 w-6 text-green-600" />
-            </button>
-            <button
-              onClick={() => setCurrentSlide((prev) => (prev + 1) % carouselItems.length)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full shadow-lg hover:bg-white transition-colors"
-            >
-              <ChevronRight className="h-6 w-6 text-green-600" />
-            </button>
-
-            {/* Carousel Indicators */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-              {carouselItems.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`w-3 h-3 rounded-full transition-colors ${
-                    index === currentSlide ? "bg-green-600" : "bg-white/50"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Features Section */}
       <section id="features" className="py-20 bg-white/50 backdrop-blur-sm">
