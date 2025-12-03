@@ -1,6 +1,11 @@
 .env
 /venv
+.venv/
 
 __pycache__
 
 .DS_Store
+
+# Ignore the initial server files
+api/apo.py 
+api/app.py
