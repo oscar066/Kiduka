@@ -12,7 +12,7 @@ from langchain_openai import ChatOpenAI
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 # Import local modules
-from ML.model_loader import ModelLoader
+from api.ML.model_loader import ModelLoader
 from api.utils.agrovet import AgrovetLocator
 from api.utils.config import AppConfig
 from api.utils.logging_config import setup_logger
@@ -31,7 +31,7 @@ def initialize_models() -> Dict[str, Any]:
         logger.info("Initializing model loader...")
         # Get the absolute path to the models directory
         current_dir = Path(__file__).parent.parent
-        models_dir = current_dir.parent / "ML"
+        models_dir = current_dir / "ML"
         
         # Create ModelLoader instance with specific models directory
         loader = ModelLoader(models_dir=str(models_dir))
@@ -105,7 +105,7 @@ def initialize_agrovet_locator() -> Optional[AgrovetLocator]:
     """Initialize AgrovetLocator with data"""
     try:
         current_dir = Path(__file__).parent.parent
-        data_path = current_dir.parent / "data" / AppConfig.DATA_FILES['agrovet_data']
+        data_path = current_dir / "data" / AppConfig.DATA_FILES['agrovet_data']
         agrovet_locator = AgrovetLocator.load_from_csv(str(data_path))
         logger.info("AgrovetLocator initialized successfully")
         return agrovet_locator
