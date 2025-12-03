@@ -194,7 +194,7 @@ def load_agrovet_data(csv_path: str = None) -> Optional[pd.DataFrame]:
         # Try to load from files
         for path in possible_paths:
             if os.path.exists(path):
-                df = pd.read_csv(path)
+                df = pd.read_csv(path, skipinitialspace=True)
                 logger.debug(f"Loaded agrovet data from {path}: {len(df)} records")
                 logger.debug(f"Original columns: {df.columns.tolist()}")
                 
