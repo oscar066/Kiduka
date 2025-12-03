@@ -1,20 +1,22 @@
 # Use an official Python runtime as a parent image
 FROM python:3.11-slim
 
-# Set the working directory in the container
-WORKDIR /app
+# Set working directory to root
+WORKDIR /
 
-# Copy the requirements file into the container at /app
-COPY requirements.txt .
+# Copy the requirements file
+COPY requirements.txt /tmp/requirements.txt
 
-# Install any needed packages specified in requirements.txt
-# Using --no-cache-dir to keep the image size small
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies
+RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm /tmp/requirements.txt
 
-# Copy the application code
-COPY . .
+# Copy application code to /api directory (matches import structure)
+COPY . /api
 
-# Expose port 8000 for the API
+# Set working directory to /api for uvicorn
+WORKDIR /api
+
+# Expose port 8000
 EXPOSE 8000
 
 # Define environment variable

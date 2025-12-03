@@ -11,6 +11,11 @@ services:
       - ./api:/app
     env_file:
       - .env
+    environment:
+      # Override DATABASE_URL to use postgres service name instead of localhost
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    networks:
+      - agri-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -31,6 +36,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
       - ./database/migrate_to_rbac.sql:/docker-entrypoint-initdb.d/02-migrate.sql
+    networks:
+      - agri-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 30s
@@ -46,9 +53,17 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
       - "5050:80"
+    networks:
+      - agri-network
     depends_on:
       - postgres
 
+# Explicit network definition
+networks:
+  agri-network:
+    driver: bridge
+
+# Persistent volume for database data
 volumes:
   postgres_data:
     driver: local
