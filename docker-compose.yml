@@ -1,4 +1,23 @@
 services:
+  # Next.js Client
+  client:
+    build:
+      context: ./client/kiduka-app
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    container_name: agricultural_client
+    ports:
+      - "3000:3000"
+    networks:
+      - agri-network
+    environment:
+      - API_URL=http://api:8000
+      - NEXTAUTH_SECRET=changeme1234567890abcdefghijklmnopqrstuvwxyz
+    depends_on:
+      - api
+    restart: always
+
   # FastAPI Backend
   api:
     build:
@@ -8,7 +27,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./api:/app
+      - ./api:/api
     env_file:
       - .env
     environment:
