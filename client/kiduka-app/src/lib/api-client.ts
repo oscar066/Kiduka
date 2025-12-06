@@ -85,7 +85,12 @@ export class ApiClient {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    // Prioritize server-side internal URL (Docker network), fallback to public URL
+    if (typeof window === 'undefined' && process.env.API_URL) {
+      this.baseUrl = process.env.API_URL;
+    } else {
+      this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    }
   }
 
   /**

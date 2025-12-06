@@ -1,10 +1,11 @@
-// components/auth/RoleBasedGuard.tsx
 "use client";
 
 import React, { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth, useRoleBasedAccess, usePermission } from "@/hooks/useAuth";
 import { UserRole } from "@/lib/api-client";
 import { Loader2, ShieldX, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface RoleGuardProps {
   children: ReactNode;
@@ -21,6 +22,7 @@ export function RoleGuard({
   fallback,
   showError = true,
 }: RoleGuardProps) {
+  const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
   const { canAccess } = useRoleBasedAccess();
 
@@ -40,14 +42,22 @@ export function RoleGuard({
 
     if (showError) {
       return (
-        <div className="flex flex-col items-center justify-center p-8 text-center">
-          <ShieldX className="h-12 w-12 text-red-500 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <div className="flex flex-col items-center justify-center p-8 text-center min-h-[50vh]">
+          <div className="p-4 bg-red-50 rounded-full mb-4">
+            <ShieldX className="h-12 w-12 text-red-500" />
+          </div>
+          <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2">
             Authentication Required
           </h3>
-          <p className="text-gray-600">
-            Please sign in to access this content.
+          <p className="text-gray-600 mb-8 max-w-md">
+            Your session has expired or you are not logged in. Please sign in to access this content.
           </p>
+          <Button 
+            onClick={() => router.push("/auth/login")}
+            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-2 h-12 shadow-lg hover:shadow-xl transition-all"
+          >
+            Sign In
+          </Button>
         </div>
       );
     }
