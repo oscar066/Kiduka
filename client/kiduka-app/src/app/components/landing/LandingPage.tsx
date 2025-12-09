@@ -53,13 +53,13 @@ export default function LandingPage() {
       rating: 5,
     },
     {
-      name: "Sarah Wanjiru",
+      name: "David Omondi",
       role: "Agronomist, Kisumu",
       content: "The fertilizer recommendations are spot-on. I now advise all my clients to use Kiduka for soil testing.",
       rating: 5,
     },
     {
-      name: "David Omondi",
+      name: "Sarah Wanjiru",
       role: "Vegetable Farmer, Kiambu",
       content: "Easy to use and very accurate. The reports are detailed and help me make better farming decisions.",
       rating: 5,
