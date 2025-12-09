@@ -16,6 +16,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../../layout/UnifiedSidebar";
 import { Navbar } from "../../layout/navbar";
 import { LocationDetector } from "../../shared/location-detector";
+import { apiClient } from "@/lib/api-client";
 
 // Import shared components
 import { ComprehensiveAnalysis } from "./soil-analysis/comprehensiveAnalysis";
@@ -135,30 +136,41 @@ export default function SoilFertilityDashboard() {
       return;
     }
 
+    // Validate all required fields
+    if (!soilData.simplified_texture || soilData.simplified_texture.trim() === "") {
+      setError("Please select a soil texture type.");
+      return;
+    }
+
+    // Validate numeric fields are greater than 0
+    const numericFields = ['ph', 'n', 'p', 'k', 'o', 'ca', 'mg', 'cu', 'fe', 'zn'] as const;
+    for (const field of numericFields) {
+      if (soilData[field] <= 0) {
+        setError(`Please enter a valid ${field.toUpperCase()} value (must be greater than 0).`);
+        return;
+      }
+    }
+
+    // Validate pH range
+    if (soilData.ph > 14) {
+      setError("pH must be between 0 and 14.");
+      return;
+    }
+
+    // Validate location
+    if (!soilData.latitude || !soilData.longitude) {
+      setError("Please enable location detection or enter coordinates.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(
-        "http://127.0.0.1:8000/predictions/predict",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-          body: JSON.stringify(soilData),
-        }
+      const apiResults = await apiClient.makePrediction(
+        soilData,
+        session.accessToken
       );
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("Authentication failed. Please sign in again.");
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const apiResults = await response.json();
       const resultsWithTimestamp: SoilOutput = {
         ...apiResults,
         timestamp: apiResults.timestamp || new Date().toISOString(),
