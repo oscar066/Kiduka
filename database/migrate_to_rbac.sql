@@ -68,12 +68,12 @@ UPDATE users
 SET role = 'super_admin', 
     is_verified = TRUE,
     notes = 'Migrated system administrator account'
-WHERE email = 'admin@agricultural-api.com';
+WHERE email = 'admin@kiduka-labs.co.ke';
 
 -- Step 9: Insert default super admin if it doesn't exist
 INSERT INTO users (email, username, hashed_password, full_name, role, is_active, is_verified, notes) 
 SELECT 
-    'superadmin@agricultural-api.com',
+    'admin@kiduka-labs.co.ke',
     'superadmin',
     '$2b$12$E/lqk3wLE3tMSj9T6iUuwu0g.RSaU/yjRr7iLwsuuMFG8S5/yDPDi',
     'Super Administrator',
@@ -82,7 +82,7 @@ SELECT
     TRUE,
     'Default super administrator account - CHANGE PASSWORD AFTER FIRST LOGIN'
 WHERE NOT EXISTS (
-    SELECT 1 FROM users WHERE email = 'superadmin@agricultural-api.com'
+    SELECT 1 FROM users WHERE email = 'admin@kiduka-labs.co.ke'
 );
 
 -- Step 10: Create trigger function for automatic audit logging
@@ -187,8 +187,6 @@ BEGIN
     RAISE NOTICE '=== MIGRATION COMPLETED SUCCESSFULLY ===';
     RAISE NOTICE 'Role-based authentication has been added to your existing database';
     RAISE NOTICE 'Existing users have been assigned the "user" role';
-    RAISE NOTICE 'admin@agricultural-api.com has been upgraded to super_admin';
-    RAISE NOTICE 'New super admin account: superadmin@agricultural-api.com (password: password123)';
     RAISE NOTICE 'IMPORTANT: Change the default super admin password immediately!';
     RAISE NOTICE '=============================================';
 END $$;
