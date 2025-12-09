@@ -23,6 +23,7 @@ import {
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../../layout/UnifiedSidebar";
 import { Navbar } from "../../layout/navbar";
+import { apiClient } from "@/lib/api-client";
 
 // Import shared components
 import { ComprehensiveAnalysis } from "../analysis/soil-analysis/comprehensiveAnalysis";
@@ -100,35 +101,14 @@ export default function ReportsPage() {
     setError(null);
 
     try {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        size: pageSize.toString(),
-        sort_by: sortBy,
-        sort_order: sortOrder,
-      });
-
-      const response = await fetch(
-        `http://127.0.0.1:8000/predictions/history?${params}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        }
+      const response = await apiClient.getPredictionHistory(
+        session.accessToken,
+        currentPage,
+        pageSize
       );
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("Authentication failed. Please sign in again.");
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: PredictionListResponse = await response.json();
-      setReports(data.predictions);
-      setTotalPages(data.pages);
-      setTotalReports(data.total);
+      setReports(response.predictions || []);
+      setTotalPages(response.pages);
+      setTotalReports(response.total);
     } catch (err) {
       console.error("Error fetching reports:", err);
       setError(
@@ -157,23 +137,10 @@ export default function ReportsPage() {
     if (!session?.accessToken) return;
 
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/predictions/history${reportId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        fetchReports();
-        if (selectedReport?.id === reportId) {
-          setSelectedReport(null);
-        }
-      } else {
-        throw new Error("Failed to delete report");
+      await apiClient.deletePredictionHistory(reportId, session.accessToken);
+      fetchReports();
+      if (selectedReport?.id === reportId) {
+        setSelectedReport(null);
       }
     } catch (err) {
       console.error("Error deleting report:", err);
