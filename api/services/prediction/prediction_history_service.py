@@ -110,23 +110,24 @@ class PredictionHistoryService:
         logger.info(f"Deleting prediction: {prediction_id}")
         
         try:
-            async with self.db.begin():
-                stmt = select(SoilPrediction).where(
-                    SoilPrediction.id == prediction_id,
-                    SoilPrediction.user_id == user.id
-                )
-                
-                result = await self.db.execute(stmt)
-                prediction = result.scalar_one_or_none()
-                
-                if not prediction:
-                    return False
-                
-                await self.db.delete(prediction)
-                return True
+            stmt = select(SoilPrediction).where(
+                SoilPrediction.id == prediction_id,
+                SoilPrediction.user_id == user.id
+            )
+            
+            result = await self.db.execute(stmt)
+            prediction = result.scalar_one_or_none()
+            
+            if not prediction:
+                return False
+            
+            await self.db.delete(prediction)
+            await self.db.commit()  # Explicitly commit the transaction
+            return True
                 
         except Exception as e:
             logger.error(f"Error deleting prediction: {e}")
+            await self.db.rollback()  # Rollback on error
             raise
     
     def _prediction_to_history(self, prediction: SoilPrediction) -> Optional[PredictionHistory]:
