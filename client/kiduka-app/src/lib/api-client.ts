@@ -85,11 +85,16 @@ export class ApiClient {
   private baseUrl: string;
 
   constructor() {
-    // Prioritize server-side internal URL (Docker network), fallback to public URL
-    if (typeof window === 'undefined' && process.env.API_URL) {
-      this.baseUrl = process.env.API_URL;
+    // FIX 1: Enhanced Environment Handling
+    if (typeof window === 'undefined') {
+      // SERVER-SIDE (SSR): 
+      // Use internal Docker network URL. Defaults to 'http://api:8000' if API_URL env is missing.
+      this.baseUrl = process.env.API_URL || 'http://api:8000';
     } else {
-      this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+      // CLIENT-SIDE (Browser):
+      // Use Nginx proxy path. Defaults to '/api' to ensure we hit Nginx port 80.
+      // NEVER default to 127.0.0.1:8000 here, as that port is closed in Docker.
+      this.baseUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
     }
   }
 
@@ -99,12 +104,15 @@ export class ApiClient {
   async request(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     
+    // CRITICAL FIX: Destructure headers from options to avoid override
+    const { headers: optionsHeaders, ...restOptions } = options;
+    
     const config: RequestInit = {
+      ...restOptions,
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...optionsHeaders,
       },
-      ...options,
     };
 
     try {
@@ -112,7 +120,25 @@ export class ApiClient {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        
+        // Better error message formatting
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        
+        if (errorData.detail) {
+          if (Array.isArray(errorData.detail)) {
+            // Pydantic validation errors
+            const validationErrors = errorData.detail.map((err: any) => 
+              `${err.loc?.join('.') || 'field'}: ${err.msg}`
+            ).join('; ');
+            errorMessage = `Validation error: ${validationErrors}`;
+          } else if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail;
+          } else {
+            errorMessage = JSON.stringify(errorData.detail);
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       return response.json();
@@ -463,7 +489,7 @@ export class ApiClient {
    * Make soil prediction
    */
   async makePrediction(soilData: any, token?: string): Promise<any> {
-    const headers = token ? this.getAuthHeaders(token) : {};
+    const headers = token ? this.getAuthHeaders(token) : {};   
     return this.request('/predictions/predict', {
       method: 'POST',
       headers,
@@ -484,7 +510,7 @@ export class ApiClient {
       size: size.toString(),
     });
 
-    return this.request(`/predictions/history?${params.toString()}`, {
+    return this.request(`/predictions/history/?${params.toString()}`, {
       headers: this.getAuthHeaders(token),
     });
   }
@@ -493,7 +519,7 @@ export class ApiClient {
    * Get specific prediction
    */
   async getPrediction(predictionId: string, token: string): Promise<any> {
-    return this.request(`/predictions/history${predictionId}`, {
+    return this.request(`/predictions/history/${predictionId}`, {
       headers: this.getAuthHeaders(token),
     });
   }
@@ -502,7 +528,7 @@ export class ApiClient {
    * Delete user's prediction
    */
   async deletePredictionHistory(predictionId: string, token: string): Promise<{ message: string }> {
-    return this.request(`/predictions/history${predictionId}`, {
+    return this.request(`/predictions/history/${predictionId}`, {
       method: 'DELETE',
       headers: this.getAuthHeaders(token),
     });
