@@ -29,6 +29,7 @@ services:
     environment:
       - API_URL=http://api:8000
       - NEXTAUTH_URL=http://localhost
+      # - NEXTAUTH_URL=http://34.172.36.225
       - NEXTAUTH_SECRET=changeme1234567890abcdefghijklmnopqrstuvwxyz
     depends_on:
       - api
