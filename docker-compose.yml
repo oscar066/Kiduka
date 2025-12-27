@@ -28,9 +28,8 @@ services:
       - agri-network
     environment:
       - API_URL=http://api:8000
-      - NEXTAUTH_URL=http://localhost
-      # - NEXTAUTH_URL=http://34.172.36.225
-      - NEXTAUTH_SECRET=changeme1234567890abcdefghijklmnopqrstuvwxyz
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
     depends_on:
       - api
     restart: always
