@@ -38,6 +38,7 @@ function NutrientGaugeItem({
   icon,
 }: NutrientGaugeItemProps) {
   // Calculate percentage for progress bar (normalize to 0-100 range)
+  // We allow it to go slightly over 100 internally for calculation, but cap visual at 100
   const percentage = Math.min((value / optimal.max) * 100, 100);
 
   // Determine status based on optimal range
@@ -49,7 +50,7 @@ function NutrientGaugeItem({
       case "low":
         return "text-red-600";
       case "high":
-        return "text-orange-600";
+        return "text-blue-600";
       case "optimal":
         return "text-green-600";
       default:
@@ -62,7 +63,7 @@ function NutrientGaugeItem({
       case "low":
         return "[&>div]:bg-red-500";
       case "high":
-        return "[&>div]:bg-orange-500";
+        return "[&>div]:bg-blue-500";
       case "optimal":
         return "[&>div]:bg-green-500";
       default:
@@ -75,7 +76,7 @@ function NutrientGaugeItem({
       case "low":
         return "Below Optimal";
       case "high":
-        return "Above Optimal";
+        return "High / Excess";
       case "optimal":
         return "Optimal Range";
       default:
@@ -121,72 +122,75 @@ export function NutrientDisplay({
   title = "Nutrient Analysis",
   showOptimalRanges = false,
 }: NutrientDisplayProps) {
+  
+  // Ranges based on Mehlich-3 extraction standards & Agronomic Credibility
   const nutrientData = [
     {
-      name: "Nitrogen (N)",
+      name: "Nitrogen (NO3-N)",
       value: soilData.nitrogen || 0,
-      unit: "mg/kg",
-      optimal: { min: 40, max: 60 },
+      unit: "ppm",
+      optimal: { min: 20, max: 40 },
       icon: <Leaf className="h-4 w-4 text-green-600" />,
     },
     {
       name: "Phosphorus (P)",
       value: soilData.phosphorus || 0,
       unit: "mg/kg",
-      optimal: { min: 30, max: 50 },
+      optimal: { min: 30, max: 70 },
       icon: <Zap className="h-4 w-4 text-yellow-600" />,
     },
     {
       name: "Potassium (K)",
       value: soilData.potassium || 0,
       unit: "mg/kg",
-      optimal: { min: 150, max: 200 },
+      optimal: { min: 150, max: 250 },
       icon: <Mountain className="h-4 w-4 text-purple-600" />,
     },
     {
       name: "Calcium (Ca)",
       value: soilData.calcium || 0,
       unit: "mg/kg",
-      optimal: { min: 1000, max: 1500 },
+      optimal: { min: 1000, max: 2000 },
       icon: <Droplets className="h-4 w-4 text-blue-600" />,
     },
     {
       name: "Magnesium (Mg)",
       value: soilData.magnesium || 0,
       unit: "mg/kg",
-      optimal: { min: 200, max: 300 },
+      optimal: { min: 60, max: 300 },
       icon: <Sparkles className="h-4 w-4 text-pink-600" />,
     },
     {
       name: "Organic Matter",
       value: soilData.organic_matter || 0,
       unit: "%",
-      optimal: { min: 3, max: 5 },
+      optimal: { min: 3.0, max: 6.0 },
       icon: <Atom className="h-4 w-4 text-amber-600" />,
     },
   ];
 
   // Add micronutrients if they exist
+  // Micronutrient ranges based on Mehlich-3
   const micronutrients = [
     {
       name: "Copper (Cu)",
       value: soilData.copper || 0,
       unit: "mg/kg",
-      optimal: { min: 1.5, max: 3.0 },
+      optimal: { min: 1.0, max: 5.0 },
       icon: <Beaker className="h-4 w-4 text-orange-600" />,
     },
     {
       name: "Iron (Fe)",
       value: soilData.iron || 0,
       unit: "mg/kg",
-      optimal: { min: 40, max: 60 },
+      optimal: { min: 50, max: 150 }, // Fe extracts high in M3
       icon: <Shield className="h-4 w-4 text-gray-600" />,
     },
     {
       name: "Zinc (Zn)",
       value: soilData.zinc || 0,
       unit: "mg/kg",
-      optimal: { min: 2.0, max: 4.0 },
+      optimal: { min: 2.0, max: 10.0 },
       icon: <Sparkles className="h-4 w-4 text-indigo-600" />,
     },
   ];
@@ -232,7 +236,7 @@ export function NutrientDisplay({
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-red-500 rounded"></div>
                 <span className="text-red-700">
-                  Below Optimal - May need supplementation
+                  Below Optimal - Deficiency
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -242,9 +246,10 @@ export function NutrientDisplay({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-orange-500 rounded"></div>
-                <span className="text-orange-700">
-                  Above Optimal - May cause imbalances
+                {/* Visualized as Blue for High-Value Tolerance */}
+                <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                <span className="text-blue-700">
+                  Above Optimal - High reserves
                 </span>
               </div>
             </div>
