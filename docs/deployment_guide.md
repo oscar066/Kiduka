@@ -60,16 +60,27 @@ chmod +x scripts/deploy.sh
 ```
 
 ## Step 7: Verification
-1. Open your browser to `http://<YOUR_SERVER_IP>`.
-2. check if the application loads.
-3. If you have "502 Bad Gateway" initially, wait 30s for the containers to fully start.
+1.  **Check HTTP**: Open `http://<YOUR_SERVER_IP>`. It should load!
+2.  *Note: If "502 Bad Gateway" initially, wait 30s.*
 
-## Step 8: (Optional) Domain & SSL
-If you have a domain (e.g. from Namecheap/GoDaddy):
-1. Create an **A Record** pointing to your Server IP.
-2. We recommend using Cloudflare (Free) for SSL:
-   - Point NameServers to Cloudflare.
-   - Add A Record in Cloudflare.
-   - Enable "Flexible" or "Full" SSL in Cloudflare.
+## Step 8: Configure Domain & HTTPS (Cloudflare)
+To get `https://kiduka-labs.co.ke` working:
+
+1.  **Login to Cloudflare Dashboard**.
+2.  **Update DNS Records**:
+    - Select your domain > **DNS**.
+    - Find the **A Record** for `@` (or `kiduka-labs.co.ke`).
+    - Change IP to: `84.247.161.30`.
+    - **ENABLE** the Orange Cloud Icon (Proxy Status: Proxied).
+    - Saving might take 1 minute to propagate.
+
+3.  **Enable SSL (Crucial)**:
+    - Go to **SSL/TLS** on the left sidebar.
+    - Set encryption mode to **Flexible**.
+    - *Explanation: "Flexible" encrypts traffic from User -> Cloudflare. Cloudflare then talks HTTP to your server (which is fine since Nginx listens on port 80).*
+
+4.  **Confirm**:
+    - Visit `https://kiduka-labs.co.ke`.
+    - The lock icon should appear.
 
 
