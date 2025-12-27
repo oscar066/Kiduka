@@ -31,9 +31,9 @@ else
     echo "Docker is already installed."
 fi
 
-# Pull latest changes (assuming this script is in the repo)
-# echo "Pulling latest changes..."
-# git pull origin main
+# Pull latest changes
+echo "Pulling latest changes..."
+git pull origin main
 
 # Build and start containers
 echo "Building and starting containers..."
