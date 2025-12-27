@@ -21,7 +21,7 @@ ufw allow 22/tcp
 ufw allow 80/tcp
 ufw allow 443/tcp
 # Allow 5050 for pgAdmin optionally, better to tunnel but user might want it
-# ufw allow 5050/tcp
+ufw allow 5050/tcp
 echo "y" | ufw enable
 ufw status
 
