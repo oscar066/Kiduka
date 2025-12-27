@@ -54,25 +54,6 @@ export function AdminDashboard() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center p-6">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="flex items-center justify-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600">
-              <Leaf className="h-5 w-5 text-white" />
-            </div>
-            <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-          </div>
-          <div className="text-center">
-            <h3 className="text-lg font-medium text-green-800">Loading...</h3>
-            <p className="text-green-600">Loading dashboard data</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
@@ -113,6 +94,7 @@ export function AdminDashboard() {
           icon={<Users className="h-8 w-8 text-green-500" />}
           change={`+${stats?.recent_users || 0} this week`}
           changeType="positive"
+          loading={loading}
         />
         <MetricCard
           title="Active Users"
@@ -122,6 +104,7 @@ export function AdminDashboard() {
             ((stats?.active_users || 0) / (stats?.total_users || 1)) * 100
           )}% of total`}
           changeType="neutral"
+          loading={loading}
         />
         <MetricCard
           title="Total Predictions"
@@ -129,6 +112,7 @@ export function AdminDashboard() {
           icon={<BarChart3 className="h-8 w-8 text-blue-500" />}
           change={`+${stats?.recent_predictions || 0} this week`}
           changeType="positive"
+          loading={loading}
         />
         <MetricCard
           title="Flagged Predictions"
@@ -140,6 +124,7 @@ export function AdminDashboard() {
           changeType={
             stats?.flagged_predictions === 0 ? "positive" : "negative"
           }
+          loading={loading}
         />
       </div>
 
@@ -153,16 +138,27 @@ export function AdminDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {Object.entries(stats?.users_by_role || {}).map(([role, count]) => (
-              <div key={role} className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700 capitalize">
-                  {role.replace("_", " ")}
-                </span>
-                <Badge variant="outline" className="text-green-700 bg-green-50">
-                  {count}
-                </Badge>
-              </div>
-            ))}
+            {loading ? (
+              <>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-6 w-12 bg-gray-200 rounded-full animate-pulse" />
+                  </div>
+                ))}
+              </>
+            ) : (
+              Object.entries(stats?.users_by_role || {}).map(([role, count]) => (
+                <div key={role} className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700 capitalize">
+                    {role.replace("_", " ")}
+                  </span>
+                  <Badge variant="outline" className="text-green-700 bg-green-50">
+                    {count}
+                  </Badge>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
         <Card className="border border-amber-200">
@@ -173,19 +169,30 @@ export function AdminDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {Object.entries(stats?.predictions_by_status || {}).map(
-              ([status, count]) => (
-                <div key={status} className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700 capitalize">
-                    {status.replace("_", " ")}
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className="text-amber-700 bg-amber-50"
-                  >
-                    {count}
-                  </Badge>
-                </div>
+            {loading ? (
+              <>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-6 w-12 bg-gray-200 rounded-full animate-pulse" />
+                  </div>
+                ))}
+              </>
+            ) : (
+              Object.entries(stats?.predictions_by_status || {}).map(
+                ([status, count]) => (
+                  <div key={status} className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700 capitalize">
+                      {status.replace("_", " ")}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-amber-700 bg-amber-50"
+                    >
+                      {count}
+                    </Badge>
+                  </div>
+                )
               )
             )}
           </CardContent>
@@ -251,7 +258,23 @@ export function AdminDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {dashboardData?.recent_users?.slice(0, 5).map((user, index) => (
+            {loading ? (
+              <>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-3 bg-green-50 rounded-lg animate-pulse"
+                  >
+                    <div className="space-y-2">
+                      <div className="h-4 w-32 bg-gray-200 rounded" />
+                      <div className="h-3 w-48 bg-gray-200 rounded" />
+                    </div>
+                    <div className="h-6 w-16 bg-gray-200 rounded-full" />
+                  </div>
+                ))}
+              </>
+            ) : (
+              dashboardData?.recent_users?.slice(0, 5).map((user, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between p-3 bg-green-50 rounded-lg"
@@ -274,7 +297,8 @@ export function AdminDashboard() {
                   </Badge>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -287,7 +311,23 @@ export function AdminDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {dashboardData?.recent_audit_logs?.slice(0, 5).map((log, index) => (
+            {loading ? (
+              <>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className="flex items-start space-x-3 p-3 bg-amber-50 rounded-lg animate-pulse"
+                  >
+                    <div className="h-4 w-4 bg-gray-200 rounded mt-1" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-3/4 bg-gray-200 rounded" />
+                      <div className="h-3 w-24 bg-gray-200 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              dashboardData?.recent_audit_logs?.slice(0, 5).map((log, index) => (
               <div
                 key={index}
                 className="flex items-start space-x-3 p-3 bg-amber-50 rounded-lg"
@@ -314,7 +354,8 @@ export function AdminDashboard() {
                   </p>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
@@ -329,6 +370,7 @@ interface MetricCardProps {
   icon: React.ReactNode;
   change: string;
   changeType: "positive" | "negative" | "neutral";
+  loading?: boolean;
 }
 
 function MetricCard({
@@ -337,6 +379,7 @@ function MetricCard({
   icon,
   change,
   changeType,
+  loading = false,
 }: MetricCardProps) {
   const changeColorClass = {
     positive: "text-green-600",
@@ -352,13 +395,21 @@ function MetricCard({
           <CardTitle className="text-sm font-medium text-green-700">
             {title}
           </CardTitle>
-          <div className="text-2xl font-semibold text-green-900">
-            {value.toLocaleString()}
-          </div>
+          {loading ? (
+            <div className="h-8 w-20 bg-gray-200 rounded animate-pulse mt-1" />
+          ) : (
+            <div className="text-2xl font-semibold text-green-900">
+              {value.toLocaleString()}
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
-        <p className={`text-sm ${changeColorClass}`}>{change}</p>
+        {loading ? (
+          <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+        ) : (
+          <p className={`text-sm ${changeColorClass}`}>{change}</p>
+        )}
       </CardContent>
     </Card>
   );

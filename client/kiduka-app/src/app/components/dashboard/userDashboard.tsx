@@ -66,22 +66,6 @@ export function UserDashboard() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center space-x-2">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Leaf className="h-6 w-6 text-green-600 animate-pulse" />
-            </div>
-            <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-          </div>
-          <p className="text-green-700 font-serif">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
@@ -116,15 +100,24 @@ export function UserDashboard() {
                 <div className="p-3 bg-blue-100 rounded-xl">
                   <BarChart3 className="h-7 w-7 text-blue-600" />
                 </div>
-                <TrendingUp className="h-5 w-5 text-blue-500" />
+                {!loading && <TrendingUp className="h-5 w-5 text-blue-500" />}
               </div>
               <div>
-                <div className="text-3xl font-bold text-gray-900">
-                  {stats?.totalPredictions || 0}
-                </div>
-                <div className="text-sm text-gray-600 font-medium mt-1">
-                  Total Predictions
-                </div>
+                {loading ? (
+                  <>
+                    <div className="h-9 w-16 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mt-2" />
+                  </>
+                ) : (
+                  <>
+                    <div className="text-3xl font-bold text-gray-900">
+                      {stats?.totalPredictions || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium mt-1">
+                      Total Predictions
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>
@@ -137,15 +130,24 @@ export function UserDashboard() {
                 <div className="p-3 bg-green-100 rounded-xl">
                   <Calendar className="h-7 w-7 text-green-600" />
                 </div>
-                <Sparkles className="h-5 w-5 text-green-500" />
+                {!loading && <Sparkles className="h-5 w-5 text-green-500" />}
               </div>
               <div>
-                <div className="text-3xl font-bold text-gray-900">
-                  {stats?.recentPredictions || 0}
-                </div>
-                <div className="text-sm text-gray-600 font-medium mt-1">
-                  This Month
-                </div>
+                {loading ? (
+                  <>
+                    <div className="h-9 w-16 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mt-2" />
+                  </>
+                ) : (
+                  <>
+                    <div className="text-3xl font-bold text-gray-900">
+                      {stats?.recentPredictions || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium mt-1">
+                      This Month
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>
@@ -158,17 +160,28 @@ export function UserDashboard() {
                 <div className="p-3 bg-amber-100 rounded-xl">
                   <Leaf className="h-7 w-7 text-amber-600" />
                 </div>
-                <div className="px-2 py-1 bg-amber-100 rounded text-xs font-semibold text-amber-700">
-                  AVG
-                </div>
+                {!loading && (
+                  <div className="px-2 py-1 bg-amber-100 rounded text-xs font-semibold text-amber-700">
+                    AVG
+                  </div>
+                )}
               </div>
               <div>
-                <div className="text-3xl font-bold text-gray-900">
-                  {stats?.averageFertility}
-                </div>
-                <div className="text-sm text-gray-600 font-medium mt-1">
-                  Avg. Fertility
-                </div>
+                {loading ? (
+                  <>
+                    <div className="h-9 w-20 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-28 bg-gray-200 rounded animate-pulse mt-2" />
+                  </>
+                ) : (
+                  <>
+                    <div className="text-3xl font-bold text-gray-900">
+                      {stats?.averageFertility}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium mt-1">
+                      Avg. Fertility
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>
@@ -183,12 +196,21 @@ export function UserDashboard() {
                 </div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {stats?.favoriteTexture}
-                </div>
-                <div className="text-sm text-gray-600 font-medium mt-1">
-                  Favorite Texture
-                </div>
+                {loading ? (
+                  <>
+                    <div className="h-8 w-24 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mt-2" />
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-gray-900">
+                      {stats?.favoriteTexture}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium mt-1">
+                      Favorite Texture
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>
