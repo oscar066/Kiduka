@@ -315,13 +315,28 @@ class SoilDataPreprocessor:
         # Progress bar for SMOTE application
         if self.use_progress_bars:
             with tqdm(total=3, desc="Applying SMOTE", unit="step") as pbar:
-                # Step 1: Initialize SMOTE
-                smote = SMOTE(random_state=42)
+                # Step 1: Initialize SMOTE with dynamic k_neighbors
+                min_class_samples = y.value_counts().min()
+                k_neighbors = min(5, min_class_samples - 1)
+                
+                if k_neighbors < 1:
+                    self.logger.warning(f"Smaliest class has only {min_class_samples} samples. SMOTE needs at least 2 samples per class. Reducing k_neighbors to 1 if possible.")
+                    k_neighbors = 1 if min_class_samples > 1 else 0
+                
+                if k_neighbors < 5:
+                    self.logger.info(f"Dynamically adjusted SMOTE k_neighbors to {k_neighbors} because smallest class has {min_class_samples} samples.")
+                
+                if k_neighbors > 0:
+                    smote = SMOTE(random_state=42, k_neighbors=k_neighbors)
+                else:
+                    self.logger.warning("A class has only 1 sample. SMOTE cannot be applied correctly. Using k_neighbors=1 and hoping for the best, or SMOTE might still fail.")
+                    smote = SMOTE(random_state=42, k_neighbors=1) # SMOTE will likely still fail if it tries to resample the 1-sample class
+                
                 pbar.update(1)
-                pbar.set_postfix({"step": "SMOTE initialized"})
+                pbar.set_postfix({"step": "SMOTE initialized", "k": k_neighbors})
                 
                 # Step 2: Apply SMOTE transformation
-                self.logger.debug("Applying SMOTE transformation...")
+                self.logger.debug(f"Applying SMOTE transformation with k_neighbors={k_neighbors}...")
                 X_resampled, y_resampled = smote.fit_resample(X, y)
                 pbar.update(1)
                 pbar.set_postfix({"step": "SMOTE applied"})
@@ -332,8 +347,17 @@ class SoilDataPreprocessor:
                 pbar.update(1)
                 pbar.set_postfix({"step": "Conversion completed"})
         else:
-            smote = SMOTE(random_state=42)
-            self.logger.debug("Applying SMOTE transformation...")
+            min_class_samples = y.value_counts().min()
+            k_neighbors = min(5, min_class_samples - 1)
+            
+            if k_neighbors < 1:
+                k_neighbors = 1 if min_class_samples > 1 else 0
+                
+            if k_neighbors < 5:
+                self.logger.info(f"Dynamically adjusted SMOTE k_neighbors to {k_neighbors} because smallest class has {min_class_samples} samples.")
+            
+            smote = SMOTE(random_state=42, k_neighbors=max(1, k_neighbors))
+            self.logger.debug(f"Applying SMOTE transformation with k_neighbors={max(1, k_neighbors)}...")
             X_resampled, y_resampled = smote.fit_resample(X, y)
             X_resampled = pd.DataFrame(X_resampled, columns=X.columns)
             y_resampled = pd.Series(y_resampled, name=target_column)
