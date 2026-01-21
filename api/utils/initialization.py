@@ -1,5 +1,6 @@
-"""Application initialization utilities"""
-
+"""
+Application initialization utilities
+"""
 import os
 import sys
 import logging
@@ -72,6 +73,27 @@ def initialize_models() -> Dict[str, Any]:
             'fertility_model': fertility_model,
             'fertilizer_preprocessor': fertilizer_preprocessor,
             'fertilizer_model': fertilizer_model
+        })
+
+        # Load Crop 1 components
+        logger.info("Loading crop recommender 1 preprocessor...")
+        crop1_preprocessor = loader.load_preprocessor(AppConfig.MODEL_FILES['crop_recommender1_preprocessor'])
+        
+        logger.info("Loading crop recommender 1 model...")
+        crop1_model = loader.load_model(AppConfig.MODEL_FILES['crop_recommender1_model'])
+        
+        # Load Crop 2 components
+        logger.info("Loading crop recommender 2 preprocessor...")
+        crop2_preprocessor = loader.load_preprocessor(AppConfig.MODEL_FILES['crop_recommender2_preprocessor'])
+        
+        logger.info("Loading crop recommender 2 model...")
+        crop2_model = loader.load_model(AppConfig.MODEL_FILES['crop_recommender2_model'])
+        
+        components.update({
+            'crop_recommender1_preprocessor': crop1_preprocessor,
+            'crop_recommender1_model': crop1_model,
+            'crop_recommender2_preprocessor': crop2_preprocessor,
+            'crop_recommender2_model': crop2_model
         })
         
         logger.info("All models and preprocessors loaded successfully!")
