@@ -114,6 +114,10 @@ class SoilPrediction(Base):
     fertility_confidence = Column(Numeric(5, 4))
     fertilizer_recommendation = Column(String(100))
     fertilizer_confidence = Column(Numeric(5, 4))
+    crop_recommendation1 = Column(String(50))
+    crop_recommendation1_confidence = Column(Numeric(5, 4))
+    crop_recommendation2 = Column(String(50))
+    crop_recommendation2_confidence = Column(Numeric(5, 4))
     
     # Structured AI response (stored as JSON)
     structured_response = Column(JSONB, nullable=True)
