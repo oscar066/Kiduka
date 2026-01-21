@@ -49,7 +49,11 @@ async def predict_soil_fertility(
                         "fertility_prediction": response.soil_fertility_status,
                         "fertility_confidence": response.soil_fertility_confidence,
                         "fertilizer_prediction": response.fertilizer_recommendation,
-                        "fertilizer_confidence": response.fertilizer_confidence
+                        "fertilizer_confidence": response.fertilizer_confidence,
+                        "crop_recommendation1": response.crop_recommendation1,
+                        "crop_recommendation1_confidence": response.crop_recommendation1_confidence,
+                        "crop_recommendation2": response.crop_recommendation2,
+                        "crop_recommendation2_confidence": response.crop_recommendation2_confidence
                     },
                     "timestamp": response.timestamp
                 }

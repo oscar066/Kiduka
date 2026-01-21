@@ -66,6 +66,10 @@ class PredictionService:
                 soil_fertility_confidence=result.get("fertility_confidence", 0.0),
                 fertilizer_recommendation=result.get("fertilizer_prediction", "UNKNOWN"), 
                 fertilizer_confidence=result.get("fertilizer_confidence", 0.0),
+                crop_recommendation1=result.get("crop_recommendation1", "UNKNOWN"),
+                crop_recommendation1_confidence=result.get("crop_recommendation1_confidence", 0.0),
+                crop_recommendation2=result.get("crop_recommendation2", "UNKNOWN"),
+                crop_recommendation2_confidence=result.get("crop_recommendation2_confidence", 0.0),
                 nearest_agrovets=result.get("nearest_agrovets", []),
                 structured_response=result.get("structured_response", None),
                 timestamp=datetime.now().isoformat()
@@ -136,6 +140,10 @@ class PredictionService:
                 fertility_confidence=result.get("fertility_confidence"),
                 fertilizer_recommendation=result.get("fertilizer_prediction"),
                 fertilizer_confidence=result.get("fertilizer_confidence"),
+                crop_recommendation1=result.get("crop_recommendation1"),
+                crop_recommendation1_confidence=result.get("crop_recommendation1_confidence", 0.0),
+                crop_recommendation2=result.get("crop_recommendation2"),
+                crop_recommendation2_confidence=result.get("crop_recommendation2_confidence", 0.0),
                 structured_response=result.get("structured_response"),
                 agrovets=agrovet_objects  # This is the key fix - ensure it's never None
             )

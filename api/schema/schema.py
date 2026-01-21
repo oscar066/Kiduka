@@ -47,6 +47,7 @@ class SoilExplanation(BaseModel):
     nutrient_analysis: str = Field(description="In-depth analysis of all nutrients")
     ph_analysis: str = Field(description="Detailed pH analysis")
     soil_texture_analysis: str = Field(description="Analysis of soil texture implications")
+    crop_recommendation_analysis: str = Field(description="Analysis of crop recommendations")
     overall_assessment: str = Field(description="Overall soil health assessment")
 
 class Recommendation(BaseModel):
@@ -75,6 +76,10 @@ class PredictionResponse(BaseModel):
     soil_fertility_confidence: float
     fertilizer_recommendation: str
     fertilizer_confidence: float
+    crop_recommendation1: Optional[str] = None
+    crop_recommendation1_confidence: Optional[float] = None
+    crop_recommendation2: Optional[str] = None
+    crop_recommendation2_confidence: Optional[float] = None
     
     # Enhanced information
     nearest_agrovets: List[AgrovetInfo] = []
@@ -112,6 +117,10 @@ class PredictionHistory(BaseModel):
     fertility_confidence: Optional[float]
     fertilizer_recommendation: Optional[str]
     fertilizer_confidence: Optional[float]
+    crop_recommendation1: Optional[str] = None
+    crop_recommendation1_confidence: Optional[float] = None
+    crop_recommendation2: Optional[str] = None
+    crop_recommendation2_confidence: Optional[float] = None
     
     # Structured AI response (stored as JSON)
     structured_response: Optional[Dict[str, Any]]
@@ -142,6 +151,10 @@ class WorkflowState(TypedDict, total=False):
     fertility_confidence: Optional[float]
     fertilizer_prediction: Optional[str] 
     fertilizer_confidence: Optional[float]
+    crop_recommendation1: Optional[str]
+    crop_recommendation1_confidence: Optional[float]
+    crop_recommendation2: Optional[str]
+    crop_recommendation2_confidence: Optional[float]
     
     # Location-based data
     nearest_agrovets: List[Dict[str, Any]]
