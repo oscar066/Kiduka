@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-import asyncio # Import asyncio
+import asyncio
 from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 
@@ -9,7 +9,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load schemas
 from api.schema.schema import WorkflowState, SoilAnalysisResponse, Recommendation, SoilExplanation
 
 # Load environment variables from .env file
@@ -34,7 +34,10 @@ async def generate_fallback_response(state: WorkflowState) -> WorkflowState:
         summary=f"Your soil shows {fertility_status.lower()} fertility status with {state.get('fertility_confidence', 0):.1%} confidence.",
         fertility_analysis=f"The {fertility_status.lower()} fertility indicates your soil's current ability to support crop growth.",
         nutrient_analysis=f"Current nutrient levels - Nitrogen: {soil_data['n']}, Phosphorus: {soil_data['p']}, Potassium: {soil_data['k']}",
-        ph_analysis=f"Soil pH is {soil_data['ph']}, which affects nutrient availability to plants."
+        ph_analysis=f"Soil pH is {soil_data['ph']}, which affects nutrient availability to plants.",
+        soil_texture_analysis=f"The {soil_data['simplified_texture'].lower()} texture affects water retention and aeration.",
+        crop_recommendation_analysis=f"Consider crops suitable for {fertility_status.lower()} fertility soils like {state.get('crop_recommendation1', 'local staples')}.",
+        overall_assessment="Overall, regular monitoring and nutrient management will improve yield potential."
     )
 
     # Step 3: Generate recommendations
@@ -136,10 +139,16 @@ async def generate_explanation_node(state: WorkflowState) -> WorkflowState:
         Predictions:
         - Soil Fertility Status: {state['fertility_prediction']} (Confidence: {state['fertility_confidence']:.1%})
         - Recommended Fertilizer: {state['fertilizer_prediction']} (Confidence: {state['fertilizer_confidence']:.1%})
+        - Recommended Crop (Option 1): {state.get('crop_recommendation1')} (Confidence: {state.get('crop_recommendation1_confidence', 0):.1%})
+        - Recommended Crop (Option 2): {state.get('crop_recommendation2')} (Confidence: {state.get('crop_recommendation2_confidence', 0):.1%})
 
         {parser.get_format_instructions()}
 
         Provide a comprehensive analysis with practical recommendations categorized by type and priority.
+        
+        IMPORTANT: In your analysis, specifically address the 'Crop Recommendations'. Explain why these crops 
+        (Option 1: {state.get('crop_recommendation1')} and Option 2: {state.get('crop_recommendation2')}) 
+        are suitable for this specific soil profile. Include this in the 'crop_recommendation_analysis' field.
         """
 
         # Step 5: Send to LLM asynchronously
@@ -156,10 +165,7 @@ async def generate_explanation_node(state: WorkflowState) -> WorkflowState:
         # Step 6: Parse response
         logger.debug("Parsing LLM response...")
         try:
-            # PydanticOutputParser.parse is synchronous. To avoid blocking,
-            # we can run it in a thread pool, but for a fast operation like this,
-            # direct calling is often acceptable. For a truly non-blocking approach,
-            # a different parser or manual parsing might be needed.
+            # PydanticOutputParser.parse is synchronous.
             structured_response = parser.parse(response.content)
             response_dict = structured_response.model_dump()
             logger.debug("LLM response parsed successfully.")
@@ -177,6 +183,7 @@ async def generate_explanation_node(state: WorkflowState) -> WorkflowState:
             "nutrient_analysis": structured_response.explanation.nutrient_analysis,
             "ph_analysis": structured_response.explanation.ph_analysis,
             "soil_texture_analysis": structured_response.explanation.soil_texture_analysis,
+            "crop_recommendation_analysis": structured_response.explanation.crop_recommendation_analysis,
             "overall_assessment": structured_response.explanation.overall_assessment
         }
         state["categorized_recommendations"] = [rec.model_dump() for rec in structured_response.recommendations]
