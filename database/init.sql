@@ -49,6 +49,12 @@ CREATE TABLE IF NOT EXISTS soil_predictions (
     fertilizer_recommendation VARCHAR(100),
     fertilizer_confidence DECIMAL(5,4),
     
+    -- Crop recommendations
+    crop_recommendation1 VARCHAR(50),
+    crop_recommendation1_confidence DECIMAL(5,4),
+    crop_recommendation2 VARCHAR(50),
+    crop_recommendation2_confidence DECIMAL(5,4),
+    
     -- AI-generated content
     structured_response JSONB,
     

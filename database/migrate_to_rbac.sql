@@ -21,7 +21,11 @@ ADD COLUMN IF NOT EXISTS notes TEXT;
 -- Step 3: Add new columns to existing soil_predictions table
 ALTER TABLE soil_predictions 
 ADD COLUMN IF NOT EXISTS is_flagged BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS admin_notes TEXT;
+ADD COLUMN IF NOT EXISTS admin_notes TEXT,
+ADD COLUMN IF NOT EXISTS crop_recommendation1 VARCHAR(50),
+ADD COLUMN IF NOT EXISTS crop_recommendation1_confidence DECIMAL(5,4),
+ADD COLUMN IF NOT EXISTS crop_recommendation2 VARCHAR(50),
+ADD COLUMN IF NOT EXISTS crop_recommendation2_confidence DECIMAL(5,4);
 
 -- Step 4: Add new columns to existing agrovets table
 ALTER TABLE agrovets 
