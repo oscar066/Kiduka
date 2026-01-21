@@ -12,6 +12,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from api.schema.schema import WorkflowState
 from api.nodes.fertility_node import predict_fertility_node
 from api.nodes.fertilizer_node import predict_fertilizer_node  
+from api.nodes.crop_recommendation_node import predict_crop_recommendation_node
 from api.nodes.agrovet_search_node import find_nearest_agrovets_node
 from api.nodes.generate_explanation_node import generate_explanation_node
 from api.utils.logging_config import setup_logger
@@ -35,13 +36,15 @@ class WorkflowManager:
         # Add nodes
         workflow.add_node("predict_fertility", predict_fertility_node)
         workflow.add_node("predict_fertilizer", predict_fertilizer_node)
+        workflow.add_node("predict_crop_recommendation", predict_crop_recommendation_node)
         workflow.add_node("find_nearest_agrovets", find_nearest_agrovets_node)
         workflow.add_node("generate_explanation", generate_explanation_node)
         
         # Define edges
         workflow.add_edge(START, "predict_fertility")
         workflow.add_edge("predict_fertility", "predict_fertilizer")
-        workflow.add_edge("predict_fertilizer", "find_nearest_agrovets")
+        workflow.add_edge("predict_fertilizer", "predict_crop_recommendation")
+        workflow.add_edge("predict_crop_recommendation", "find_nearest_agrovets")
         workflow.add_edge("find_nearest_agrovets", "generate_explanation")
         workflow.add_edge("generate_explanation", END)
         
