@@ -29,6 +29,8 @@ export interface StructuredResponse {
     nutrient_analysis: string;
     ph_analysis: string;
     soil_texture_analysis: string;
+
+    crop_recommendation_analysis: string;
     overall_assessment: string;
   };
   recommendations: Recommendation[];
@@ -56,6 +58,10 @@ export interface SoilData {
   fertility_confidence?: number;
   fertilizer_recommendation: string;
   fertilizer_confidence?: number;
+  crop_recommendation1?: string;
+  crop_recommendation1_confidence?: number;
+  crop_recommendation2?: string;
+  crop_recommendation2_confidence?: number;
   structured_response?: StructuredResponse;
   agrovets?: AgrovetInfo[];
   created_at?: string;
@@ -83,6 +89,10 @@ export interface SoilOutput {
   soil_fertility_confidence: number;
   fertilizer_recommendation: string;
   fertilizer_confidence: number;
+  crop_recommendation1?: string;
+  crop_recommendation1_confidence?: number;
+  crop_recommendation2?: string;
+  crop_recommendation2_confidence?: number;
   explanation?: string;
   recommendations?: string[];
   structured_response?: StructuredResponse;

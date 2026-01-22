@@ -12,6 +12,7 @@ import {
   Target,
   Calendar,
   MapPin,
+  Wheat,
 } from "lucide-react";
 import { SoilData } from "@/types/soil-analysis";
 
@@ -153,6 +154,65 @@ export function StatusSummaryCards({ soilData }: StatusSummaryCardsProps) {
           <div className="flex items-center gap-2 text-xs text-gray-500 pt-2">
             <Calendar className="h-3 w-3" />
             <span>Analysis Date: {new Date().toLocaleDateString()}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Crop Recommendation Card */}
+      <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-orange-200 col-span-1 md:col-span-2">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-orange-800">
+            <Wheat className="h-5 w-5" />
+            Crop Recommendations
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid md:grid-cols-2 gap-6">
+          {/* Crop Option 1 */}
+          <div className="space-y-4">
+             <div className="flex items-center justify-center">
+              <div className="text-center space-y-2">
+                <Badge className="bg-orange-600 text-white text-lg px-4 py-2">
+                  {soilData.crop_recommendation1 || "Not Available"}
+                </Badge>
+                <p className="text-sm text-gray-600">Primary Recommendation</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-1">
+                  <Target className="h-4 w-4 text-orange-600" />
+                  <span className="text-gray-700">Confidence</span>
+                </div>
+                <span className="font-medium">
+                  {Math.round((soilData.crop_recommendation1_confidence || 0) * 100)}%
+                </span>
+              </div>
+              <Progress value={(soilData.crop_recommendation1_confidence || 0) * 100} className="h-3" />
+            </div>
+          </div>
+
+          {/* Crop Option 2 */}
+          <div className="space-y-4">
+             <div className="flex items-center justify-center">
+              <div className="text-center space-y-2">
+                <Badge className="bg-orange-600/80 text-white text-lg px-4 py-2">
+                  {soilData.crop_recommendation2 || "Not Available"}
+                </Badge>
+                <p className="text-sm text-gray-600">Alternative Recommendation</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-1">
+                  <Target className="h-4 w-4 text-orange-600" />
+                  <span className="text-gray-700">Confidence</span>
+                </div>
+                <span className="font-medium">
+                  {Math.round((soilData.crop_recommendation2_confidence || 0) * 100)}%
+                </span>
+              </div>
+              <Progress value={(soilData.crop_recommendation2_confidence || 0) * 100} className="h-3" />
+            </div>
           </div>
         </CardContent>
       </Card>

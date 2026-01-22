@@ -5,6 +5,10 @@ set -e
 
 echo "Starting deployment..."
 
+# Ensure we are in the project root
+cd "$(dirname "$0")/.."
+echo "Working in directory: $(pwd)"
+
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
     echo "Docker not found. Installing Docker..."

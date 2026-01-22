@@ -1,0 +1,26 @@
+name: Deploy Kiduka App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            # Navigate to the project directory
+            # Assuming the project is in a folder named 'Kiduka' in the user's home directory
+            # You might need to adjust this path depending on where you cloned the repo
+            cd ~/Kiduka || cd /var/www/Kiduka || (echo "Project directory not found" && exit 1)
+            
+            # Run the deployment script
+            bash scripts/deploy.sh

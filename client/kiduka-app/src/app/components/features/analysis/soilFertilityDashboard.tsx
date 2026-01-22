@@ -213,6 +213,10 @@ export default function SoilFertilityDashboard() {
         fertility_confidence: results.soil_fertility_confidence,
         fertilizer_recommendation: results.fertilizer_recommendation,
         fertilizer_confidence: results.fertilizer_confidence,
+        crop_recommendation1: results.crop_recommendation1,
+        crop_recommendation1_confidence: results.crop_recommendation1_confidence,
+        crop_recommendation2: results.crop_recommendation2,
+        crop_recommendation2_confidence: results.crop_recommendation2_confidence,
         structured_response: results.structured_response,
         agrovets: results.nearest_agrovets,
       }
