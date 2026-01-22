@@ -11,9 +11,8 @@ echo "Working in directory: $(pwd)"
 
 # Load environment variables
 if [ -f .env ]; then
-    set -a
-    source .env
-    set +a
+    # Only export lines that are valid KEY=VALUE pairs and not comments
+    export $(grep -v '^#' .env | grep -E '^[A-Za-z0-9_]+=' | xargs)
     echo "Environment variables loaded."
 else
     echo "Warning: .env file not found."
