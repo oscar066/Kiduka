@@ -36,8 +36,9 @@ else
 fi
 
 # Pull latest changes
-echo "Pulling latest changes..."
-git pull origin main
+echo "Syncing with repository..."
+git fetch origin main
+git reset --hard origin/main
 
 # Build and start containers
 echo "Building and starting containers..."

@@ -14,6 +14,9 @@ To enable automated deployment, you need to add the following secrets to your Gi
 Run these commands in your terminal on your Mac:
 
 - **For GitHub SSH_PRIVATE_KEY**: `cat ~/.ssh/kiduka_deploy`
+  > [!IMPORTANT]
+  > Copy the **entire** output of the command, including the `-----BEGIN OPENSSH PRIVATE KEY-----` and `-----END OPENSSH PRIVATE KEY-----` lines. Without these, GitHub cannot use the key.
+
 - **For Server Provider (Public Key)**: `cat ~/.ssh/kiduka_deploy.pub`
 
 ### Optional Secrets
