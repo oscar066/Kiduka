@@ -45,8 +45,10 @@ echo "Building and starting containers..."
 # We use sudo if the user isn't in the docker group yet (which happens on first run)
 if groups | grep -q "docker"; then
     docker compose up -d --build
+    docker compose restart nginx
 else
     sudo docker compose up -d --build
+    sudo docker compose restart nginx
 fi
 
 echo "Deployment complete! Services should be running."
