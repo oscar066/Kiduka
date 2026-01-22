@@ -9,6 +9,16 @@ echo "Starting deployment..."
 cd "$(dirname "$0")/.."
 echo "Working in directory: $(pwd)"
 
+# Load environment variables
+if [ -f .env ]; then
+    set -a
+    source .env
+    set +a
+    echo "Environment variables loaded."
+else
+    echo "Warning: .env file not found."
+fi
+
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
     echo "Docker not found. Installing Docker..."
@@ -46,9 +56,15 @@ echo "Building and starting containers..."
 if groups | grep -q "docker"; then
     docker compose up -d --build
     docker compose restart nginx
+    
+    echo "Running database migrations..."
+    docker compose exec -T postgres psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-agricultural_api} -f /docker-entrypoint-initdb.d/02-migrate.sql
 else
     sudo docker compose up -d --build
     sudo docker compose restart nginx
+    
+    echo "Running database migrations..."
+    sudo docker compose exec -T postgres psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-agricultural_api} -f /docker-entrypoint-initdb.d/02-migrate.sql
 fi
 
 echo "Deployment complete! Services should be running."
