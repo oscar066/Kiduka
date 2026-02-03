@@ -1,0 +1,201 @@
+{
+    "model_type": "DecisionTreeClassifier",
+    "n_estimators": 1,
+    "feature_names": [
+        "simpliedtexture(1)",
+        "ph",
+        "n",
+        "p",
+        "k",
+        "o",
+        "ca",
+        "mg",
+        "cu",
+        "fe",
+        "zn"
+    ],
+    "classes": [
+        0,
+        1,
+        2
+    ],
+    "trees": [
+        {
+            "type": "node",
+            "feature": "ph",
+            "threshold": -1.0558805465698242,
+            "left": {
+                "type": "node",
+                "feature": "p",
+                "threshold": 1.4308225512504578,
+                "left": {
+                    "type": "leaf",
+                    "value": [
+                        0.0,
+                        0.0,
+                        233.17307692307736
+                    ],
+                    "predicted_class": 2
+                },
+                "right": {
+                    "type": "node",
+                    "feature": "mg",
+                    "threshold": 0.924207478761673,
+                    "left": {
+                        "type": "leaf",
+                        "value": [
+                            0.0,
+                            0.0,
+                            16.826923076923077
+                        ],
+                        "predicted_class": 2
+                    },
+                    "right": {
+                        "type": "leaf",
+                        "value": [
+                            0.0,
+                            0.8445945945945946,
+                            0.0
+                        ],
+                        "predicted_class": 1
+                    }
+                }
+            },
+            "right": {
+                "type": "node",
+                "feature": "ph",
+                "threshold": -0.0232345350086689,
+                "left": {
+                    "type": "node",
+                    "feature": "p",
+                    "threshold": 1.1074376702308655,
+                    "left": {
+                        "type": "node",
+                        "feature": "cu",
+                        "threshold": 1.3148743510246277,
+                        "left": {
+                            "type": "leaf",
+                            "value": [
+                                0.0,
+                                235.6418918918905,
+                                0.0
+                            ],
+                            "predicted_class": 1
+                        },
+                        "right": {
+                            "type": "node",
+                            "feature": "ph",
+                            "threshold": -0.19534220173954964,
+                            "left": {
+                                "type": "node",
+                                "feature": "zn",
+                                "threshold": 0.047467149794101715,
+                                "left": {
+                                    "type": "leaf",
+                                    "value": [
+                                        0.0,
+                                        6.756756756756757,
+                                        0.0
+                                    ],
+                                    "predicted_class": 1
+                                },
+                                "right": {
+                                    "type": "node",
+                                    "feature": "mg",
+                                    "threshold": 0.5996964275836945,
+                                    "left": {
+                                        "type": "leaf",
+                                        "value": [
+                                            0.0,
+                                            2.5337837837837838,
+                                            0.0
+                                        ],
+                                        "predicted_class": 1
+                                    },
+                                    "right": {
+                                        "type": "node",
+                                        "feature": "p",
+                                        "threshold": -0.9885756969451904,
+                                        "left": {
+                                            "type": "leaf",
+                                            "value": [
+                                                0.0,
+                                                0.8445945945945946,
+                                                0.0
+                                            ],
+                                            "predicted_class": 1
+                                        },
+                                        "right": {
+                                            "type": "leaf",
+                                            "value": [
+                                                1.4285714285714286,
+                                                0.0,
+                                                0.0
+                                            ],
+                                            "predicted_class": 0
+                                        }
+                                    }
+                                }
+                            },
+                            "right": {
+                                "type": "leaf",
+                                "value": [
+                                    0.7142857142857143,
+                                    0.0,
+                                    0.0
+                                ],
+                                "predicted_class": 0
+                            }
+                        }
+                    },
+                    "right": {
+                        "type": "node",
+                        "feature": "o",
+                        "threshold": 0.16670018061995506,
+                        "left": {
+                            "type": "leaf",
+                            "value": [
+                                0.0,
+                                3.3783783783783785,
+                                0.0
+                            ],
+                            "predicted_class": 1
+                        },
+                        "right": {
+                            "type": "leaf",
+                            "value": [
+                                2.142857142857143,
+                                0.0,
+                                0.0
+                            ],
+                            "predicted_class": 0
+                        }
+                    }
+                },
+                "right": {
+                    "type": "node",
+                    "feature": "mg",
+                    "threshold": -1.7800512909889221,
+                    "left": {
+                        "type": "leaf",
+                        "value": [
+                            2.142857142857143,
+                            0.0,
+                            0.0
+                        ],
+                        "predicted_class": 0
+                    },
+                    "right": {
+                        "type": "leaf",
+                        "value": [
+                            243.57142857142938,
+                            0.0,
+                            0.0
+                        ],
+                        "predicted_class": 0
+                    }
+                }
+            }
+        }
+    ]
+}
