@@ -1,0 +1,237 @@
+{
+    "model_type": "DecisionTreeClassifier",
+    "n_estimators": 1,
+    "feature_names": [
+        "county",
+        "ph",
+        "total_n_(%)",
+        "toc_(%)",
+        "p_(ppm)",
+        "k_(me%)",
+        "ca_(me%)",
+        "mg_(me%)",
+        "k_(ppm)",
+        "ca_(ppm)",
+        "mg_(ppm)",
+        "ph_score",
+        "ph_class",
+        "ph_interpretation",
+        "n_score",
+        "n_class",
+        "n_interpretation",
+        "oc_score",
+        "oc_class",
+        "oc_interpretation",
+        "p_score",
+        "p_class",
+        "p_interpretation",
+        "k_score",
+        "k_class",
+        "k_interpretation",
+        "ca_score",
+        "ca_class",
+        "ca_interpretation",
+        "mg_score",
+        "mg_class",
+        "mg_interpretation",
+        "shi",
+        "override_rule(s)_applied",
+        "recommended_actions"
+    ],
+    "classes": [
+        0,
+        1,
+        2,
+        3,
+        4
+    ],
+    "trees": [
+        {
+            "type": "node",
+            "feature": "shi",
+            "threshold": 1.5363309979438782,
+            "left": {
+                "type": "node",
+                "feature": "n_score",
+                "threshold": 0.5,
+                "left": {
+                    "type": "node",
+                    "feature": "ph_score",
+                    "threshold": 1.0,
+                    "left": {
+                        "type": "leaf",
+                        "value": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            3515.6
+                        ],
+                        "predicted_class": 4
+                    },
+                    "right": {
+                        "type": "node",
+                        "feature": "ph_class",
+                        "threshold": 1.5,
+                        "left": {
+                            "type": "leaf",
+                            "value": [
+                                0.0,
+                                1.5125197189158182,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "predicted_class": 1
+                        },
+                        "right": {
+                            "type": "leaf",
+                            "value": [
+                                0.0,
+                                0.0,
+                                1.8258114775383016,
+                                0.0,
+                                0.0
+                            ],
+                            "predicted_class": 2
+                        }
+                    }
+                },
+                "right": {
+                    "type": "node",
+                    "feature": "override_rule(s)_applied",
+                    "threshold": 7.5,
+                    "left": {
+                        "type": "node",
+                        "feature": "shi",
+                        "threshold": -0.2896915674209595,
+                        "left": {
+                            "type": "node",
+                            "feature": "override_rule(s)_applied",
+                            "threshold": 0.5,
+                            "left": {
+                                "type": "leaf",
+                                "value": [
+                                    0.0,
+                                    0.0,
+                                    393.46237340950523,
+                                    0.0,
+                                    0.0
+                                ],
+                                "predicted_class": 2
+                            },
+                            "right": {
+                                "type": "leaf",
+                                "value": [
+                                    0.0,
+                                    0.0,
+                                    0.0,
+                                    3304.1117458053027,
+                                    0.0
+                                ],
+                                "predicted_class": 3
+                            }
+                        },
+                        "right": {
+                            "type": "node",
+                            "feature": "override_rule(s)_applied",
+                            "threshold": 2.5,
+                            "left": {
+                                "type": "leaf",
+                                "value": [
+                                    0.0,
+                                    0.0,
+                                    2006.566813814479,
+                                    0.0,
+                                    0.0
+                                ],
+                                "predicted_class": 2
+                            },
+                            "right": {
+                                "type": "node",
+                                "feature": "override_rule(s)_applied",
+                                "threshold": 6.5,
+                                "left": {
+                                    "type": "leaf",
+                                    "value": [
+                                        0.0,
+                                        0.0,
+                                        0.0,
+                                        211.48825419492962,
+                                        0.0
+                                    ],
+                                    "predicted_class": 3
+                                },
+                                "right": {
+                                    "type": "node",
+                                    "feature": "mg_class",
+                                    "threshold": 0.5,
+                                    "left": {
+                                        "type": "leaf",
+                                        "value": [
+                                            0.0,
+                                            0.0,
+                                            42.90656972215005,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "predicted_class": 2
+                                    },
+                                    "right": {
+                                        "type": "leaf",
+                                        "value": [
+                                            0.0,
+                                            0.0,
+                                            4.564528693845754,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "predicted_class": 2
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "right": {
+                        "type": "node",
+                        "feature": "shi",
+                        "threshold": -0.2805614620447159,
+                        "left": {
+                            "type": "leaf",
+                            "value": [
+                                0.0,
+                                0.0,
+                                1066.2739028823669,
+                                0.0,
+                                0.0
+                            ],
+                            "predicted_class": 2
+                        },
+                        "right": {
+                            "type": "leaf",
+                            "value": [
+                                0.0,
+                                3514.087480280881,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "predicted_class": 1
+                        }
+                    }
+                }
+            },
+            "right": {
+                "type": "leaf",
+                "value": [
+                    3515.599999999919,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "predicted_class": 0
+            }
+        }
+    ]
+}
