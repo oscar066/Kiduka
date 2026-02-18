@@ -18,14 +18,43 @@ ADD COLUMN IF NOT EXISTS last_login TIMESTAMP WITH TIME ZONE,
 ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id),
 ADD COLUMN IF NOT EXISTS notes TEXT;
 
--- Step 3: Add new columns to existing soil_predictions table
+-- Step 3: Update soil_predictions table for simplified schema and RBAC
 ALTER TABLE soil_predictions 
+-- Metadata/RBAC columns
 ADD COLUMN IF NOT EXISTS is_flagged BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS admin_notes TEXT,
-ADD COLUMN IF NOT EXISTS crop_recommendation1 VARCHAR(50),
-ADD COLUMN IF NOT EXISTS crop_recommendation1_confidence DECIMAL(5,4),
-ADD COLUMN IF NOT EXISTS crop_recommendation2 VARCHAR(50),
-ADD COLUMN IF NOT EXISTS crop_recommendation2_confidence DECIMAL(5,4);
+-- Legacy cleanup
+DROP COLUMN IF EXISTS simplified_texture,
+DROP COLUMN IF EXISTS copper,
+DROP COLUMN IF EXISTS iron,
+DROP COLUMN IF EXISTS zinc,
+DROP COLUMN IF EXISTS fertility_prediction,
+DROP COLUMN IF EXISTS fertility_confidence,
+DROP COLUMN IF EXISTS fertilizer_recommendation,
+DROP COLUMN IF EXISTS fertilizer_confidence,
+DROP COLUMN IF EXISTS crop_recommendation1,
+DROP COLUMN IF EXISTS crop_recommendation1_confidence,
+DROP COLUMN IF EXISTS crop_recommendation2,
+DROP COLUMN IF EXISTS crop_recommendation2_confidence,
+DROP COLUMN IF EXISTS structured_response;
+
+-- Handle renaming organic_matter to organic_carbon
+DO $$ BEGIN
+    ALTER TABLE soil_predictions RENAME COLUMN organic_matter TO organic_carbon;
+EXCEPTION
+    WHEN undefined_column THEN 
+        RAISE NOTICE 'organic_matter column does not exist, skipping rename';
+    WHEN duplicate_column THEN
+        RAISE NOTICE 'organic_carbon column already exists, skipping rename';
+END $$;
+
+-- Add new analysis columns
+ALTER TABLE soil_predictions
+ADD COLUMN IF NOT EXISTS soil_health_index DECIMAL(5,2),
+ADD COLUMN IF NOT EXISTS initial_soil_fertility_status VARCHAR(100),
+ADD COLUMN IF NOT EXISTS soil_fertility_status VARCHAR(100),
+ADD COLUMN IF NOT EXISTS mentions JSONB NOT NULL DEFAULT '[]',
+ADD COLUMN IF NOT EXISTS recommendations JSONB NOT NULL DEFAULT '[]';
 
 -- Step 4: Add new columns to existing agrovets table
 ALTER TABLE agrovets 
@@ -72,12 +101,12 @@ UPDATE users
 SET role = 'super_admin', 
     is_verified = TRUE,
     notes = 'Migrated system administrator account'
-WHERE email = 'admin@kiduka-labs.co.ke';
+WHERE email IN ('admin@agricultural-api.com', 'admin@kiduka-labs.co.ke');
 
 -- Step 9: Insert default super admin if it doesn't exist
 INSERT INTO users (email, username, hashed_password, full_name, role, is_active, is_verified, notes) 
 SELECT 
-    'admin@kiduka-labs.co.ke',
+    'admin@agricultural-api.com',
     'superadmin',
     '$2b$12$E/lqk3wLE3tMSj9T6iUuwu0g.RSaU/yjRr7iLwsuuMFG8S5/yDPDi',
     'Super Administrator',
@@ -86,7 +115,7 @@ SELECT
     TRUE,
     'Default super administrator account - CHANGE PASSWORD AFTER FIRST LOGIN'
 WHERE NOT EXISTS (
-    SELECT 1 FROM users WHERE email = 'admin@kiduka-labs.co.ke'
+    SELECT 1 FROM users WHERE email IN ('admin@agricultural-api.com', 'admin@kiduka-labs.co.ke')
 );
 
 -- Step 10: Create trigger function for automatic audit logging

@@ -46,14 +46,11 @@ async def predict_soil_fertility(
                 prediction_data = {
                     "soil_data": soil_data.model_dump(),
                     "result": {
-                        "fertility_prediction": response.soil_fertility_status,
-                        "fertility_confidence": response.soil_fertility_confidence,
-                        "fertilizer_prediction": response.fertilizer_recommendation,
-                        "fertilizer_confidence": response.fertilizer_confidence,
-                        "crop_recommendation1": response.crop_recommendation1,
-                        "crop_recommendation1_confidence": response.crop_recommendation1_confidence,
-                        "crop_recommendation2": response.crop_recommendation2,
-                        "crop_recommendation2_confidence": response.crop_recommendation2_confidence
+                        "soil_health_index": response.soil_health_index,
+                        "initial_soil_fertility_status": response.initial_soil_fertility_status,
+                        "soil_fertility_status": response.soil_fertility_status,
+                        "mentions": response.mentions,
+                        "recommendations": response.recommendations
                     },
                     "timestamp": response.timestamp
                 }

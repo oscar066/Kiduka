@@ -94,37 +94,28 @@ class SoilPrediction(Base):
     session_id = Column(String(255))
     
     # Input soil data
-    simplified_texture = Column(String(50))
+    # simplified_texture = Column(String(50)) # Removed
     soil_ph = Column(Numeric(4, 2))
     nitrogen = Column(Numeric(10, 2))
     phosphorus = Column(Numeric(10, 2))
     potassium = Column(Numeric(10, 2))
-    organic_matter = Column(Numeric(5, 2))
+    organic_carbon = Column(Numeric(5, 2))
     calcium = Column(Numeric(10, 2))
     magnesium = Column(Numeric(10, 2))
-    copper = Column(Numeric(10, 2))
-    iron = Column(Numeric(10, 2))
-    zinc = Column(Numeric(10, 2))
     location_lat = Column(Numeric(10, 8))
     location_lng = Column(Numeric(11, 8))
     location_name = Column(String(255))
     
-    # Core prediction results
-    fertility_prediction = Column(String(50))
-    fertility_confidence = Column(Numeric(5, 4))
-    fertilizer_recommendation = Column(String(100))
-    fertilizer_confidence = Column(Numeric(5, 4))
-    crop_recommendation1 = Column(String(50))
-    crop_recommendation1_confidence = Column(Numeric(5, 4))
-    crop_recommendation2 = Column(String(50))
-    crop_recommendation2_confidence = Column(Numeric(5, 4))
+    # Analysis results
+    soil_health_index = Column(Numeric(5, 2))
+    initial_soil_fertility_status = Column(String(100))
+    soil_fertility_status = Column(String(100))
+    mentions = Column(JSONB, nullable=False, server_default='[]')
+    recommendations = Column(JSONB, nullable=False, server_default='[]')
     
-    # Structured AI response (stored as JSON)
-    structured_response = Column(JSONB, nullable=True)
-    
-    # Admin fields
-    is_flagged = Column(Boolean, default=False)  # Admin can flag problematic predictions
-    admin_notes = Column(Text, nullable=True)    # Admin notes about this prediction
+    # Metadata and Admin
+    is_flagged = Column(Boolean, default=False)
+    admin_notes = Column(Text, nullable=True)
     
     # Metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())

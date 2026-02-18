@@ -40,8 +40,8 @@ services:
       context: ./api
       dockerfile: Dockerfile
     container_name: agricultural_api
-    # ports:
-    #   - "8000:8000" # Exposed via Nginx only for security
+    ports:
+      - "8000:8000" # Exposed for direct testing (usually via Nginx)
     volumes:
       - ./api:/api
     env_file:

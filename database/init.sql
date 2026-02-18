@@ -28,37 +28,27 @@ CREATE TABLE IF NOT EXISTS soil_predictions (
     session_id VARCHAR(255),
     
     -- Input soil data
-    simplified_texture VARCHAR(50),
     soil_ph DECIMAL(4,2),
     nitrogen DECIMAL(10,2),
     phosphorus DECIMAL(10,2),
     potassium DECIMAL(10,2),
-    organic_matter DECIMAL(5,2),
+    organic_carbon DECIMAL(5,2),
     calcium DECIMAL(10,2),
     magnesium DECIMAL(10,2),
-    copper DECIMAL(10,2),
-    iron DECIMAL(10,2),
-    zinc DECIMAL(10,2),
     location_lat DECIMAL(10,8),
     location_lng DECIMAL(11,8),
     location_name VARCHAR(255),
     
-    -- Prediction results
-    fertility_prediction VARCHAR(50),
-    fertility_confidence DECIMAL(5,4),
-    fertilizer_recommendation VARCHAR(100),
-    fertilizer_confidence DECIMAL(5,4),
-    
-    -- Crop recommendations
-    crop_recommendation1 VARCHAR(50),
-    crop_recommendation1_confidence DECIMAL(5,4),
-    crop_recommendation2 VARCHAR(50),
-    crop_recommendation2_confidence DECIMAL(5,4),
-    
-    -- AI-generated content
-    structured_response JSONB,
+    -- Analysis results
+    soil_health_index DECIMAL(5,2),
+    initial_soil_fertility_status VARCHAR(100),
+    soil_fertility_status VARCHAR(100),
+    mentions JSONB NOT NULL DEFAULT '[]',
+    recommendations JSONB NOT NULL DEFAULT '[]',
     
     -- Metadata
+    is_flagged BOOLEAN DEFAULT FALSE,
+    admin_notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -77,6 +67,9 @@ CREATE TABLE IF NOT EXISTS agrovets (
     rating DECIMAL(2,1),
     services TEXT[],
     is_active BOOLEAN DEFAULT TRUE,
+    is_verified BOOLEAN DEFAULT FALSE,
+    admin_notes TEXT,
+    created_by UUID REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

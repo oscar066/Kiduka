@@ -87,8 +87,8 @@ class AdminDashboardService:
         
         # Get predictions by fertility status
         predictions_by_status_result = await self.db.execute(
-            select(SoilPrediction.fertility_prediction, func.count(SoilPrediction.id))
-            .group_by(SoilPrediction.fertility_prediction)
+            select(SoilPrediction.soil_fertility_status, func.count(SoilPrediction.id))
+            .group_by(SoilPrediction.soil_fertility_status)
         )
         predictions_by_status = {
             status or "Unknown": count 
@@ -151,18 +151,23 @@ class AdminDashboardService:
                 user_id=pred.user_id,
                 username=pred.user.username,
                 user_email=pred.user.email,
-                simplified_texture=pred.simplified_texture,
                 soil_ph=float(pred.soil_ph) if pred.soil_ph else None,
                 nitrogen=float(pred.nitrogen) if pred.nitrogen else None,
                 phosphorus=float(pred.phosphorus) if pred.phosphorus else None,
                 potassium=float(pred.potassium) if pred.potassium else None,
-                fertility_prediction=pred.fertility_prediction,
-                fertility_confidence=float(pred.fertility_confidence) if pred.fertility_confidence else None,
-                fertilizer_recommendation=pred.fertilizer_recommendation,
-                fertilizer_confidence=float(pred.fertilizer_confidence) if pred.fertilizer_confidence else None,
+                organic_carbon=float(pred.organic_carbon) if pred.organic_carbon else None,
+                calcium=float(pred.calcium) if pred.calcium else None,
+                magnesium=float(pred.magnesium) if pred.magnesium else None,
+                soil_health_index=float(pred.soil_health_index) if pred.soil_health_index else 0.0,
+                initial_soil_fertility_status=pred.initial_soil_fertility_status,
+                soil_fertility_status=pred.soil_fertility_status,
+                mentions=pred.mentions or [],
+                recommendations=pred.recommendations or [],
                 is_flagged=pred.is_flagged or False,
                 admin_notes=pred.admin_notes,
                 created_at=pred.created_at,
+                location_lat=float(pred.location_lat) if pred.location_lat else None,
+                location_lng=float(pred.location_lng) if pred.location_lng else None,
                 location_name=pred.location_name
             )
             for pred in recent_predictions_data

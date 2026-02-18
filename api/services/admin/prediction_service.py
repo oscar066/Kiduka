@@ -48,7 +48,7 @@ class AdminPredictionService:
                 conditions.append(SoilPrediction.is_flagged == is_flagged)
             
             if fertility_status:
-                conditions.append(SoilPrediction.fertility_prediction == fertility_status)
+                conditions.append(SoilPrediction.soil_fertility_status == fertility_status)
             
             if conditions:
                 stmt = stmt.where(and_(*conditions))
@@ -151,7 +151,7 @@ class AdminPredictionService:
             prediction_info = {
                 "user_id": str(prediction.user_id),
                 "username": prediction.user.username,
-                "fertility_prediction": prediction.fertility_prediction,
+                "soil_fertility_status": prediction.soil_fertility_status,
                 "created_at": prediction.created_at.isoformat()
             }
             
@@ -174,17 +174,22 @@ class AdminPredictionService:
             user_id=prediction.user_id,
             username=prediction.user.username,
             user_email=prediction.user.email,
-            simplified_texture=prediction.simplified_texture,
             soil_ph=float(prediction.soil_ph) if prediction.soil_ph else None,
             nitrogen=float(prediction.nitrogen) if prediction.nitrogen else None,
             phosphorus=float(prediction.phosphorus) if prediction.phosphorus else None,
             potassium=float(prediction.potassium) if prediction.potassium else None,
-            fertility_prediction=prediction.fertility_prediction,
-            fertility_confidence=float(prediction.fertility_confidence) if prediction.fertility_confidence else None,
-            fertilizer_recommendation=prediction.fertilizer_recommendation,
-            fertilizer_confidence=float(prediction.fertilizer_confidence) if prediction.fertilizer_confidence else None,
+            organic_carbon=float(prediction.organic_carbon) if prediction.organic_carbon else None,
+            calcium=float(prediction.calcium) if prediction.calcium else None,
+            magnesium=float(prediction.magnesium) if prediction.magnesium else None,
+            soil_health_index=float(prediction.soil_health_index) if prediction.soil_health_index else 0.0,
+            initial_soil_fertility_status=prediction.initial_soil_fertility_status,
+            soil_fertility_status=prediction.soil_fertility_status,
+            mentions=prediction.mentions or [],
+            recommendations=prediction.recommendations or [],
             is_flagged=prediction.is_flagged or False,
             admin_notes=prediction.admin_notes,
             created_at=prediction.created_at,
+            location_lat=float(prediction.location_lat) if prediction.location_lat else None,
+            location_lng=float(prediction.location_lng) if prediction.location_lng else None,
             location_name=prediction.location_name
         )

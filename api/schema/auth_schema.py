@@ -147,17 +147,20 @@ class AdminPredictionResponse(BaseModel):
     user_email: str
     
     # Soil data
-    simplified_texture: Optional[str]
     soil_ph: Optional[float]
     nitrogen: Optional[float]
     phosphorus: Optional[float]
     potassium: Optional[float]
+    organic_carbon: Optional[float]
+    calcium: Optional[float]
+    magnesium: Optional[float]
     
-    # Predictions
-    fertility_prediction: Optional[str]
-    fertility_confidence: Optional[float]
-    fertilizer_recommendation: Optional[str]
-    fertilizer_confidence: Optional[float]
+    # Analysis results
+    soil_health_index: float
+    initial_soil_fertility_status: str
+    soil_fertility_status: str
+    mentions: List[str] = []
+    recommendations: List[str] = []
     
     # Admin fields
     is_flagged: bool
@@ -165,6 +168,8 @@ class AdminPredictionResponse(BaseModel):
     
     # Metadata
     created_at: datetime
+    location_lat: Optional[float] = None
+    location_lng: Optional[float] = None
     location_name: Optional[str] = None
 
 class AdminPredictionUpdate(BaseModel):

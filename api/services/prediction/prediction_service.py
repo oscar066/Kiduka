@@ -1,15 +1,17 @@
 """
 Main prediction service - handles soil analysis workflow and database operations
 """
+import uuid
 import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from api.schema.schema import SoilData, PredictionResponse, WorkflowState
+from api.schema.schema import SoilData, PredictionResponse
 from api.db.models.database import User, SoilPrediction, Agrovet
 from api.utils.dependencies import dependency_manager
+from api.utils.soil_classifier import SoilHealthClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -32,47 +34,68 @@ class PredictionService:
             if not dependency_manager.is_initialized():
                 raise ValueError("Prediction service not properly initialized")
             
-            if not dependency_manager.validate_models_loaded():
-                raise ValueError("ML models not properly loaded")
-            
-            # Get workflow components
+            # Get components
             app_components = dependency_manager.get_components()
-            prediction_workflow = dependency_manager.get_workflow()
+            agrovet_locator = app_components.get('agrovet_locator')
             
-            # Initialize workflow state
-            initial_state: WorkflowState = {
-                "soil_data": soil_data.model_dump(),
-                "fertility_prediction": None,
-                "fertility_confidence": None,
-                "fertilizer_prediction": None,
-                "fertilizer_confidence": None,
-                "nearest_agrovets": [],
-                "app_components": app_components,
-                "detailed_explanation": None,
-                "categorized_recommendations": None,
-                "structured_response": None,
-                "fertilizer_justification": None,
-                "confidence_assessment": None,
-                "long_term_strategy": None
+            # Initialize classifier
+            classifier = SoilHealthClassifier()
+            
+            # Run classification
+            logger.info("Running soil classification...")
+            soil_dict = soil_data.model_dump()
+            # Map input keys to classifier expected keys if necessary, but schema matches roughly
+            # SoilData keys: ph, n, p, k, o (organic matter), ca, mg
+            # Classifier keys: pH, N, P, K, OC, Ca, Mg
+            # We need to map 'o' to 'OC' and 'ph' to 'pH'
+            mapping = {
+                "pH": "ph",
+                "N": "n", 
+                "OC": "organic_carbon",
+                "P": "p", 
+                "K": "k", 
+                "Ca": "ca", 
+                "Mg": "mg"
             }
             
-            # Run prediction workflow
-            logger.info("Executing prediction workflow...")
-            result = await prediction_workflow.ainvoke(initial_state)
+            classification_result = classifier.process_row(soil_dict, col_map=mapping)
+            
+            # Find nearest agrovets
+            nearest_agrovets = []
+            if agrovet_locator:
+                nearest_agrovets = agrovet_locator.find_nearest_agrovets(
+                    user_lat=soil_data.latitude,
+                    user_lon=soil_data.longitude
+                )
+            
+            # Extract results
+            shi_score = classification_result.get("SHI_Score", 0.0)
+            initial_status = classification_result.get("Initial_Class", "UNKNOWN")
+            final_status = classification_result.get("Final_Soil_Status", "UNKNOWN")
+            recommendations_str = classification_result.get("Recommendations", "")
+            recommendations_list = [r.strip() for r in recommendations_str.split(";") if r.strip()]
+            mentions = classification_result.get("Mentions", [])
+            
+            # Simplified result mapping
+            result = {
+                "soil_health_index": shi_score,
+                "initial_soil_fertility_status": initial_status,
+                "soil_fertility_status": final_status,
+                "mentions": mentions,
+                "recommendations": recommendations_list,
+                "nearest_agrovets": nearest_agrovets
+            }
             
             # Create response
             response = PredictionResponse(
-                soil_fertility_status=result.get("fertility_prediction", "UNKNOWN"),
-                soil_fertility_confidence=result.get("fertility_confidence", 0.0),
-                fertilizer_recommendation=result.get("fertilizer_prediction", "UNKNOWN"), 
-                fertilizer_confidence=result.get("fertilizer_confidence", 0.0),
-                crop_recommendation1=result.get("crop_recommendation1", "UNKNOWN"),
-                crop_recommendation1_confidence=result.get("crop_recommendation1_confidence", 0.0),
-                crop_recommendation2=result.get("crop_recommendation2", "UNKNOWN"),
-                crop_recommendation2_confidence=result.get("crop_recommendation2_confidence", 0.0),
-                nearest_agrovets=result.get("nearest_agrovets", []),
-                structured_response=result.get("structured_response", None),
-                timestamp=datetime.now().isoformat()
+                soil_health_index=shi_score,
+                initial_soil_fertility_status=initial_status,
+                soil_fertility_status=final_status,
+                mentions=mentions,
+                recommendations=recommendations_list,
+                nearest_agrovets=nearest_agrovets,
+                prediction_id=uuid.uuid4(), # Generate ID if not already present
+                timestamp=datetime.now()
             )
             
             # Save to database if user is authenticated
@@ -122,30 +145,22 @@ class PredictionService:
             # Create prediction record
             prediction = SoilPrediction(
                 user_id=user_id,
-                simplified_texture=soil_data.get('simplified_texture'),
                 soil_ph=soil_data.get('ph'),
                 nitrogen=soil_data.get('n'),
                 phosphorus=soil_data.get('p'),
                 potassium=soil_data.get('k'),
-                organic_matter=soil_data.get('o'),
+                organic_carbon=soil_data.get('organic_carbon'),
                 calcium=soil_data.get('ca'),
                 magnesium=soil_data.get('mg'),
-                copper=soil_data.get('cu'),
-                iron=soil_data.get('fe'),
-                zinc=soil_data.get('zn'),
                 location_lat=soil_data.get('latitude'),
                 location_lng=soil_data.get('longitude'),
                 location_name=soil_data.get('location_name'),
-                fertility_prediction=result.get("fertility_prediction"),
-                fertility_confidence=result.get("fertility_confidence"),
-                fertilizer_recommendation=result.get("fertilizer_prediction"),
-                fertilizer_confidence=result.get("fertilizer_confidence"),
-                crop_recommendation1=result.get("crop_recommendation1"),
-                crop_recommendation1_confidence=result.get("crop_recommendation1_confidence", 0.0),
-                crop_recommendation2=result.get("crop_recommendation2"),
-                crop_recommendation2_confidence=result.get("crop_recommendation2_confidence", 0.0),
-                structured_response=result.get("structured_response"),
-                agrovets=agrovet_objects  # This is the key fix - ensure it's never None
+                soil_health_index=result.get("soil_health_index", 0.0),
+                initial_soil_fertility_status=result.get("initial_soil_fertility_status"),
+                soil_fertility_status=result.get("soil_fertility_status"),
+                mentions=result.get("mentions", []),
+                recommendations=result.get("recommendations", []),
+                agrovets=agrovet_objects
             )
             
             self.db.add(prediction)

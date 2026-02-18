@@ -1,9 +1,7 @@
 """This module defines the schema Agents State, APIs response and SoilData input."""
 from .schema import (
-    WorkflowState, 
     PredictionResponse, 
-    SoilData, Recommendation, 
-    SoilExplanation, SoilAnalysisResponse, 
+    SoilData, 
     RecommendationDict, DetailedExplanationDict,
     PredictionListResponse, PredictionHistory, AgrovetInfo,
     )
@@ -16,12 +14,8 @@ from .auth_schema import (
 
 __all__ = [
     # Schema imports
-    "WorkflowState",
     "PredictionResponse",
     "SoilData",
-    "Recommendation",
-    "SoilExplanation",
-    "SoilAnalysisResponse",
     "RecommendationDict",
     "DetailedExplanationDict",
     "PredictionListResponse",
