@@ -4,7 +4,7 @@ Utility package for the Kiduka Prediction API.
 from .config import AppConfig
 from .initialization import initialize_app_components, initialize_agrovet_locator
 from .logging_config import setup_logger
-from .agrovet import AgrovetLocator, AgrovetInfo, AgrovetResponse, UserLocation
+from .agrovet import AgrovetLocator
 from .session import SessionManager
 from .dependencies import DependencyManager
 from .soil_classifier import SoilHealthClassifier
@@ -21,9 +21,6 @@ __all__ = [
 
     # Agrovet utilities
     "AgrovetLocator",
-    "AgrovetInfo",
-    "AgrovetResponse",
-    "UserLocation",
 
     # Session management utilities
     "SessionManager",

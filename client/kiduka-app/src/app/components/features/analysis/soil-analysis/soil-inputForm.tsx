@@ -11,13 +11,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Beaker, Loader2, AlertCircle } from "lucide-react";
 
@@ -55,7 +48,6 @@ export function SoilInputForm({
 
   const isFormValid = () => {
     return (
-      soilData.simplified_texture &&
       soilData.ph > 0 &&
       soilData.latitude !== 0 &&
       soilData.longitude !== 0
@@ -75,7 +67,7 @@ export function SoilInputForm({
       </CardHeader>
       <CardContent className="p-6">
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-green-50">
+          <TabsList className="grid w-full grid-cols-2 bg-green-50">
             <TabsTrigger
               value="basic"
               className="data-[state=active]:bg-green-600 data-[state=active]:text-white"
@@ -86,39 +78,11 @@ export function SoilInputForm({
               value="nutrients"
               className="data-[state=active]:bg-green-600 data-[state=active]:text-white"
             >
-              Macro
-            </TabsTrigger>
-            <TabsTrigger
-              value="micronutrients"
-              className="data-[state=active]:bg-green-600 data-[state=active]:text-white"
-            >
-              Micro
+              Nutrients
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="texture" className="text-green-700 font-medium">
-                Soil Texture
-              </Label>
-              <Select
-                value={soilData.simplified_texture}
-                onValueChange={(value) =>
-                  handleInputChange("simplified_texture", value)
-                }
-              >
-                <SelectTrigger className="border-amber-200 focus:border-green-500">
-                  <SelectValue placeholder="Select soil texture" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Sandy">Sandy</SelectItem>
-                  <SelectItem value="Loamy">Loamy</SelectItem>
-                  <SelectItem value="Clay">Clay</SelectItem>
-                  <SelectItem value="Silty">Silty</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="ph" className="text-green-700 font-medium">
                 pH Level
@@ -137,18 +101,18 @@ export function SoilInputForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="organic" className="text-green-700 font-medium">
-                Organic Content (%)
+              <Label htmlFor="organic_carbon" className="text-green-700 font-medium">
+                Organic Carbon (%)
               </Label>
               <Input
-                id="organic"
+                id="organic_carbon"
                 type="number"
                 step="0.1"
                 placeholder="2.5"
-                value={soilData.o || ""}
+                value={soilData.organic_carbon || ""}
                 className="border-amber-200 focus:border-green-500"
                 onChange={(e) =>
-                  handleInputChange("o", Number.parseFloat(e.target.value) || 0)
+                  handleInputChange("organic_carbon", Number.parseFloat(e.target.value) || 0)
                 }
               />
             </div>
@@ -160,22 +124,37 @@ export function SoilInputForm({
                 {
                   key: "n" as keyof SoilInput,
                   label: "Nitrogen (N)",
-                  placeholder: "45.5",
+                  placeholder: "0.20",
+                  unit: "%",
                 },
                 {
                   key: "p" as keyof SoilInput,
                   label: "Phosphorus (P)",
                   placeholder: "35.2",
+                  unit: "ppm",
                 },
                 {
                   key: "k" as keyof SoilInput,
                   label: "Potassium (K)",
                   placeholder: "180.0",
+                  unit: "ppm",
+                },
+                {
+                  key: "ca" as keyof SoilInput,
+                  label: "Calcium (Ca)",
+                  placeholder: "1250",
+                  unit: "ppm",
+                },
+                {
+                  key: "mg" as keyof SoilInput,
+                  label: "Magnesium (Mg)",
+                  placeholder: "220",
+                  unit: "ppm",
                 },
               ].map((nutrient) => (
                 <div key={nutrient.key} className="space-y-2">
                   <Label className="text-green-700 font-medium">
-                    {nutrient.label} (mg/kg)
+                    {nutrient.label} ({nutrient.unit})
                   </Label>
                   <Input
                     type="number"
@@ -186,57 +165,6 @@ export function SoilInputForm({
                     onChange={(e) =>
                       handleInputChange(
                         nutrient.key,
-                        Number.parseFloat(e.target.value) || 0
-                      )
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="micronutrients" className="space-y-4 mt-4">
-            <div className="grid grid-cols-1 gap-4">
-              {[
-                {
-                  key: "ca" as keyof SoilInput,
-                  label: "Calcium (Ca)",
-                  placeholder: "1250",
-                },
-                {
-                  key: "mg" as keyof SoilInput,
-                  label: "Magnesium (Mg)",
-                  placeholder: "220",
-                },
-                {
-                  key: "cu" as keyof SoilInput,
-                  label: "Copper (Cu)",
-                  placeholder: "1.8",
-                },
-                {
-                  key: "fe" as keyof SoilInput,
-                  label: "Iron (Fe)",
-                  placeholder: "45.0",
-                },
-                {
-                  key: "zn" as keyof SoilInput,
-                  label: "Zinc (Zn)",
-                  placeholder: "2.2",
-                },
-              ].map((micronutrient) => (
-                <div key={micronutrient.key} className="space-y-2">
-                  <Label className="text-green-700 font-medium">
-                    {micronutrient.label} (mg/kg)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    placeholder={micronutrient.placeholder}
-                    value={soilData[micronutrient.key] || ""}
-                    className="border-amber-200 focus:border-green-500"
-                    onChange={(e) =>
-                      handleInputChange(
-                        micronutrient.key,
                         Number.parseFloat(e.target.value) || 0
                       )
                     }

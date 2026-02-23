@@ -17,9 +17,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # Local imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# Import schemas
-# from api.schema.schema import WorkflowState # Not needed in main
-
 # Import modularized components
 from api.utils.config import AppConfig
 from api.utils.initialization import initialize_app_components

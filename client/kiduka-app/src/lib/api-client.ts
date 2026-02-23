@@ -3,6 +3,8 @@
  * Handles all HTTP requests to authentication and admin endpoints
  */
 
+import type { SoilInput, PredictionResponse } from '@/types/soil-analysis';
+
 // User Role Types
 export enum UserRole {
   USER = "user",
@@ -82,20 +84,25 @@ export interface ApiError {
 }
 
 export class ApiClient {
-  private baseUrl: string;
-
-  constructor() {
-    // FIX 1: Enhanced Environment Handling
+  /**
+   * Get the base URL for API requests.
+   * This is dynamically determined to ensure correctness across SSR and CSR.
+   */
+  private get baseUrl(): string {
     if (typeof window === 'undefined') {
       // SERVER-SIDE (SSR): 
-      // Use internal Docker network URL. Defaults to 'http://api:8000' if API_URL env is missing.
-      this.baseUrl = process.env.API_URL || 'http://api:8000';
+      // Use internal Docker network URL.
+      return process.env.API_URL || 'http://api:8000';
     } else {
       // CLIENT-SIDE (Browser):
-      // Use Nginx proxy path. Defaults to '/api' to ensure we hit Nginx port 80.
-      // NEVER default to 127.0.0.1:8000 here, as that port is closed in Docker.
-      this.baseUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+      // ALWAYS use the relative /api path which is proxied by Nginx
+      // This prevents leaking internal Docker hostnames to the browser
+      return '/api';
     }
+  }
+
+  constructor() {
+    // No longer need to initialize baseUrl here as it's a getter
   }
 
   /**
@@ -116,6 +123,7 @@ export class ApiClient {
     };
 
     try {
+      console.log(`API Request: ${config.method || 'GET'} ${url}`);
       const response = await fetch(url, config);
       
       if (!response.ok) {
@@ -157,7 +165,7 @@ export class ApiClient {
     };
   }
 
-  // ===== AUTHENTICATION ENDPOINTS =====
+  // AUTHENTICATION ENDPOINTS
 
   /**
    * Register a new user
@@ -253,7 +261,7 @@ export class ApiClient {
     });
   }
 
-  // ===== ADMIN ENDPOINTS =====
+  // ADMIN ENDPOINTS
 
   /**
    * Get admin dashboard data
@@ -284,7 +292,7 @@ export class ApiClient {
     if (role) params.append('role', role);
     if (is_active !== undefined) params.append('is_active', is_active.toString());
 
-    return this.request(`/admin/users/?${params.toString()}`, {
+    return this.request(`/admin/users?${params.toString()}`, {
       headers: this.getAuthHeaders(token),
     });
   }
@@ -360,7 +368,7 @@ export class ApiClient {
     },
     token: string
   ): Promise<AdminUserResponse> {
-    return this.request('/admin/users/', {
+    return this.request('/admin/users', {
       method: 'POST',
       headers: this.getAuthHeaders(token),
       body: JSON.stringify(userData),
@@ -385,7 +393,7 @@ export class ApiClient {
     if (userId) params.append('user_id', userId);
     if (flagged !== undefined) params.append('flagged', flagged.toString());
 
-    return this.request(`/admin/predictions/?${params.toString()}`, {
+    return this.request(`/admin/predictions?${params.toString()}`, {
       headers: this.getAuthHeaders(token),
     });
   }
@@ -436,7 +444,7 @@ export class ApiClient {
     if (adminUserId) params.append('admin_user_id', adminUserId);
     if (action) params.append('action', action);
 
-    return this.request(`/admin/audit-logs/?${params.toString()}`, {
+    return this.request(`/admin/audit-logs?${params.toString()}`, {
       headers: this.getAuthHeaders(token),
     });
   }
@@ -445,7 +453,7 @@ export class ApiClient {
    * Get admin statistics
    */
   async getAdminStats(token: string): Promise<any> {
-    return this.request('/admin/stats/', {
+    return this.request('/admin/stats', {
       headers: this.getAuthHeaders(token),
     });
   }
@@ -463,7 +471,7 @@ export class ApiClient {
       size: size.toString(),
     });
 
-    return this.request(`/admin/agrovets/?${params.toString()}`, {
+    return this.request(`/admin/agrovets?${params.toString()}`, {
       headers: this.getAuthHeaders(token),
     });
   }
@@ -483,12 +491,12 @@ export class ApiClient {
     });
   }
 
-  // ===== PREDICTION ENDPOINTS =====
+  // PREDICTION ENDPOINTS
 
   /**
    * Make soil prediction
    */
-  async makePrediction(soilData: any, token?: string): Promise<any> {
+  async makePrediction(soilData: SoilInput, token?: string): Promise<PredictionResponse> {
     const headers = token ? this.getAuthHeaders(token) : {};   
     return this.request('/predictions/predict', {
       method: 'POST',
@@ -510,7 +518,7 @@ export class ApiClient {
       size: size.toString(),
     });
 
-    return this.request(`/predictions/history/?${params.toString()}`, {
+    return this.request(`/predictions/history?${params.toString()}`, {
       headers: this.getAuthHeaders(token),
     });
   }

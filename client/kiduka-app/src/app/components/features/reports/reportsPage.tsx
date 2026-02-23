@@ -49,13 +49,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
-import { SoilData } from "@/types/soil-analysis";
+import { PredictionHistory } from "@/types/soil-analysis";
 import { getStatusColor } from "@/lib/soil-analysis-helper";
-
-interface PredictionHistory extends SoilData {
-  id: string;
-  user_id: string;
-}
 
 interface PredictionListResponse {
   predictions: PredictionHistory[];
@@ -150,10 +145,10 @@ export default function ReportsPage() {
 
   const filteredReports = reports.filter(
     (report) =>
-      report.fertility_prediction
+      report.soil_fertility_status
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      report.fertilizer_recommendation
+      report.recommendations?.[0]
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       report.location_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -266,10 +261,10 @@ export default function ReportsPage() {
                             <SelectItem value="created_at">
                               Date Created
                             </SelectItem>
-                            <SelectItem value="fertility_prediction">
+                            <SelectItem value="soil_fertility_status">
                               Fertility Status
                             </SelectItem>
-                            <SelectItem value="fertilizer_recommendation">
+                            <SelectItem value="recommendations">
                               Fertilizer
                             </SelectItem>
                           </SelectContent>
@@ -335,13 +330,13 @@ export default function ReportsPage() {
                               <div className="flex items-center gap-4 mb-2">
                                 <span
                                   className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                                    report.fertility_prediction
+                                    report.soil_fertility_status
                                   )}`}
                                 >
-                                  {report.fertility_prediction}
+                                  {report.soil_fertility_status}
                                 </span>
                                 <span className="text-sm text-gray-600">
-                                  {report.fertilizer_recommendation} Recommended
+                                  {report.recommendations?.[0] || "No Recommendations"}
                                 </span>
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-600">
@@ -469,24 +464,60 @@ export default function ReportsPage() {
               </div>
 
               {/* Report Summary Cards - Using shared component */}
-              <StatusSummaryCards soilData={selectedReport} />
+              <StatusSummaryCards 
+                results={{
+                  ...selectedReport,
+                  timestamp: selectedReport.created_at,
+                  nearest_agrovets: selectedReport.agrovets
+                } as any}
+                soilInput={{
+                  ph: selectedReport.soil_ph || 0,
+                  n: selectedReport.nitrogen || 0,
+                  p: selectedReport.phosphorus || 0,
+                  k: selectedReport.potassium || 0,
+                  organic_carbon: selectedReport.organic_carbon || 0,
+                  ca: selectedReport.calcium || 0,
+                  mg: selectedReport.magnesium || 0,
+                  latitude: selectedReport.location_lat || 0,
+                  longitude: selectedReport.location_lng || 0,
+                }}
+              />
 
               {/* Nutrient Analysis - Using shared component */}
-              <NutrientDisplay soilData={selectedReport} />
+              <NutrientDisplay 
+                soilInput={{
+                  ph: selectedReport.soil_ph || 0,
+                  n: selectedReport.nitrogen || 0,
+                  p: selectedReport.phosphorus || 0,
+                  k: selectedReport.potassium || 0,
+                  organic_carbon: selectedReport.organic_carbon || 0,
+                  ca: selectedReport.calcium || 0,
+                  mg: selectedReport.magnesium || 0,
+                  latitude: selectedReport.location_lat || 0,
+                  longitude: selectedReport.location_lng || 0,
+                }} 
+              />
 
               {/* Comprehensive Analysis - Using shared component */}
-              {selectedReport.structured_response && (
-                <ComprehensiveAnalysis
-                  structuredResponse={selectedReport.structured_response}
-                />
-              )}
+              <ComprehensiveAnalysis
+                results={selectedReport as any}
+                soilInput={{
+                  ph: selectedReport.soil_ph || 0,
+                  n: selectedReport.nitrogen || 0,
+                  p: selectedReport.phosphorus || 0,
+                  k: selectedReport.potassium || 0,
+                  organic_carbon: selectedReport.organic_carbon || 0,
+                  ca: selectedReport.calcium || 0,
+                  mg: selectedReport.magnesium || 0,
+                  latitude: selectedReport.location_lat || 0,
+                  longitude: selectedReport.location_lng || 0,
+                }}
+              />
 
               {/* Action Plan & Recommendations - Using shared component */}
-              {selectedReport.structured_response && (
-                <ActionPlanRecommendations
-                  structuredResponse={selectedReport.structured_response}
-                />
-              )}
+              <ActionPlanRecommendations
+                recommendations={selectedReport.recommendations || []}
+              />
 
               {/* Agrovets - Using shared component */}
               {selectedReport.agrovets && (

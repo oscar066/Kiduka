@@ -21,14 +21,16 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: /api
+        API_URL: http://api:8000
     container_name: agricultural_client
-    # ports:
-    #   - "3000:3000" # Exposed via Nginx
+    ports:
+      - "3000:3000"
     networks:
       - agri-network
     environment:
       - API_URL=http://api:8000
-      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      # - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
     depends_on:
       - api

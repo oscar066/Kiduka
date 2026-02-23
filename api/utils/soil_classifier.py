@@ -4,6 +4,7 @@ from api.utils.logging_config import setup_logger
 logger = setup_logger("SoilHealthClassifier")
 
 # The Soil Health Classifier Class
+
 class SoilHealthClassifier:
     def __init__(self):
         # Weights
@@ -126,8 +127,6 @@ class SoilHealthClassifier:
         try:
             # Default mapping if none provided
             if col_map is None:
-                # Assuming the input keys match the expected keys directly for simplicity
-                # but supporting mapping if keys differ
                 col_map = {"pH": "pH", "N": "N", "OC": "OC", "P": "P", "K": "K", "Ca": "Ca", "Mg": "Mg"}
 
             # Extract values based on user mapping

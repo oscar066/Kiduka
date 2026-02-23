@@ -11,13 +11,11 @@ import {
   Droplets,
   Sparkles,
   Atom,
-  Beaker,
-  Shield,
 } from "lucide-react";
-import { SoilData } from "@/types/soil-analysis";
+import { SoilInput } from "@/types/soil-analysis";
 
 interface NutrientDisplayProps {
-  soilData: SoilData;
+  soilInput: SoilInput;
   title?: string;
   showOptimalRanges?: boolean;
 }
@@ -38,7 +36,6 @@ function NutrientGaugeItem({
   icon,
 }: NutrientGaugeItemProps) {
   // Calculate percentage for progress bar (normalize to 0-100 range)
-  // We allow it to go slightly over 100 internally for calculation, but cap visual at 100
   const percentage = Math.min((value / optimal.max) * 100, 100);
 
   // Determine status based on optimal range
@@ -118,88 +115,55 @@ function NutrientGaugeItem({
 }
 
 export function NutrientDisplay({
-  soilData,
+  soilInput,
   title = "Nutrient Analysis",
   showOptimalRanges = false,
 }: NutrientDisplayProps) {
   
-  // Ranges based on Mehlich-3 extraction standards & Agronomic Credibility
   const nutrientData = [
     {
-      name: "Nitrogen (NO3-N)",
-      value: soilData.nitrogen || 0,
-      unit: "ppm",
-      optimal: { min: 20, max: 40 },
+      name: "Nitrogen (N)",
+      value: soilInput.n || 0,
+      unit: "%",
+      optimal: { min: 0.15, max: 0.30 },
       icon: <Leaf className="h-4 w-4 text-green-600" />,
     },
     {
       name: "Phosphorus (P)",
-      value: soilData.phosphorus || 0,
-      unit: "mg/kg",
-      optimal: { min: 30, max: 70 },
+      value: soilInput.p || 0,
+      unit: "ppm",
+      optimal: { min: 20, max: 50 },
       icon: <Zap className="h-4 w-4 text-yellow-600" />,
     },
     {
       name: "Potassium (K)",
-      value: soilData.potassium || 0,
-      unit: "mg/kg",
-      optimal: { min: 150, max: 250 },
+      value: soilInput.k || 0,
+      unit: "ppm",
+      optimal: { min: 80, max: 200 },
       icon: <Mountain className="h-4 w-4 text-purple-600" />,
     },
     {
       name: "Calcium (Ca)",
-      value: soilData.calcium || 0,
-      unit: "mg/kg",
-      optimal: { min: 1000, max: 2000 },
+      value: soilInput.ca || 0,
+      unit: "ppm",
+      optimal: { min: 1000, max: 2500 },
       icon: <Droplets className="h-4 w-4 text-blue-600" />,
     },
     {
       name: "Magnesium (Mg)",
-      value: soilData.magnesium || 0,
-      unit: "mg/kg",
-      optimal: { min: 60, max: 300 },
+      value: soilInput.mg || 0,
+      unit: "ppm",
+      optimal: { min: 150, max: 350 },
       icon: <Sparkles className="h-4 w-4 text-pink-600" />,
     },
     {
-      name: "Organic Matter",
-      value: soilData.organic_matter || 0,
+      name: "Organic Carbon",
+      value: soilInput.organic_carbon || 0,
       unit: "%",
-      optimal: { min: 3.0, max: 6.0 },
+      optimal: { min: 2.0, max: 4.0 },
       icon: <Atom className="h-4 w-4 text-amber-600" />,
     },
   ];
-
-  // Add micronutrients if they exist
-  // Micronutrient ranges based on Mehlich-3
-  const micronutrients = [
-    {
-      name: "Copper (Cu)",
-      value: soilData.copper || 0,
-      unit: "mg/kg",
-      optimal: { min: 1.0, max: 5.0 },
-      icon: <Beaker className="h-4 w-4 text-orange-600" />,
-    },
-    {
-      name: "Iron (Fe)",
-      value: soilData.iron || 0,
-      unit: "mg/kg",
-      optimal: { min: 50, max: 150 }, // Fe extracts high in M3
-      icon: <Shield className="h-4 w-4 text-gray-600" />,
-    },
-    {
-      name: "Zinc (Zn)",
-      value: soilData.zinc || 0,
-      unit: "mg/kg",
-      optimal: { min: 2.0, max: 10.0 },
-      icon: <Sparkles className="h-4 w-4 text-indigo-600" />,
-    },
-  ];
-
-  // Filter out micronutrients with zero values
-  const availableMicronutrients = micronutrients.filter(
-    (nutrient) => nutrient.value > 0
-  );
-  const allNutrients = [...nutrientData, ...availableMicronutrients];
 
   return (
     <Card className="border-amber-200 bg-white shadow-lg">
@@ -214,7 +178,7 @@ export function NutrientDisplay({
       </CardHeader>
       <CardContent className="p-6">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {allNutrients.map((nutrient) => (
+          {nutrientData.map((nutrient) => (
             <NutrientGaugeItem
               key={nutrient.name}
               name={nutrient.name}
@@ -246,7 +210,6 @@ export function NutrientDisplay({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                {/* Visualized as Blue for High-Value Tolerance */}
                 <div className="w-3 h-3 bg-blue-500 rounded"></div>
                 <span className="text-blue-700">
                   Above Optimal - High reserves

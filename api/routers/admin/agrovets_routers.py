@@ -19,7 +19,7 @@ router = APIRouter()
 async def get_agrovet_service(db: AsyncSession = Depends(get_db)) -> AdminAgrovetService:
     return AdminAgrovetService(db)
 
-@router.get("/")
+@router.get("")
 async def get_all_agrovets(
     current_user: User = Depends(get_current_admin_user),
     agrovet_service: AdminAgrovetService = Depends(get_agrovet_service),
