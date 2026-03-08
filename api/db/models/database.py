@@ -113,6 +113,11 @@ class SoilPrediction(Base):
     mentions = Column(JSONB, nullable=False, server_default='[]')
     recommendations = Column(JSONB, nullable=False, server_default='[]')
     
+    # ML Metadata
+    prediction_mode = Column(String(50), nullable=True) # "FORMULA" or "ML"
+    confidence_data = Column(JSONB, nullable=True)    # Store confidence metrics
+    nutrients = Column(JSONB, nullable=True)          # Store uniform nutrient scores/labels
+    
     # Metadata and Admin
     is_flagged = Column(Boolean, default=False)
     admin_notes = Column(Text, nullable=True)
