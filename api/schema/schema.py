@@ -7,12 +7,14 @@ from typing import List, Dict, Any, Optional, TypedDict
 class SoilData(BaseModel):
     """Input soil data model"""
     ph: float = Field(..., description="Soil pH level", ge=0, le=14)
-    n: float = Field(..., description="Nitrogen content", ge=0)
-    p: float = Field(..., description="Phosphorus content", ge=0)
-    k: float = Field(..., description="Potassium content", ge=0)
-    organic_carbon: float = Field(..., description="Organic Carbon content (%)", ge=0)
-    ca: float = Field(..., description="Calcium content", ge=0)
-    mg: float = Field(..., description="Magnesium content", ge=0)
+    n: Optional[float] = Field(None, description="Nitrogen content", ge=0)
+    p: Optional[float] = Field(None, description="Phosphorus content", ge=0)
+    k: Optional[float] = Field(None, description="Potassium content", ge=0)
+    organic_carbon: Optional[float] = Field(None, description="Organic Carbon content (%)", ge=0)
+    ca: Optional[float] = Field(None, description="Calcium content", ge=0)
+    mg: Optional[float] = Field(None, description="Magnesium content", ge=0)
+    ph_score: Optional[int] = Field(None, description="Optional pH score (1-4) for ML model", ge=1, le=4)
+    year: Optional[int] = Field(2025, description="Year for Earth Engine satellite data fetch")
     latitude: float = Field(..., description="Location latitude", ge=-90, le=90)
     longitude: float = Field(..., description="Location longitude", ge=-180, le=180)
 
@@ -49,8 +51,11 @@ class PredictionResponse(BaseModel):
     
     # Enhanced information
     nearest_agrovets: List[AgrovetInfo] = []
+    nutrients: Dict[str, Dict[str, Any]] = Field(default_factory=dict, description="Detailed nutrient scores (score and label)")
     
     # Metadata
+    prediction_mode: Optional[str] = Field(None, description="Prediction method: 'FORMULA' or 'ML'")
+    confidence: Optional[Dict[str, Any]] = Field(None, description="Confidence metrics for ML predictions")
     prediction_id: Optional[uuid.UUID] = None
     timestamp: datetime
 
@@ -79,6 +84,12 @@ class PredictionHistory(BaseModel):
     soil_fertility_status: str
     mentions: List[str] = Field(default_factory=list)
     recommendations: List[str] = Field(default_factory=list)
+    nutrients: Dict[str, Dict[str, Any]] = Field(default_factory=dict, description="Detailed nutrient scores")
+    
+    
+    # ML Metadata
+    prediction_mode: Optional[str] = None
+    confidence_data: Optional[Dict[str, Any]] = None
     
     # Associated agrovets
     agrovets: List[AgrovetInfo] = []
