@@ -49,6 +49,7 @@ export function SoilInputForm({
   const isFormValid = () => {
     return (
       soilData.ph > 0 &&
+      soilData.ph <= 14 &&
       soilData.latitude !== 0 &&
       soilData.longitude !== 0
     );
@@ -72,20 +73,20 @@ export function SoilInputForm({
               value="basic"
               className="data-[state=active]:bg-green-600 data-[state=active]:text-white"
             >
-              Basic
+              Basic (Required)
             </TabsTrigger>
             <TabsTrigger
               value="nutrients"
               className="data-[state=active]:bg-green-600 data-[state=active]:text-white"
             >
-              Nutrients
+              Nutrients (Optional)
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="ph" className="text-green-700 font-medium">
-                pH Level
+                pH Level <span className="text-red-500 font-bold">*</span>
               </Label>
               <Input
                 id="ph"
@@ -102,7 +103,7 @@ export function SoilInputForm({
 
             <div className="space-y-2">
               <Label htmlFor="organic_carbon" className="text-green-700 font-medium">
-                Organic Carbon (%)
+                Organic Carbon (%) <span className="text-gray-400 font-normal italic">(Optional)</span>
               </Label>
               <Input
                 id="organic_carbon"
@@ -154,7 +155,7 @@ export function SoilInputForm({
               ].map((nutrient) => (
                 <div key={nutrient.key} className="space-y-2">
                   <Label className="text-green-700 font-medium">
-                    {nutrient.label} ({nutrient.unit})
+                    {nutrient.label} ({nutrient.unit}) <span className="text-gray-400 font-normal italic text-xs">(Optional)</span>
                   </Label>
                   <Input
                     type="number"

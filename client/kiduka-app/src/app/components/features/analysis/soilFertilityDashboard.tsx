@@ -1,4 +1,3 @@
-// components/SoilFertilityDashboard.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -47,7 +46,7 @@ export default function SoilFertilityDashboard() {
     longitude: 0,
   });
 
-  const [results, setResults] = useState<PredictionResponse | null>(null);
+  const[results, setResults] = useState<PredictionResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,7 +56,7 @@ export default function SoilFertilityDashboard() {
     if (status === "unauthenticated") {
       router.push("/auth/login");
     }
-  }, [status, router]);
+  },[status, router]);
 
   // Loading screen
   if (status === "loading") {
@@ -132,25 +131,32 @@ export default function SoilFertilityDashboard() {
       return;
     }
 
-    // Validate numeric fields are greater than 0
-    const numericFields = ['ph', 'n', 'p', 'k', 'organic_carbon', 'ca', 'mg'] as const;
-    for (const field of numericFields) {
-      if (soilData[field] <= 0) {
-        setError(`Please enter a valid ${field.toUpperCase()} value (must be greater than 0).`);
-        return;
-      }
-    }
-
-    // Validate pH range
-    if (soilData.ph > 14) {
-      setError("pH must be between 0 and 14.");
+    // Validate pH is required and within limits
+    if (!soilData.ph || soilData.ph <= 0 || soilData.ph > 14) {
+      setError("Please enter a valid pH value (must be between 0 and 14).");
       return;
     }
 
-    // Validate location
+    // Validate location is required
     if (!soilData.latitude || !soilData.longitude) {
       setError("Please enable location detection or enter coordinates.");
       return;
+    }
+
+    // Build the payload dynamically to drop missing/zero fields 
+    // so the backend triggers the ML prediction mode correctly
+    const payload: any = {
+      ph: soilData.ph,
+      latitude: soilData.latitude,
+      longitude: soilData.longitude,
+    };
+
+    const optionalFields =['n', 'p', 'k', 'organic_carbon', 'ca', 'mg'] as const;
+    for (const field of optionalFields) {
+      // Only attach optional fields if they have a real value > 0
+      if (soilData[field] && soilData[field] > 0) {
+        payload[field] = soilData[field];
+      }
     }
 
     setIsLoading(true);
@@ -158,7 +164,7 @@ export default function SoilFertilityDashboard() {
 
     try {
       const apiResults = await apiClient.makePrediction(
-        soilData,
+        payload as SoilInput,
         session.accessToken
       );
       const resultsWithTimestamp: PredictionResponse = {
@@ -241,6 +247,7 @@ export default function SoilFertilityDashboard() {
                   {/* Nutrient Analysis */}
                   <NutrientDisplay
                     soilInput={soilData}
+                    results={results}
                     showOptimalRanges={true}
                   />
 

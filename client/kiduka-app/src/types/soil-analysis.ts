@@ -34,6 +34,9 @@ export interface PredictionResponse {
   mentions: string[];
   recommendations: string[];
   nearest_agrovets: AgrovetInfo[];
+  nutrients?: Record<string, { score: number; label: string }>;
+  prediction_mode?: "FORMULA" | "ML";
+  confidence?: Record<string, any>;
   prediction_id?: string;
   timestamp: string;
 }

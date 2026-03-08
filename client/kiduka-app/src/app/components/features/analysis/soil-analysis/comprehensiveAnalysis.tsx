@@ -1,4 +1,4 @@
-// Now displays Soil Health Classification Details with TTS support
+// Soil Health Classification Details with TTS support
 "use client";
 
 import { useState, useEffect } from "react";

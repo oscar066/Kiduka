@@ -106,14 +106,43 @@ export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsPro
             <Progress value={shiPercentage} className="h-3" />
           </div>
 
-          {/* Fertility Status */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">
-              Final Status:
-            </span>
-            <Badge className={getStatusColor()}>
-              {results.soil_fertility_status || "Unknown"}
-            </Badge>
+          {/* Fertility Status & Mode */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">
+                Final Status:
+              </span>
+              <Badge className={getStatusColor()}>
+                {results.soil_fertility_status || "Unknown"}
+              </Badge>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">
+                Prediction Mode:
+              </span>
+              <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50">
+                {results.prediction_mode === "ML" ? "Machine Learning" : "Standard Formula"}
+              </Badge>
+            </div>
+
+            {results.prediction_mode === "ML" && results.confidence && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">
+                  ML Confidence:
+                </span>
+                <Badge 
+                  variant="outline" 
+                  className={
+                    results.confidence.confidence_level === "high" 
+                      ? "border-green-200 text-green-700 bg-green-50"
+                      : "border-yellow-200 text-yellow-700 bg-yellow-50"
+                  }
+                >
+                  {results.confidence.confidence_level?.toUpperCase() || "MODERATE"}
+                </Badge>
+              </div>
+            )}
           </div>
 
           {/* Show downgrade if applicable */}
