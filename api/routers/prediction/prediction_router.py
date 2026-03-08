@@ -28,7 +28,7 @@ async def predict_soil_fertility(
     current_user: Optional[User] = Depends(get_current_user_optional),
     prediction_service: PredictionService = Depends(get_prediction_service)
 ):
-    # Predict soil fertility status and fertilizer recommendations
+    # Predict soil fertility status
     logger.info("Prediction endpoint accessed")
     logger.debug(f"Received soil data for user: {current_user.username if current_user else 'anonymous'}")
     
@@ -50,7 +50,10 @@ async def predict_soil_fertility(
                         "initial_soil_fertility_status": response.initial_soil_fertility_status,
                         "soil_fertility_status": response.soil_fertility_status,
                         "mentions": response.mentions,
-                        "recommendations": response.recommendations
+                        "recommendations": response.recommendations,
+                        "nutrients": response.nutrients,
+                        "prediction_mode": response.prediction_mode,
+                        "confidence": response.confidence
                     },
                     "timestamp": response.timestamp
                 }
