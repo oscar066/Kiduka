@@ -9,3 +9,7 @@ __pycache__
 # Ignore the initial server files
 api/apo.py 
 api/app.py
+
+# Ignore credentials
+api/credentials/
+
