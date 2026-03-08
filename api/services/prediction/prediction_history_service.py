@@ -179,6 +179,9 @@ class PredictionHistoryService:
                 soil_fertility_status=prediction.soil_fertility_status,
                 mentions=prediction.mentions or [],
                 recommendations=prediction.recommendations or [],
+                nutrients=prediction.nutrients or {},
+                prediction_mode=prediction.prediction_mode,
+                confidence_data=prediction.confidence_data,
                 agrovets=agrovet_list,
                 # Timestamps
                 created_at=prediction.created_at,

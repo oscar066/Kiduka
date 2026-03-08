@@ -175,7 +175,8 @@ class SoilHealthClassifier:
                 "Initial_Class": shi_class,
                 "Final_Soil_Status": final_status,
                 "Recommendations": recommendations,
-                "Mentions": rules  # Added to see triggered rules if needed
+                "Mentions": rules,
+                "Parameter_Scores": scores
             }
         
         except Exception as e:

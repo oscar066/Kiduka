@@ -13,6 +13,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 
 # Import local modules
 from api.utils.agrovet import AgrovetLocator
+from api.services.prediction.ml_predictor import MLPredictor
 from api.utils.config import AppConfig
 from api.utils.logging_config import setup_logger
 
@@ -38,6 +39,25 @@ def initialize_agrovet_locator() -> Optional[AgrovetLocator]:
         logger.error(f"Error initializing AgrovetLocator: {e}")
         return None
 
+def initialize_ml_predictor() -> Optional[MLPredictor]:
+    """Initialize MLPredictor with optional service account credentials"""
+    try:
+        # Check for service account credentials in environment
+        creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        use_sa = creds_path is not None and os.path.exists(creds_path)
+        
+        predictor = MLPredictor(use_service_account=use_sa, credentials_path=creds_path)
+        
+        # Eagerly initialize to load models and connect to GEE at startup
+        logger.info("Initializing MLPredictor (loading models and connecting to GEE)...")
+        predictor.initialize()
+        
+        return predictor
+    except Exception as e:
+        logger.error(f"Error initializing MLPredictor at startup: {e}")
+        # We still return the instance if possible, or None if it failed fatally
+        return None
+
 def initialize_app_components() -> Dict[str, Any]:
     """Initialize all application components"""
     logger.info("Initializing application components...")
@@ -48,6 +68,11 @@ def initialize_app_components() -> Dict[str, Any]:
     agrovet_locator = initialize_agrovet_locator()
     if agrovet_locator:
         components['agrovet_locator'] = agrovet_locator
+        
+    # Initialize MLPredictor
+    ml_predictor = initialize_ml_predictor()
+    if ml_predictor:
+        components['ml_predictor'] = ml_predictor
     
     logger.debug(f"Initialized components: {list(components.keys())}")
     return components

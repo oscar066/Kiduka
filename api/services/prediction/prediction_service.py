@@ -12,6 +12,7 @@ from api.schema.schema import SoilData, PredictionResponse
 from api.db.models.database import User, SoilPrediction, Agrovet
 from api.utils.dependencies import dependency_manager
 from api.utils.soil_classifier import SoilHealthClassifier
+from api.utils.config import AppConfig
 
 logger = logging.getLogger(__name__)
 
@@ -37,28 +38,63 @@ class PredictionService:
             # Get components
             app_components = dependency_manager.get_components()
             agrovet_locator = app_components.get('agrovet_locator')
+            ml_predictor = app_components.get('ml_predictor')
             
-            # Initialize classifier
-            classifier = SoilHealthClassifier()
+            # Decide prediction mode
+            required_nutrients = ["n", "p", "k", "organic_carbon", "ca", "mg"]
+            has_all_nutrients = all(getattr(soil_data, n) is not None for n in required_nutrients)
             
-            # Run classification
-            logger.info("Running soil classification...")
-            soil_dict = soil_data.model_dump()
-            # Map input keys to classifier expected keys if necessary, but schema matches roughly
-            # SoilData keys: ph, n, p, k, o (organic matter), ca, mg
-            # Classifier keys: pH, N, P, K, OC, Ca, Mg
-            # We need to map 'o' to 'OC' and 'ph' to 'pH'
-            mapping = {
-                "pH": "ph",
-                "N": "n", 
-                "OC": "organic_carbon",
-                "P": "p", 
-                "K": "k", 
-                "Ca": "ca", 
-                "Mg": "mg"
-            }
+            classification_result = {}
+            prediction_mode = "FORMULA"
+            ml_extra_data = {}
             
-            classification_result = classifier.process_row(soil_dict, col_map=mapping)
+            if not has_all_nutrients:
+                if not ml_predictor:
+                    raise ValueError("ML Predictor is required for incomplete soil data but not available")
+                
+                logger.info("Running ML-based soil prediction due to missing nutrient data...")
+                ml_res = ml_predictor.predict_soil_health(
+                    latitude=soil_data.latitude,
+                    longitude=soil_data.longitude,
+                    ph=soil_data.ph,
+                    ph_score=soil_data.ph_score,
+                    year=soil_data.year or 2025
+                )
+                
+                prediction_mode = "ML"
+                ml_extra_data = ml_res.get("confidence", {})
+                
+                # Map ML result to classification_result structure
+                pred = ml_res.get("prediction", {})
+                classification_result = {
+                    "SHI_Score": pred.get("SHI"),
+                    "Initial_Class": pred.get("final_classification"), # ML only gives final
+                    "Final_Soil_Status": pred.get("final_classification"),
+                    "Recommendations": self._generate_ml_recommendations(pred.get("nutrients", {})),
+                    "Mentions": ["Predicted via GEE + ML Model"],
+                    "Predicted_Nutrients": pred.get("nutrients", {})
+                }
+            else:
+                # Initialize classifier
+                from api.utils.soil_classifier import SoilHealthClassifier
+                classifier = SoilHealthClassifier()
+                
+                # Run classification
+                logger.info("Running formula-based soil classification...")
+                soil_dict = soil_data.model_dump()
+                
+                # Map input keys to classifier expected keys
+                mapping = {
+                    "pH": "ph",
+                    "N": "n", 
+                    "OC": "organic_carbon",
+                    "P": "p", 
+                    "K": "k", 
+                    "Ca": "ca", 
+                    "Mg": "mg"
+                }
+                
+                classification_result = classifier.process_row(soil_dict, col_map=mapping)
             
             # Find nearest agrovets
             nearest_agrovets = []
@@ -75,16 +111,28 @@ class PredictionService:
             recommendations_str = classification_result.get("Recommendations", "")
             recommendations_list = [r.strip() for r in recommendations_str.split(";") if r.strip()]
             mentions = classification_result.get("Mentions", [])
-            
-            # Simplified result mapping
+            # Prepare result dictionary for storage and response
             result = {
                 "soil_health_index": shi_score,
                 "initial_soil_fertility_status": initial_status,
                 "soil_fertility_status": final_status,
                 "mentions": mentions,
                 "recommendations": recommendations_list,
-                "nearest_agrovets": nearest_agrovets
+                "nearest_agrovets": nearest_agrovets,
+                "prediction_mode": prediction_mode,
+                "confidence": ml_extra_data
             }
+            
+            # Extract unified nutrient scores for uniform display
+            if prediction_mode == "ML":
+                # ml_res has the structure we want in "prediction"]["nutrients"]
+                unified_nutrients = ml_res.get("prediction", {}).get("nutrients", {})
+            else:
+                # Formula mode - map parameter scores from classifier
+                param_scores = classification_result.get("Parameter_Scores", {})
+                unified_nutrients = self._format_nutrient_scores(param_scores)
+
+            result["nutrients"] = unified_nutrients
             
             # Create response
             response = PredictionResponse(
@@ -94,15 +142,28 @@ class PredictionService:
                 mentions=mentions,
                 recommendations=recommendations_list,
                 nearest_agrovets=nearest_agrovets,
+                nutrients=unified_nutrients,
+                prediction_mode=prediction_mode,
+                confidence=ml_extra_data,
                 prediction_id=uuid.uuid4(), # Generate ID if not already present
                 timestamp=datetime.now()
             )
             
             # Save to database if user is authenticated
             if user:
+                # For ML, use predicted nutrients for DB storage
+                db_soil_data = soil_data.model_dump()
+                if prediction_mode == "ML" and "Predicted_Nutrients" in classification_result:
+                    pn = classification_result["Predicted_Nutrients"]
+                    # Map back to DB field names
+                    nutrient_map = {"N": "n", "P": "p", "K": "k", "OC": "organic_carbon", "Ca": "ca", "Mg": "mg"}
+                    for key, db_key in nutrient_map.items():
+                        if db_soil_data.get(db_key) is None:
+                            db_soil_data[db_key] = pn.get(key, {}).get("score")
+
                 await self._save_prediction_to_database(
                     user_id=str(user.id),
-                    soil_data=soil_data.model_dump(),
+                    soil_data=db_soil_data,
                     result=result
                 )
                 logger.info("Prediction saved to database successfully")
@@ -160,6 +221,9 @@ class PredictionService:
                 soil_fertility_status=result.get("soil_fertility_status"),
                 mentions=result.get("mentions", []),
                 recommendations=result.get("recommendations", []),
+                prediction_mode=result.get("prediction_mode"),
+                confidence_data=result.get("confidence"),
+                nutrients=result.get("nutrients"),
                 agrovets=agrovet_objects
             )
             
@@ -214,3 +278,32 @@ class PredictionService:
         except Exception as e:
             logger.error(f"Error processing agrovet data: {e}")
             return None
+
+    def _generate_ml_recommendations(self, nutrient_scores: Dict[str, Any]) -> str:
+        """Helper to generate recommendations based on predicted nutrient scores"""
+        actions = []
+        # Mapping from classifier recommendations logic
+        # 1=Very Poor, 2=Poor
+        if nutrient_scores.get("N", {}).get("score", 4) <= 2:
+            actions.append("Top-dress with CAN (predicted low Nitrogen)")
+        if nutrient_scores.get("P", {}).get("score", 4) <= 2:
+            actions.append("Apply NPK/DAP at planting (predicted low Phosphorus)")
+        if nutrient_scores.get("OC", {}).get("score", 4) <= 2:
+            actions.append("Apply 20 tons FYM/compost per acre (predicted low Organic Carbon)")
+        if nutrient_scores.get("K", {}).get("score", 4) <= 2:
+            actions.append("Apply MOP or K-rich blend (predicted low Potassium)")
+        
+        if not actions:
+            actions.append("Maintain current practices (predicted healthy levels)")
+            
+        return "; ".join(actions)
+
+    def _format_nutrient_scores(self, scores: Dict[str, int]) -> Dict[str, Dict[str, Any]]:
+        """Helper to format raw scores into uniform response structure"""
+        formatted = {}
+        for key, score in scores.items():
+            formatted[key] = {
+                "score": int(score),
+                "label": AppConfig.CLASS_NAMES.get(int(score), "Unknown")
+            }
+        return formatted
