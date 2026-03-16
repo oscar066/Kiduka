@@ -18,8 +18,6 @@ import { LocationDetector } from "../../shared/location-detector";
 import { apiClient } from "@/lib/api-client";
 
 // Import shared components
-import { ComprehensiveAnalysis } from "./soil-analysis/comprehensiveAnalysis";
-import { ActionPlanRecommendations } from "./soil-analysis/actionPlanRecommendation";
 import { NutrientDisplay } from "./soil-analysis/nutrientDisplay";
 import { AgrovetsDisplay } from "./soil-analysis/agrovetDisplay";
 import { StatusSummaryCards } from "./soil-analysis/statusSummaryCard";
@@ -36,12 +34,6 @@ export default function SoilFertilityDashboard() {
 
   const [soilData, setSoilData] = useState<SoilInput>({
     ph: 0,
-    n: 0,
-    p: 0,
-    k: 0,
-    organic_carbon: 0,
-    ca: 0,
-    mg: 0,
     latitude: 0,
     longitude: 0,
   });
@@ -109,7 +101,7 @@ export default function SoilFertilityDashboard() {
 
   const handleInputChange = (
     field: keyof SoilInput,
-    value: string | number
+    value: string | number | undefined
   ) => {
     setSoilData((prev) => ({
       ...prev,
@@ -153,9 +145,9 @@ export default function SoilFertilityDashboard() {
 
     const optionalFields =['n', 'p', 'k', 'organic_carbon', 'ca', 'mg'] as const;
     for (const field of optionalFields) {
-      // Only attach optional fields if they have a real value > 0
-      if (soilData[field] && soilData[field] > 0) {
-        payload[field] = soilData[field];
+      const val = soilData[field];
+      if (val !== undefined && val > 0) {
+        payload[field] = val;
       }
     }
 
@@ -250,20 +242,6 @@ export default function SoilFertilityDashboard() {
                     results={results}
                     showOptimalRanges={true}
                   />
-
-                  {/* Classification Details */}
-                  <ComprehensiveAnalysis
-                    results={results}
-                    soilInput={soilData}
-                  />
-
-                  {/* Action Plan & Recommendations */}
-                  {results.recommendations.length > 0 && (
-                    <ActionPlanRecommendations
-                      recommendations={results.recommendations}
-                    />
-                  )}
-
                   {/* Agrovets */}
                   {results.nearest_agrovets && results.nearest_agrovets.length > 0 && (
                     <AgrovetsDisplay agrovets={results.nearest_agrovets} />

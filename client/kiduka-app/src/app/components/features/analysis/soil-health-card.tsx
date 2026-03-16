@@ -73,7 +73,6 @@ export function SoilHealthCard({
             <span className="text-gray-700">Confidence Level</span>
             <span className="font-medium">{Math.round(confidence * 100)}%</span>
           </div>
-          <Progress value={confidence * 100} className="h-3" />
         </div>
 
         <div className="grid grid-cols-2 gap-4 pt-2">

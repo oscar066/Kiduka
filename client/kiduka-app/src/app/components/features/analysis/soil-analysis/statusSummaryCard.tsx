@@ -1,9 +1,7 @@
-// components/soil-analysis/StatusSummaryCards.tsx
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   CheckCircle,
   AlertTriangle,
@@ -13,6 +11,8 @@ import {
   Calendar,
   AlertCircle,
   TrendingUp,
+  Info,
+  HelpCircle,
 } from "lucide-react";
 import { PredictionResponse, SoilInput } from "@/types/soil-analysis";
 
@@ -22,6 +22,7 @@ interface StatusSummaryCardsProps {
 }
 
 export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsProps) {
+  
   // Helper functions for soil health status
   const getStatusIcon = () => {
     const status = results.soil_fertility_status?.toLowerCase() || "";
@@ -29,13 +30,13 @@ export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsPro
       case "healthy":
         return <CheckCircle className="h-6 w-6 text-green-600" />;
       case "moderately healthy":
-        return <AlertTriangle className="h-6 w-6 text-yellow-600" />;
+        return <Info className="h-6 w-6 text-yellow-600" />;
       case "poor":
         return <XCircle className="h-6 w-6 text-orange-600" />;
       case "very poor":
         return <XCircle className="h-6 w-6 text-red-600" />;
       default:
-        return <AlertTriangle className="h-6 w-6 text-gray-600" />;
+        return <HelpCircle className="h-6 w-6 text-gray-600" />;
     }
   };
 
@@ -71,8 +72,6 @@ export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsPro
   };
 
   const phStatus = getPhStatus();
-  // Normalize SHI to percentage (max is 4.0)
-  const shiPercentage = Math.min((results.soil_health_index / 4.0) * 100, 100);
   const wasDowngraded = results.initial_soil_fertility_status !== results.soil_fertility_status;
 
   return (
@@ -92,18 +91,8 @@ export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsPro
               Soil Health Index (SHI):
             </span>
             <span className={`text-2xl font-bold ${getSHIColor()}`}>
-              {results.soil_health_index.toFixed(2)}
+              {results.soil_health_index.toFixed(2)}/4
             </span>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-700">Health Score</span>
-              <span className="font-medium">
-                {Math.round(shiPercentage)}%
-              </span>
-            </div>
-            <Progress value={shiPercentage} className="h-3" />
           </div>
 
           {/* Fertility Status & Mode */}
@@ -169,11 +158,11 @@ export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsPro
                 {soilInput.ph?.toFixed(1) || "N/A"} ({phStatus.text})
               </p>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 text-right">
               <span className="text-xs text-gray-500 uppercase tracking-wide">
                 Initial Class
               </span>
-              <p className="font-medium text-gray-900">
+              <p className="font-medium text-gray-700">
                 {results.initial_soil_fertility_status}
               </p>
             </div>

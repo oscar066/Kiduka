@@ -1,5 +1,3 @@
-// components/soil-analysis/ActionPlanRecommendations.tsx
-// Now displays simple recommendations list from the classifier
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

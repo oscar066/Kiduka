@@ -17,12 +17,12 @@ export interface AgrovetInfo {
 
 export interface SoilInput {
   ph: number;
-  n: number;
-  p: number;
-  k: number;
-  organic_carbon: number;
-  ca: number;
-  mg: number;
+  n?: number;
+  p?: number;
+  k?: number;
+  organic_carbon?: number;
+  ca?: number;
+  mg?: number;
   latitude: number;
   longitude: number;
 }

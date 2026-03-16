@@ -1,4 +1,3 @@
-// components/soil-analysis/SoilInputForm.tsx
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,7 @@ import { SoilInput } from "@/types/soil-analysis";
 
 interface SoilInputFormProps {
   soilData: SoilInput;
-  onInputChange: (field: keyof SoilInput, value: string | number) => void;
+  onInputChange: (field: keyof SoilInput, value: string | number | undefined) => void;
   onSubmit: () => void;
   isLoading?: boolean;
   disabled?: boolean;
@@ -42,7 +41,7 @@ export function SoilInputForm({
   submitButtonText = "Analyze Soil Health",
   loadingText = "Analyzing Soil...",
 }: SoilInputFormProps) {
-  const handleInputChange = (field: keyof SoilInput, value: string | number) => {
+  const handleInputChange = (field: keyof SoilInput, value: string | number | undefined) => {
     onInputChange(field, value);
   };
 
@@ -95,26 +94,10 @@ export function SoilInputForm({
                 placeholder="6.8"
                 value={soilData.ph || ""}
                 className="border-amber-200 focus:border-green-500"
-                onChange={(e) =>
-                  handleInputChange("ph", Number.parseFloat(e.target.value) || 0)
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="organic_carbon" className="text-green-700 font-medium">
-                Organic Carbon (%) <span className="text-gray-400 font-normal italic">(Optional)</span>
-              </Label>
-              <Input
-                id="organic_carbon"
-                type="number"
-                step="0.1"
-                placeholder="2.5"
-                value={soilData.organic_carbon || ""}
-                className="border-amber-200 focus:border-green-500"
-                onChange={(e) =>
-                  handleInputChange("organic_carbon", Number.parseFloat(e.target.value) || 0)
-                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  handleInputChange("ph", val === "" ? undefined : (Number.parseFloat(val) || 0));
+                }}
               />
             </div>
           </TabsContent>
@@ -122,6 +105,12 @@ export function SoilInputForm({
           <TabsContent value="nutrients" className="space-y-4 mt-4">
             <div className="grid grid-cols-1 gap-4">
               {[
+                {
+                  key: "organic_carbon" as keyof SoilInput,
+                  label: "Organic Carbon",
+                  placeholder: "2.5",
+                  unit: "%",
+                },
                 {
                   key: "n" as keyof SoilInput,
                   label: "Nitrogen (N)",
@@ -163,12 +152,13 @@ export function SoilInputForm({
                     placeholder={nutrient.placeholder}
                     value={soilData[nutrient.key] || ""}
                     className="border-amber-200 focus:border-green-500"
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const val = e.target.value;
                       handleInputChange(
                         nutrient.key,
-                        Number.parseFloat(e.target.value) || 0
-                      )
-                    }
+                        val === "" ? undefined : (Number.parseFloat(val) || 0)
+                      );
+                    }}
                   />
                 </div>
               ))}

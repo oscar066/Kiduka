@@ -1,4 +1,3 @@
-// Soil Health Classification Details with TTS support
 "use client";
 
 import { useState, useEffect } from "react";
@@ -315,7 +314,7 @@ export function ComprehensiveAnalysis({
               <p className="text-xs text-gray-600">pH Level</p>
             </div>
             <div className="text-center">
-              <p className="text-lg font-semibold text-gray-800">{soilInput.organic_carbon.toFixed(1)}%</p>
+              <p className="text-lg font-semibold text-gray-800">{soilInput.organic_carbon !== undefined ? soilInput.organic_carbon.toFixed(1) : "N/A"}%</p>
               <p className="text-xs text-gray-600">Organic Carbon</p>
             </div>
             <div className="text-center">
