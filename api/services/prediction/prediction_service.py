@@ -41,18 +41,18 @@ class PredictionService:
             ml_predictor = app_components.get('ml_predictor')
             
             # Decide prediction mode
-            required_nutrients = ["n", "p", "k", "organic_carbon", "ca", "mg"]
-            has_all_nutrients = all(getattr(soil_data, n) is not None for n in required_nutrients)
+            optional_nutrients = ["n", "p", "k", "organic_carbon", "ca", "mg"]
+            has_any_nutrient = any(getattr(soil_data, n) is not None for n in optional_nutrients)
             
             classification_result = {}
             prediction_mode = "FORMULA"
             ml_extra_data = {}
             
-            if not has_all_nutrients:
+            if not has_any_nutrient:
                 if not ml_predictor:
                     raise ValueError("ML Predictor is required for incomplete soil data but not available")
                 
-                logger.info("Running ML-based soil prediction due to missing nutrient data...")
+                logger.info("Running ML-based soil prediction due to completely missing nutrient data...")
                 ml_res = ml_predictor.predict_soil_health(
                     latitude=soil_data.latitude,
                     longitude=soil_data.longitude,

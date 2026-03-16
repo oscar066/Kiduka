@@ -4,7 +4,6 @@ from api.utils.logging_config import setup_logger
 logger = setup_logger("SoilHealthClassifier")
 
 # The Soil Health Classifier Class
-
 class SoilHealthClassifier:
     def __init__(self):
         # Weights
@@ -79,41 +78,42 @@ class SoilHealthClassifier:
             return "Very Poor", ["R3: ≥3 params Very Poor"]
 
         # R1: pH Very Poor
-        if scores["pH"] == 1:
+        if scores.get("pH") == 1:
             if self.CLASSIFICATION_RANK[final] > self.CLASSIFICATION_RANK["Poor"]:
                 final = "Poor"
             rules_triggered.append("R1: pH Very Poor")
 
         # R4: pH Poor + 2 macronutrients Poor/Very Poor
-        if scores["pH"] == 2:
-            macro_poor = sum(1 for p in ["N", "P", "K"] if scores[p] <= 2)
+        if scores.get("pH") == 2:
+            macro_poor = sum(1 for p in ["N", "P", "K"] if p in scores and scores[p] <= 2)
             if macro_poor >= 2:
                 if self.CLASSIFICATION_RANK[final] > self.CLASSIFICATION_RANK["Poor"]:
                     final = "Poor"
                 rules_triggered.append("R4: pH Poor + Macro issues")
 
         # R2: OC Very Poor
-        if scores["OC"] == 1:
+        if scores.get("OC") == 1:
             final = self._downgrade(final)
             rules_triggered.append("R2: OC Very Poor")
 
         return final, rules_triggered
 
+    # Update this * if alkaline
     def _generate_recommendations(self, ph_val, scores):
         actions = []
-        if scores["pH"] <= 2:
+        if scores.get("pH", 4) <= 2:
             actions.append("Apply calcitic lime (if acidic) or gypsum (if alkaline)")
-        if scores["OC"] <= 2:
+        if scores.get("OC", 4) <= 2:
             actions.append("Apply 20 tons FYM/compost per acre")
-        if scores["N"] <= 2:
+        if scores.get("N", 4) <= 2:
             actions.append("Top-dress with CAN")
-        if scores["P"] <= 2:
+        if scores.get("P", 4) <= 2:
             actions.append("Apply NPK/DAP at planting")
-        if scores["K"] <= 2:
+        if scores.get("K", 4) <= 2:
             actions.append("Apply MOP or K-rich blend")
-        if scores["Ca"] <= 2:
+        if scores.get("Ca", 4) <= 2:
             actions.append("Apply calcitic lime/gypsum")
-        if scores["Mg"] <= 2:
+        if scores.get("Mg", 4) <= 2:
             actions.append("Apply dolomitic lime")
         
         if not actions:
@@ -129,34 +129,44 @@ class SoilHealthClassifier:
             if col_map is None:
                 col_map = {"pH": "pH", "N": "N", "OC": "OC", "P": "P", "K": "K", "Ca": "Ca", "Mg": "Mg"}
 
-            # Extract values based on user mapping
-            # Using .get with default 0.0 to prevent key errors
+            def safe_float(val):
+                if val is None or val == "":
+                    return None
+                try:
+                    return float(val)
+                except (ValueError, TypeError):
+                    return None
+
+            # Extract values based on user mapping safely for optional nutrients
             vals = {
-                "pH": float(row.get(col_map.get("pH", "pH"), 0)),
-                "N":  float(row.get(col_map.get("N", "N"), 0)),
-                "OC": float(row.get(col_map.get("OC", "OC"), 0)),
-                "P":  float(row.get(col_map.get("P", "P"), 0)),
-                "K":  float(row.get(col_map.get("K", "K"), 0)),
-                "Ca": float(row.get(col_map.get("Ca", "Ca"), 0)),
-                "Mg": float(row.get(col_map.get("Mg", "Mg"), 0))
+                "pH": safe_float(row.get(col_map.get("pH", "pH"))),
+                "N":  safe_float(row.get(col_map.get("N", "N"))),
+                "OC": safe_float(row.get(col_map.get("OC", "OC"))),
+                "P":  safe_float(row.get(col_map.get("P", "P"))),
+                "K":  safe_float(row.get(col_map.get("K", "K"))),
+                "Ca": safe_float(row.get(col_map.get("Ca", "Ca"))),
+                "Mg": safe_float(row.get(col_map.get("Mg", "Mg")))
             }
             
             logger.info(f"Processing sample with pH: {vals['pH']}, N: {vals['N']}, OC: {vals['OC']}")
 
-            # Calculate Scores
-            scores = {
-                "pH": self._classify_ph(vals["pH"]),
-                "N":  self._classify_n(vals["N"]),
-                "OC": self._classify_oc(vals["OC"]),
-                "P":  self._classify_p(vals["P"]),
-                "K":  self._classify_k(vals["K"]),
-                "Ca": self._classify_ca(vals["Ca"]),
-                "Mg": self._classify_mg(vals["Mg"])
-            }
+            # Calculate Scores dynamically only for provided values
+            scores = {}
+            if vals["pH"] is not None: scores["pH"] = self._classify_ph(vals["pH"])
+            if vals["N"] is not None:  scores["N"]  = self._classify_n(vals["N"])
+            if vals["OC"] is not None: scores["OC"] = self._classify_oc(vals["OC"])
+            if vals["P"] is not None:  scores["P"]  = self._classify_p(vals["P"])
+            if vals["K"] is not None:  scores["K"]  = self._classify_k(vals["K"])
+            if vals["Ca"] is not None: scores["Ca"] = self._classify_ca(vals["Ca"])
+            if vals["Mg"] is not None: scores["Mg"] = self._classify_mg(vals["Mg"])
 
-            # Calculate SHI
+            # Calculate SHI using dynamic total weight
+            if not scores:
+                raise ValueError("No valid soil parameters provided for analysis.")
+
             weighted_sum = sum(scores[k] * self.WEIGHTS[k] for k in scores)
-            shi = round(weighted_sum / self.TOTAL_WEIGHT, 2)
+            total_weight = sum(self.WEIGHTS[k] for k in scores)
+            shi = round(weighted_sum / total_weight, 2)
             shi_class = self._get_shi_class(shi)
             
             logger.info(f"Calculated SHI: {shi} ({shi_class})")
