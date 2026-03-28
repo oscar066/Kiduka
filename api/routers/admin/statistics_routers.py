@@ -19,7 +19,7 @@ router = APIRouter()
 async def get_statistics_service(db: AsyncSession = Depends(get_db)) -> AdminStatisticsService:
     return AdminStatisticsService(db)
 
-@router.get("/", response_model=UserStatsResponse)
+@router.get("", response_model=UserStatsResponse)
 async def get_user_statistics(
     current_user: User = Depends(get_current_admin_user),
     stats_service: AdminStatisticsService = Depends(get_statistics_service),

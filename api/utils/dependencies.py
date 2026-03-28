@@ -8,16 +8,11 @@ class DependencyManager:
     
     def __init__(self):
         self._app_components: Optional[Dict[str, Any]] = None
-        self._prediction_workflow = None
         self._session_manager = None
     
     def set_components(self, app_components: Dict[str, Any]):
         """Set application components (models, preprocessors, etc.)"""
         self._app_components = app_components
-    
-    def set_workflow(self, prediction_workflow):
-        """Set the prediction workflow"""
-        self._prediction_workflow = prediction_workflow
     
     def set_session_manager(self, session_manager):
         """Set the session manager"""
@@ -27,10 +22,6 @@ class DependencyManager:
         """Get application components"""
         return self._app_components
     
-    def get_workflow(self):
-        """Get the prediction workflow"""
-        return self._prediction_workflow
-    
     def get_session_manager(self):
         """Get the session manager"""
         return self._session_manager
@@ -39,23 +30,13 @@ class DependencyManager:
         """Check if all dependencies are initialized"""
         return all([
             self._app_components is not None,
-            self._prediction_workflow is not None,
             self._session_manager is not None
         ])
     
     def validate_models_loaded(self) -> bool:
         """Validate that required models are loaded"""
-        if not self._app_components:
-            return False
-        
-        required_components = [
-            'fertility_model', 
-            'fertility_preprocessor', 
-            'fertilizer_model', 
-            'fertilizer_preprocessor'
-        ]
-        
-        return all(self._app_components.get(comp) for comp in required_components)
+        # Kept for compatibility but always true if components are set
+        return self._app_components is not None
 
 # Global dependency manager instance
 dependency_manager = DependencyManager()

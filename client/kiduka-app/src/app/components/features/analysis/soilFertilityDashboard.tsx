@@ -1,4 +1,3 @@
-// components/SoilFertilityDashboard.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -19,8 +18,6 @@ import { LocationDetector } from "../../shared/location-detector";
 import { apiClient } from "@/lib/api-client";
 
 // Import shared components
-import { ComprehensiveAnalysis } from "./soil-analysis/comprehensiveAnalysis";
-import { ActionPlanRecommendations } from "./soil-analysis/actionPlanRecommendation";
 import { NutrientDisplay } from "./soil-analysis/nutrientDisplay";
 import { AgrovetsDisplay } from "./soil-analysis/agrovetDisplay";
 import { StatusSummaryCards } from "./soil-analysis/statusSummaryCard";
@@ -29,29 +26,19 @@ import { SoilInputForm } from "./soil-analysis/soil-inputForm";
 import { Leaf, AlertCircle, Loader2, Lock } from "lucide-react";
 
 // import types
-import { SoilData, SoilInput, SoilOutput } from "@/types/soil-analysis";
+import { SoilInput, PredictionResponse } from "@/types/soil-analysis";
 
 export default function SoilFertilityDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   const [soilData, setSoilData] = useState<SoilInput>({
-    simplified_texture: "",
     ph: 0,
-    n: 0,
-    p: 0,
-    k: 0,
-    o: 0,
-    ca: 0,
-    mg: 0,
-    cu: 0,
-    fe: 0,
-    zn: 0,
     latitude: 0,
     longitude: 0,
   });
 
-  const [results, setResults] = useState<SoilOutput | null>(null);
+  const[results, setResults] = useState<PredictionResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,7 +48,7 @@ export default function SoilFertilityDashboard() {
     if (status === "unauthenticated") {
       router.push("/auth/login");
     }
-  }, [status, router]);
+  },[status, router]);
 
   // Loading screen
   if (status === "loading") {
@@ -114,7 +101,7 @@ export default function SoilFertilityDashboard() {
 
   const handleInputChange = (
     field: keyof SoilInput,
-    value: string | number
+    value: string | number | undefined
   ) => {
     setSoilData((prev) => ({
       ...prev,
@@ -136,31 +123,32 @@ export default function SoilFertilityDashboard() {
       return;
     }
 
-    // Validate all required fields
-    if (!soilData.simplified_texture || soilData.simplified_texture.trim() === "") {
-      setError("Please select a soil texture type.");
+    // Validate pH is required and within limits
+    if (!soilData.ph || soilData.ph <= 0 || soilData.ph > 14) {
+      setError("Please enter a valid pH value (must be between 0 and 14).");
       return;
     }
 
-    // Validate numeric fields are greater than 0
-    const numericFields = ['ph', 'n', 'p', 'k', 'o', 'ca', 'mg', 'cu', 'fe', 'zn'] as const;
-    for (const field of numericFields) {
-      if (soilData[field] <= 0) {
-        setError(`Please enter a valid ${field.toUpperCase()} value (must be greater than 0).`);
-        return;
-      }
-    }
-
-    // Validate pH range
-    if (soilData.ph > 14) {
-      setError("pH must be between 0 and 14.");
-      return;
-    }
-
-    // Validate location
+    // Validate location is required
     if (!soilData.latitude || !soilData.longitude) {
       setError("Please enable location detection or enter coordinates.");
       return;
+    }
+
+    // Build the payload dynamically to drop missing/zero fields 
+    // so the backend triggers the ML prediction mode correctly
+    const payload: any = {
+      ph: soilData.ph,
+      latitude: soilData.latitude,
+      longitude: soilData.longitude,
+    };
+
+    const optionalFields =['n', 'p', 'k', 'organic_carbon', 'ca', 'mg'] as const;
+    for (const field of optionalFields) {
+      const val = soilData[field];
+      if (val !== undefined && val > 0) {
+        payload[field] = val;
+      }
     }
 
     setIsLoading(true);
@@ -168,10 +156,10 @@ export default function SoilFertilityDashboard() {
 
     try {
       const apiResults = await apiClient.makePrediction(
-        soilData,
+        payload as SoilInput,
         session.accessToken
       );
-      const resultsWithTimestamp: SoilOutput = {
+      const resultsWithTimestamp: PredictionResponse = {
         ...apiResults,
         timestamp: apiResults.timestamp || new Date().toISOString(),
       };
@@ -195,33 +183,6 @@ export default function SoilFertilityDashboard() {
     }
   };
 
-  // Convert results to SoilData format for shared components
-  const soilAnalysisData: SoilData | null = results
-    ? {
-        simplified_texture: soilData.simplified_texture,
-        soil_ph: soilData.ph,
-        nitrogen: soilData.n,
-        phosphorus: soilData.p,
-        potassium: soilData.k,
-        organic_matter: soilData.o,
-        calcium: soilData.ca,
-        magnesium: soilData.mg,
-        copper: soilData.cu,
-        iron: soilData.fe,
-        zinc: soilData.zn,
-        fertility_prediction: results.soil_fertility_status,
-        fertility_confidence: results.soil_fertility_confidence,
-        fertilizer_recommendation: results.fertilizer_recommendation,
-        fertilizer_confidence: results.fertilizer_confidence,
-        crop_recommendation1: results.crop_recommendation1,
-        crop_recommendation1_confidence: results.crop_recommendation1_confidence,
-        crop_recommendation2: results.crop_recommendation2,
-        crop_recommendation2_confidence: results.crop_recommendation2_confidence,
-        structured_response: results.structured_response,
-        agrovets: results.nearest_agrovets,
-      }
-    : null;
-
   const showLocationWarning = !soilData.latitude || !soilData.longitude;
 
   return (
@@ -236,8 +197,7 @@ export default function SoilFertilityDashboard() {
               Soil Fertility Analysis
             </h1>
             <p className="text-green-600 font-serif">
-              Comprehensive soil health assessment and fertilizer
-              recommendations
+              Comprehensive soil health assessment and recommendations
             </p>
           </div>
 
@@ -271,34 +231,20 @@ export default function SoilFertilityDashboard() {
 
             {/* Results Section - Using shared components */}
             <div className="lg:col-span-2 space-y-6">
-              {soilAnalysisData ? (
+              {results ? (
                 <>
-                  {/* Status Cards - Using shared component */}
-                  <StatusSummaryCards soilData={soilAnalysisData} />
+                  {/* Status Cards */}
+                  <StatusSummaryCards results={results} soilInput={soilData} />
 
-                  {/* Nutrient Analysis - Using shared component */}
+                  {/* Nutrient Analysis */}
                   <NutrientDisplay
-                    soilData={soilAnalysisData}
+                    soilInput={soilData}
+                    results={results}
                     showOptimalRanges={true}
                   />
-
-                  {/* Comprehensive Analysis - Using shared component */}
-                  {soilAnalysisData.structured_response && (
-                    <ComprehensiveAnalysis
-                      structuredResponse={soilAnalysisData.structured_response}
-                    />
-                  )}
-
-                  {/* Action Plan & Recommendations - Using shared component */}
-                  {soilAnalysisData.structured_response && (
-                    <ActionPlanRecommendations
-                      structuredResponse={soilAnalysisData.structured_response}
-                    />
-                  )}
-
-                  {/* Agrovets - Using shared component */}
-                  {soilAnalysisData.agrovets && (
-                    <AgrovetsDisplay agrovets={soilAnalysisData.agrovets} />
+                  {/* Agrovets */}
+                  {results.nearest_agrovets && results.nearest_agrovets.length > 0 && (
+                    <AgrovetsDisplay agrovets={results.nearest_agrovets} />
                   )}
                 </>
               ) : (

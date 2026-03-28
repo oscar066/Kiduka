@@ -63,12 +63,6 @@ export function RoleBasedLayout({ children }: RoleBasedLayoutProps) {
         <UnifiedSidebar />
         <SidebarInset className="flex-1 flex flex-col">
           <Navbar />
-          {/* 
-            CORRECTED MAIN CONTENT AREA:
-            - flex-1: Fills the available space.
-            - overflow-y-auto: Allows content to scroll vertically if it's too long.
-            - p-6: Applies padding directly to the content area.
-          */}
           <main className="flex-1 overflow-y-auto p-6">{children}</main>
         </SidebarInset>
       </div>
@@ -122,15 +116,6 @@ export function AdminLayout({ children }: RoleBasedLayoutProps) {
         <UnifiedSidebar />
         <SidebarInset className="flex-1 flex flex-col">
           <Navbar />
-
-          {/* 
-            CORRECTED ADMIN MAIN CONTENT AREA:
-            This now follows the same successful pattern as the user layout.
-            - flex-1: Fills the remaining vertical space.
-            - overflow-y-auto: Allows the admin dashboard to scroll if needed.
-            - p-6: Adds padding for the content.
-            The old restrictive wrappers have been removed.
-          */}
           <main className="flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>
         </SidebarInset>
       </div>

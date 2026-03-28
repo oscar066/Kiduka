@@ -1,4 +1,3 @@
-// components/soil-analysis/ComprehensiveAnalysis.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,23 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   FileText,
-  Beaker,
-  Target,
   Volume2,
-  VolumeX,
   Pause,
   Play,
   RotateCcw,
   Settings,
+  AlertTriangle,
+  CheckCircle,
+  ArrowRight,
+  VolumeX,
 } from "lucide-react";
-import { StructuredResponse } from "@/types/soil-analysis";
+import { PredictionResponse, SoilInput } from "@/types/soil-analysis";
 
 interface ComprehensiveAnalysisProps {
-  structuredResponse: StructuredResponse;
+  results: PredictionResponse;
+  soilInput: SoilInput;
 }
 
 export function ComprehensiveAnalysis({
-  structuredResponse,
+  results,
+  soilInput,
 }: ComprehensiveAnalysisProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -49,7 +51,6 @@ export function ComprehensiveAnalysis({
       const voices = speechSynthesis.getVoices();
       setAvailableVoices(voices);
 
-      // Set default voice (prefer English voices)
       const englishVoice =
         voices.find(
           (voice) => voice.lang.startsWith("en") && voice.localService
@@ -70,30 +71,29 @@ export function ComprehensiveAnalysis({
 
   // Create comprehensive text for TTS
   const createFullAnalysisText = () => {
-    const sections = [
-      `Executive Summary: ${structuredResponse.explanation.summary}`,
-      `Soil Fertility Analysis: ${structuredResponse.explanation.fertility_analysis}`,
-      `pH Analysis: ${structuredResponse.explanation.ph_analysis}`,
-      `Nutrient Analysis: ${structuredResponse.explanation.nutrient_analysis}`,
-      `Soil Texture Analysis: ${structuredResponse.explanation.soil_texture_analysis}`,
-      `Overall Assessment: ${structuredResponse.explanation.overall_assessment}`,
+    const parts = [
+      `Soil Health Index: ${results.soil_health_index.toFixed(2)} out of 4.`,
+      `Initial classification: ${results.initial_soil_fertility_status}.`,
+      `Final soil status: ${results.soil_fertility_status}.`,
     ];
 
-    return sections.join(". ");
+    if (results.mentions.length > 0) {
+      parts.push(`Override rules triggered: ${results.mentions.join(". ")}.`);
+    }
+
+    if (results.recommendations.length > 0) {
+      parts.push(`Recommendations: ${results.recommendations.join(". ")}.`);
+    }
+
+    return parts.join(" ");
   };
 
   const speakText = (text: string, sectionName?: string) => {
-    if (!isSpeechSupported) {
-      alert("Text-to-speech is not supported in your browser.");
-      return;
-    }
+    if (!isSpeechSupported) return;
 
-    // Stop any current speech
     speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-
-    // Configure speech parameters
     utterance.rate = speechRate;
     utterance.pitch = 1;
     utterance.volume = 1;
@@ -102,7 +102,6 @@ export function ComprehensiveAnalysis({
       utterance.voice = speechVoice;
     }
 
-    // Event handlers
     utterance.onstart = () => {
       setIsPlaying(true);
       setIsPaused(false);
@@ -115,8 +114,7 @@ export function ComprehensiveAnalysis({
       setCurrentSection(null);
     };
 
-    utterance.onerror = (event) => {
-      console.error("Speech synthesis error:", event.error);
+    utterance.onerror = () => {
       setIsPlaying(false);
       setIsPaused(false);
       setCurrentSection(null);
@@ -147,72 +145,7 @@ export function ComprehensiveAnalysis({
     setCurrentSection(null);
   };
 
-  const speakSection = (text: string, sectionName: string) => {
-    speakText(text, sectionName);
-  };
-
-  const analysisData = [
-    {
-      id: "summary",
-      title: "Executive Summary",
-      content: structuredResponse.explanation.summary,
-      icon: <Beaker className="h-4 w-4" />,
-      bgColor: "bg-gradient-to-r from-blue-50 to-green-50",
-      borderColor: "border-blue-200",
-      textColor: "text-blue-800",
-      titleColor: "text-blue-900",
-    },
-    {
-      id: "fertility",
-      title: "Fertility Analysis",
-      content: structuredResponse.explanation.fertility_analysis,
-      icon: <Target className="h-4 w-4" />,
-      bgColor: "bg-amber-50",
-      borderColor: "border-amber-200",
-      textColor: "text-amber-800",
-      titleColor: "text-amber-900",
-    },
-    {
-      id: "ph",
-      title: "pH Analysis",
-      content: structuredResponse.explanation.ph_analysis,
-      icon: <Target className="h-4 w-4" />,
-      bgColor: "bg-green-50",
-      borderColor: "border-green-200",
-      textColor: "text-green-800",
-      titleColor: "text-green-900",
-    },
-    {
-      id: "nutrients",
-      title: "Nutrient Analysis",
-      content: structuredResponse.explanation.nutrient_analysis,
-      icon: <Target className="h-4 w-4" />,
-      bgColor: "bg-purple-50",
-      borderColor: "border-purple-200",
-      textColor: "text-purple-800",
-      titleColor: "text-purple-900",
-    },
-    {
-      id: "texture",
-      title: "Soil Texture Analysis",
-      content: structuredResponse.explanation.soil_texture_analysis,
-      icon: <Target className="h-4 w-4" />,
-      bgColor: "bg-yellow-50",
-      borderColor: "border-yellow-200",
-      textColor: "text-yellow-800",
-      titleColor: "text-yellow-900",
-    },
-    {
-      id: "overall",
-      title: "Overall Assessment",
-      content: structuredResponse.explanation.overall_assessment,
-      icon: <Target className="h-4 w-4" />,
-      bgColor: "bg-gradient-to-r from-slate-50 to-gray-50",
-      borderColor: "border-slate-200",
-      textColor: "text-slate-800",
-      titleColor: "text-slate-900",
-    },
-  ];
+  const wasDowngraded = results.initial_soil_fertility_status !== results.soil_fertility_status;
 
   return (
     <Card className="border-amber-200 bg-white shadow-lg">
@@ -220,7 +153,7 @@ export function ComprehensiveAnalysis({
         <CardTitle className="flex items-center justify-between text-green-800">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Comprehensive Analysis
+            Classification Details
           </div>
 
           {/* TTS Controls */}
@@ -321,40 +254,75 @@ export function ComprehensiveAnalysis({
       </CardHeader>
 
       <CardContent className="p-6 space-y-6">
-        {analysisData.map((section, index) => (
-          <div
-            key={section.id}
-            className={`${section.bgColor} p-4 rounded-lg border ${
-              section.borderColor
-            } ${
-              currentSection === section.title ? "ring-2 ring-green-400" : ""
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <h4
-                className={`${section.titleColor} font-semibold flex items-center gap-2`}
-              >
-                {section.icon}
-                {section.title}
-              </h4>
-
-              {isSpeechSupported && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => speakSection(section.content, section.title)}
-                  className="text-gray-500 hover:text-green-600 p-1"
-                  title={`Listen to ${section.title}`}
-                >
-                  <Volume2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            <p className={`${section.textColor} text-sm leading-relaxed`}>
-              {section.content}
-            </p>
+        {/* Classification Flow */}
+        <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg border border-blue-200">
+          <h4 className="text-blue-900 font-semibold mb-3 text-sm">Classification Flow</h4>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Badge className="bg-blue-100 text-blue-800 border-blue-300 text-sm px-3 py-1">
+              {results.initial_soil_fertility_status}
+            </Badge>
+            {wasDowngraded ? (
+              <>
+                <ArrowRight className="h-4 w-4 text-amber-600" />
+                <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-sm px-3 py-1">
+                  {results.soil_fertility_status}
+                </Badge>
+                <span className="text-xs text-amber-600 italic">(adjusted by override rules)</span>
+              </>
+            ) : (
+              <span className="text-xs text-green-600 italic">No overrides applied</span>
+            )}
           </div>
-        ))}
+        </div>
+
+        {/* Triggered Override Rules */}
+        {results.mentions.length > 0 && (
+          <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+            <h4 className="text-amber-900 font-semibold mb-3 flex items-center gap-2 text-sm">
+              <AlertTriangle className="h-4 w-4" />
+              Override Rules Triggered
+            </h4>
+            <div className="space-y-2">
+              {results.mentions.map((mention, index) => (
+                <div
+                  key={index}
+                  className="flex items-start gap-3 p-3 bg-white rounded-lg border border-amber-200"
+                >
+                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-amber-800 font-medium">{mention}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* SHI Score breakdown */}
+        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+          <h4 className="text-green-900 font-semibold mb-3 flex items-center gap-2 text-sm">
+            <CheckCircle className="h-4 w-4" />
+            Soil Health Index Details
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-700">{results.soil_health_index.toFixed(2)}</p>
+              <p className="text-xs text-gray-600">SHI Score</p>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-800">{soilInput.ph.toFixed(1)}</p>
+              <p className="text-xs text-gray-600">pH Level</p>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-800">{soilInput.organic_carbon !== undefined ? soilInput.organic_carbon.toFixed(1) : "N/A"}%</p>
+              <p className="text-xs text-gray-600">Organic Carbon</p>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-800">{results.recommendations.length}</p>
+              <p className="text-xs text-gray-600">Actions Needed</p>
+            </div>
+          </div>
+        </div>
 
         {!isSpeechSupported && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

@@ -17,16 +17,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # Local imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# Import schemas
-from api.schema.schema import WorkflowState
-
 # Import modularized components
 from api.utils.config import AppConfig
 from api.utils.initialization import initialize_app_components
 from api.utils.logging_config import setup_logger
 from api.utils.dependencies import dependency_manager
 from api.utils.session import SessionManager
-from api.workflow.prediction_workflow import create_prediction_workflow
+# from api.workflow.prediction_workflow import create_prediction_workflow # Removed
 
 # Import database components
 from api.db.connection import db_manager, get_db
@@ -48,7 +45,7 @@ logger = setup_logger("API", level=logging.INFO, console_level=logging.INFO)
 
 # Global components dictionary
 app_components = {}
-prediction_workflow = None
+# prediction_workflow = None # Removed
 session_manager = SessionManager()
 
 # Initialize app configuration
@@ -59,13 +56,11 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing application with role-based authentication...")
     
     # Initialize app components (models, preprocessors, etc.)
-    global app_components, prediction_workflow
+    global app_components
     app_components = initialize_app_components()
-    prediction_workflow = create_prediction_workflow()
     
     # Set dependencies in dependency manager
     dependency_manager.set_components(app_components)
-    dependency_manager.set_workflow(prediction_workflow)
     dependency_manager.set_session_manager(session_manager)
     
     # Create database tables
@@ -125,8 +120,8 @@ app.include_router(admin_router)  # New admin router
 def get_app_components():
     return app_components
 
-def get_prediction_workflow():
-    return prediction_workflow
+# def get_prediction_workflow(): # Removed
+#     return prediction_workflow
 
 def get_session_manager():
     return session_manager
@@ -152,11 +147,9 @@ async def root(
             "ai_explanations": True,
             "admin_panel": True
         },
-        "models_loaded": {
-            "fertility_model": app_components.get('fertility_model') is not None,
-            "fertility_preprocessor": app_components.get('fertility_preprocessor') is not None,
-            "fertilizer_model": app_components.get('fertilizer_model') is not None,
-            "fertilizer_preprocessor": app_components.get('fertilizer_preprocessor') is not None
+        "components_loaded": {
+            "agrovet_locator": app_components.get('agrovet_locator') is not None,
+            "soil_classifier": True # Always available as class
         },
         "endpoints": {
             "predict": "/predict - POST soil data for predictions",
@@ -207,21 +200,13 @@ async def health_check():
     
     health_status = {
         "status": "healthy" if all([
-            app_components.get('fertility_model'),
-            app_components.get('fertility_preprocessor'),
-            app_components.get('fertilizer_model'),
-            app_components.get('fertilizer_preprocessor'),
+            app_components.get('agrovet_locator'),
             db_healthy
         ]) else "degraded",
         "timestamp": datetime.now().isoformat(),
         "database": "healthy" if db_healthy else "degraded",
-        "models_available": {
-            "fertility_model": app_components.get('fertility_model') is not None,
-            "fertility_preprocessor": (app_components.get('fertility_preprocessor') is not None and 
-                                    getattr(app_components.get('fertility_preprocessor'), 'is_fitted', False)),
-            "fertilizer_model": app_components.get('fertilizer_model') is not None,
-            "fertilizer_preprocessor": (app_components.get('fertilizer_preprocessor') is not None and 
-                                      getattr(app_components.get('fertilizer_preprocessor'), 'is_fitted', False))
+        "components_available": {
+            "agrovet_locator": app_components.get('agrovet_locator') is not None
         },
         "llm_available": app_components.get('llm') is not None,
         "active_sessions": session_manager.get_session_count(),

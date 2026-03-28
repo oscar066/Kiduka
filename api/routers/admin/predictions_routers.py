@@ -22,7 +22,7 @@ router = APIRouter()
 async def get_prediction_service(db: AsyncSession = Depends(get_db)) -> AdminPredictionService:
     return AdminPredictionService(db)
 
-@router.get("/", response_model=AdminPredictionListResponse)
+@router.get("", response_model=AdminPredictionListResponse)
 async def get_all_predictions(
     current_user: User = Depends(get_current_admin_user),
     prediction_service: AdminPredictionService = Depends(get_prediction_service),

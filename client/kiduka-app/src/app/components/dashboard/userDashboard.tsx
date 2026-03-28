@@ -23,7 +23,7 @@ import Link from "next/link";
 interface UserStats {
   totalPredictions: number;
   recentPredictions: number;
-  favoriteTexture: string;
+  averageSHI: string;
   averageFertility: string;
 }
 
@@ -55,7 +55,7 @@ export function UserDashboard() {
       setStats({
         totalPredictions,
         recentPredictions: recentCount,
-        favoriteTexture: "Loamy",
+        averageSHI: "--",
         averageFertility: "Medium",
       });
     } catch (error) {
@@ -204,10 +204,10 @@ export function UserDashboard() {
                 ) : (
                   <>
                     <div className="text-2xl font-bold text-gray-900">
-                      {stats?.favoriteTexture}
+                      {stats?.averageSHI}
                     </div>
                     <div className="text-sm text-gray-600 font-medium mt-1">
-                      Favorite Texture
+                      Avg. SHI Score
                     </div>
                   </>
                 )}
@@ -247,7 +247,7 @@ export function UserDashboard() {
             </Card>
           </Link>
 
-          <Link href="/history">
+          <Link href="/reports">
             <Card className="cursor-pointer group border-amber-200 hover:border-blue-400 hover:shadow-xl transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
@@ -304,7 +304,7 @@ export function UserDashboard() {
             <h2 className="text-2xl font-serif font-bold text-green-800">
               Recent Predictions
             </h2>
-            <Link href="/history">
+            <Link href="/reports">
               <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
                 View All
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -331,7 +331,7 @@ export function UserDashboard() {
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900">
-                          {prediction.simplified_texture} Soil Analysis
+                          Soil Analysis
                         </p>
                         <p className="text-sm text-gray-500">
                           {new Date(prediction.created_at).toLocaleDateString('en-US', {
@@ -345,11 +345,11 @@ export function UserDashboard() {
                     <div className="text-right">
                       <div className="px-3 py-1 bg-green-100 rounded-full">
                         <p className="text-sm font-semibold text-green-800">
-                          {prediction.fertility_prediction}
+                          {prediction.soil_fertility_status}
                         </p>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        {Math.round(prediction.fertility_confidence * 100)}% confidence
+                        SHI: {prediction.soil_health_index?.toFixed(2) || 'N/A'}
                       </p>
                     </div>
                   </div>

@@ -23,7 +23,7 @@ router = APIRouter()
 async def get_admin_user_service(db: AsyncSession = Depends(get_db)) -> AdminUserService:
     return AdminUserService(db)
 
-@router.get("/", response_model=UserListResponse)
+@router.get("", response_model=UserListResponse)
 async def get_all_users(
     current_user: User = Depends(get_current_admin_user),
     user_service: AdminUserService = Depends(get_admin_user_service),

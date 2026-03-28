@@ -19,7 +19,7 @@ router = APIRouter(tags=["prediction-history"])
 async def get_history_service(db: AsyncSession = Depends(get_db)) -> PredictionHistoryService:
     return PredictionHistoryService(db)
 
-@router.get("/", response_model=PredictionListResponse)
+@router.get("", response_model=PredictionListResponse)
 async def get_user_predictions(
     current_user: User = Depends(get_current_user),
     history_service: PredictionHistoryService = Depends(get_history_service),

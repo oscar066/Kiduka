@@ -7,14 +7,13 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
 
 # Local imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 # Import local modules
-from api.ML.model_loader import ModelLoader
 from api.utils.agrovet import AgrovetLocator
+from api.services.prediction.ml_predictor import MLPredictor
 from api.utils.config import AppConfig
 from api.utils.logging_config import setup_logger
 
@@ -24,115 +23,39 @@ logger = setup_logger("init_app", level=logging.INFO, console_level=logging.INFO
 # Load environment variables
 load_dotenv()
 
-def initialize_models() -> Dict[str, Any]:
-    """Initialize and load all models and preprocessors"""
-    components = {}
-    
-    try:
-        logger.info("Initializing model loader...")
-        # Get the absolute path to the models directory
-        current_dir = Path(__file__).parent.parent
-        models_dir = current_dir / "ML"
-        
-        # Create ModelLoader instance with specific models directory
-        loader = ModelLoader(models_dir=str(models_dir))
-        
-        # List available models for debugging
-        available_models = loader.list_available_models()
-        logger.debug(f"Available model files: {available_models}")
-        
-        if not available_models:
-            logger.error(f"No model files found in {models_dir}")
-            return components
-        
-        # Load fertility components
-        logger.info("Loading fertility preprocessor...")
-        fertility_preprocessor = loader.load_preprocessor(AppConfig.MODEL_FILES['fertility_preprocessor'])
-        logger.info(f"Fertility preprocessor loaded. Is fitted: {fertility_preprocessor.is_fitted}")
-        logger.debug(f"Fertility preprocessor encoders: {list(fertility_preprocessor.label_encoders.keys())}")
-        logger.debug(f"Fertility preprocessor feature columns: {fertility_preprocessor.feature_columns}")
-        
-        logger.info("Loading fertility model...")
-        fertility_model = loader.load_model(AppConfig.MODEL_FILES['fertility_model'])
-        logger.info(f"Fertility model loaded: {type(fertility_model)}")
-        
-        # Load fertilizer components
-        logger.info("Loading fertilizer preprocessor...")
-        fertilizer_preprocessor = loader.load_preprocessor(AppConfig.MODEL_FILES['fertilizer_preprocessor'])
-        logger.info(f"Fertilizer preprocessor loaded. Is fitted: {fertilizer_preprocessor.is_fitted}")
-        logger.debug(f"Fertilizer preprocessor encoders: {list(fertilizer_preprocessor.label_encoders.keys())}")
-        logger.debug(f"Fertilizer preprocessor feature columns: {fertilizer_preprocessor.feature_columns}")
-        
-        logger.info("Loading fertilizer model...")
-        fertilizer_model = loader.load_model(AppConfig.MODEL_FILES['fertilizer_model'])
-        logger.info(f"Fertilizer model loaded: {type(fertilizer_model)}")
-        
-        # Store components
-        components.update({
-            'fertility_preprocessor': fertility_preprocessor,
-            'fertility_model': fertility_model,
-            'fertilizer_preprocessor': fertilizer_preprocessor,
-            'fertilizer_model': fertilizer_model
-        })
-
-        # Load Crop 1 components
-        logger.info("Loading crop recommender 1 preprocessor...")
-        crop1_preprocessor = loader.load_preprocessor(AppConfig.MODEL_FILES['crop_recommender1_preprocessor'])
-        
-        logger.info("Loading crop recommender 1 model...")
-        crop1_model = loader.load_model(AppConfig.MODEL_FILES['crop_recommender1_model'])
-        
-        # Load Crop 2 components
-        logger.info("Loading crop recommender 2 preprocessor...")
-        crop2_preprocessor = loader.load_preprocessor(AppConfig.MODEL_FILES['crop_recommender2_preprocessor'])
-        
-        logger.info("Loading crop recommender 2 model...")
-        crop2_model = loader.load_model(AppConfig.MODEL_FILES['crop_recommender2_model'])
-        
-        components.update({
-            'crop_recommender1_preprocessor': crop1_preprocessor,
-            'crop_recommender1_model': crop1_model,
-            'crop_recommender2_preprocessor': crop2_preprocessor,
-            'crop_recommender2_model': crop2_model
-        })
-        
-        logger.info("All models and preprocessors loaded successfully!")
-        
-    except Exception as e:
-        logger.error(f"Error loading models: {e}")
-        logger.error(f"Exception details:", exc_info=True)
-    
-    return components
-
-def initialize_llm() -> Optional[ChatOpenAI]:
-    """Initialize OpenAI LLM"""
-    try:
-        openai_api_key = os.getenv("OPENAI_API_KEY")
-        if openai_api_key and openai_api_key != "your-openai-api-key-here":
-            llm = ChatOpenAI(
-                model=AppConfig.OPENAI_MODEL,
-                temperature=AppConfig.OPENAI_TEMPERATURE,
-                api_key=openai_api_key
-            )
-            logger.info("OpenAI LLM initialized successfully")
-            return llm
-        else:
-            logger.warning("OpenAI API key not found or invalid")
-            return None
-    except Exception as e:
-        logger.error(f"Error initializing OpenAI LLM: {e}")
-        return None
-
 def initialize_agrovet_locator() -> Optional[AgrovetLocator]:
     """Initialize AgrovetLocator with data"""
     try:
         current_dir = Path(__file__).parent.parent
-        data_path = current_dir / "data" / AppConfig.DATA_FILES['agrovet_data']
+        # Ensure we have a valid path for data, default to "data/agrovets.csv" if config missing
+        data_file = AppConfig.DATA_FILES.get('agrovet_data', 'agrovets.csv')
+        data_path = current_dir / "data" / data_file
+        
+        # Check if file exists, if not, AgrovetLocator will generate sample data
         agrovet_locator = AgrovetLocator.load_from_csv(str(data_path))
         logger.info("AgrovetLocator initialized successfully")
         return agrovet_locator
     except Exception as e:
         logger.error(f"Error initializing AgrovetLocator: {e}")
+        return None
+
+def initialize_ml_predictor() -> Optional[MLPredictor]:
+    """Initialize MLPredictor with optional service account credentials"""
+    try:
+        # Check for service account credentials in environment
+        creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        use_sa = creds_path is not None and os.path.exists(creds_path)
+        
+        predictor = MLPredictor(use_service_account=use_sa, credentials_path=creds_path)
+        
+        # Eagerly initialize to load models and connect to GEE at startup
+        logger.info("Initializing MLPredictor (loading models and connecting to GEE)...")
+        predictor.initialize()
+        
+        return predictor
+    except Exception as e:
+        logger.error(f"Error initializing MLPredictor at startup: {e}")
+        # We still return the instance if possible, or None if it failed fatally
         return None
 
 def initialize_app_components() -> Dict[str, Any]:
@@ -141,19 +64,15 @@ def initialize_app_components() -> Dict[str, Any]:
     
     components = {}
     
-    # Initialize models
-    model_components = initialize_models()
-    components.update(model_components)
-    
-    # Initialize LLM
-    llm = initialize_llm()
-    if llm:
-        components['llm'] = llm
-    
     # Initialize AgrovetLocator
     agrovet_locator = initialize_agrovet_locator()
     if agrovet_locator:
         components['agrovet_locator'] = agrovet_locator
+        
+    # Initialize MLPredictor
+    ml_predictor = initialize_ml_predictor()
+    if ml_predictor:
+        components['ml_predictor'] = ml_predictor
     
     logger.debug(f"Initialized components: {list(components.keys())}")
     return components

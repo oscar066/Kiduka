@@ -21,7 +21,7 @@ router = APIRouter()
 async def get_audit_service(db: AsyncSession = Depends(get_db)) -> AdminAuditService:
     return AdminAuditService(db)
 
-@router.get("/", response_model=AuditLogResponse)
+@router.get("", response_model=AuditLogResponse)
 async def get_audit_logs(
     current_user: User = Depends(get_current_admin_user),
     audit_service: AdminAuditService = Depends(get_audit_service),

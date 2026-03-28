@@ -11,27 +11,10 @@ from pydantic import BaseModel, Field
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from api.utils.logging_config import setup_logger
+from api.schema.schema import AgrovetInfo
 
 # Setup logging
 logger = setup_logger("AgrovetLocator", level=logging.INFO, console_level=logging.INFO)
-
-class UserLocation(BaseModel):
-    latitude: float = Field(..., ge=-90, le=90, description="User latitude")
-    longitude: float = Field(..., ge=-180, le=180, description="User longitude")
-
-class AgrovetInfo(BaseModel):
-    name: str
-    latitude: float
-    longitude: float
-    products: List[str]
-    prices: List[float]
-    distance_km: Optional[float] = None
-
-class AgrovetResponse(BaseModel):
-    user_location: UserLocation
-    nearest_agrovets: List[AgrovetInfo]
-    search_radius_km: float
-    timestamp: str
 
 class AgrovetLocator:
     """Class to handle agrovet location and distance calculations"""
@@ -132,7 +115,7 @@ class AgrovetLocator:
                 name_column = 'name' if 'name' in self.agrovets_df.columns else self.agrovets_df.columns[0]
                 
                 results.append({
-                    'name': str(row[name_column]),
+                    'name': str(row[name_column]).strip(), # Strip trailing whitespace
                     'latitude': float(row['lat']),
                     'longitude': float(row['lon']),
                     'products': products,
@@ -151,32 +134,7 @@ class AgrovetLocator:
         """Factory method to create AgrovetLocator from CSV file"""
         agrovets_df = load_agrovet_data(csv_path)
         return cls(agrovets_df)
-        
-    def test_locator(self):
-        """Test method to verify AgrovetLocator functionality"""
-        if self.agrovets_df is None or self.agrovets_df.empty:
-            logger.error("No data available for testing")
-            return
-            
-        # Use first agrovet location as test coordinates
-        test_lat = float(self.agrovets_df.iloc[0]['lat'])
-        test_lon = float(self.agrovets_df.iloc[0]['lon'])
-            
-        print("\nTesting AgrovetLocator...")
-        print(f"User location: {test_lat}, {test_lon}")
-            
-        # Find nearest agrovets
-        results = self.find_nearest_agrovets(
-            test_lat, test_lon, top_k=3, max_distance_km=50
-        )
-            
-        # Display results
-        print(f"\nFound {len(results)} nearest agrovets:")
-        for i, agrovet in enumerate(results, 1):
-            print(f"\n{i}. {agrovet['name']}")
-            print(f"   Distance: {agrovet['distance_km']} km")
-            print(f"   Products: {', '.join(agrovet['products'])}")
-            print(f"   Prices: {agrovet['prices']}")
+
 
 def load_agrovet_data(csv_path: str = None) -> Optional[pd.DataFrame]:
     """Load agrovet data from CSV file"""

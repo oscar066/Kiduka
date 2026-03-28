@@ -19,7 +19,7 @@ router = APIRouter()
 async def get_dashboard_service(db: AsyncSession = Depends(get_db)) -> AdminDashboardService:
     return AdminDashboardService(db)
 
-@router.get("/", response_model=AdminDashboardResponse)
+@router.get("", response_model=AdminDashboardResponse)
 async def get_admin_dashboard(
     current_user: User = Depends(get_current_admin_user),
     dashboard_service: AdminDashboardService = Depends(get_dashboard_service),
