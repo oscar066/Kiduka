@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../../layout/UnifiedSidebar";
 import { Navbar } from "../../layout/navbar";
+import { SessionGuard } from "../../shared/SessionGuard";
 import {
   User,
   Mail,
@@ -64,13 +65,7 @@ export default function UserProfileComponent() {
   const [profileData, setProfileData] = useState<UserProfile | null>(null);
   const [editedData, setEditedData] = useState<Partial<UserProfile>>({});
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (status === "loading") return;
-    if (status === "unauthenticated") {
-      router.push("/auth/login");
-    }
-  }, [status, router]);
+
 
   // Fetch user profile data
   useEffect(() => {
@@ -181,30 +176,9 @@ export default function UserProfileComponent() {
     return profileData?.username?.slice(0, 2).toUpperCase() || "U";
   };
 
-  if (status === "loading" || isLoading) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-25 via-amber-25 to-green-25">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-          <div className="text-center">
-            <h3 className="text-lg font-medium text-green-800">
-              Loading Profile...
-            </h3>
-            <p className="text-green-600">
-              Please wait while we fetch your information
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (status === "unauthenticated") {
-    return null;
-  }
-
   return (
-    <SidebarProvider>
+    <SessionGuard message="Please log in to view your profile.">
+      <SidebarProvider>
       <UnifiedSidebar />
       <SidebarInset>
         <Navbar />
@@ -545,5 +519,6 @@ export default function UserProfileComponent() {
         </main>
       </SidebarInset>
     </SidebarProvider>
+    </SessionGuard>
   );
 }

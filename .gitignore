@@ -13,3 +13,5 @@ api/app.py
 # Ignore credentials
 api/credentials/
 
+# Ignore Ml models
+api/ml_models/*

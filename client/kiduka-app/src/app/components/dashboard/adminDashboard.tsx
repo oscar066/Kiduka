@@ -1,5 +1,4 @@
 "use client";
-
 import type React from "react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,19 +12,18 @@ import {
   BarChart3,
   Activity,
   AlertTriangle,
-  Shield,
   TrendingUp,
   MapPin,
   Settings,
   UserCheck,
   FileText,
-  Loader2,
-  Leaf,
 } from "lucide-react";
 import { SuperAdminOnly } from "../auth/roleBasedGaurd";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { AdminMetricCard } from "./components/AdminMetricCard";
+import { AdminActionCard } from "./components/AdminActionCard";
 
 export function AdminDashboard() {
   const { user, token, isSuperAdmin } = useAuth();
@@ -88,7 +86,7 @@ export function AdminDashboard() {
 
       {/* Key Metrics */}
       <div className="grid lg:grid-cols-4 gap-6">
-        <MetricCard
+        <AdminMetricCard
           title="Total Users"
           value={stats?.total_users || 0}
           icon={<Users className="h-8 w-8 text-green-500" />}
@@ -96,7 +94,7 @@ export function AdminDashboard() {
           changeType="positive"
           loading={loading}
         />
-        <MetricCard
+        <AdminMetricCard
           title="Active Users"
           value={stats?.active_users || 0}
           icon={<UserCheck className="h-8 w-8 text-amber-500" />}
@@ -106,7 +104,7 @@ export function AdminDashboard() {
           changeType="neutral"
           loading={loading}
         />
-        <MetricCard
+        <AdminMetricCard
           title="Total Predictions"
           value={stats?.total_predictions || 0}
           icon={<BarChart3 className="h-8 w-8 text-blue-500" />}
@@ -114,7 +112,7 @@ export function AdminDashboard() {
           changeType="positive"
           loading={loading}
         />
-        <MetricCard
+        <AdminMetricCard
           title="Flagged Predictions"
           value={stats?.flagged_predictions || 0}
           icon={<AlertTriangle className="h-8 w-8 text-red-500" />}
@@ -360,102 +358,5 @@ export function AdminDashboard() {
         </Card>
       </div>
     </div>
-  );
-}
-
-// Metric Card Component
-interface MetricCardProps {
-  title: string;
-  value: number;
-  icon: React.ReactNode;
-  change: string;
-  changeType: "positive" | "negative" | "neutral";
-  loading?: boolean;
-}
-
-function MetricCard({
-  title,
-  value,
-  icon,
-  change,
-  changeType,
-  loading = false,
-}: MetricCardProps) {
-  const changeColorClass = {
-    positive: "text-green-600",
-    negative: "text-red-600",
-    neutral: "text-gray-600",
-  }[changeType];
-
-  return (
-    <Card>
-      <CardHeader className="flex items-center">
-        <div className="p-2 bg-green-50 rounded-lg">{icon}</div>
-        <div className="ml-4">
-          <CardTitle className="text-sm font-medium text-green-700">
-            {title}
-          </CardTitle>
-          {loading ? (
-            <div className="h-8 w-20 bg-gray-200 rounded animate-pulse mt-1" />
-          ) : (
-            <div className="text-2xl font-semibold text-green-900">
-              {value.toLocaleString()}
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
-        ) : (
-          <p className={`text-sm ${changeColorClass}`}>{change}</p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// Admin Action Card Component
-interface AdminActionCardProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  href: string;
-  color: "green" | "amber" | "blue" | "purple" | "orange" | "gray";
-}
-
-function AdminActionCard({
-  title,
-  description,
-  icon,
-  href,
-  color,
-}: AdminActionCardProps) {
-  const colorClasses = {
-    green: "bg-green-500 hover:bg-green-600",
-    amber: "bg-amber-500 hover:bg-amber-600",
-    blue: "bg-blue-500 hover:bg-blue-600",
-    purple: "bg-purple-500 hover:bg-purple-600",
-    orange: "bg-orange-500 hover:bg-orange-600",
-    gray: "bg-gray-500 hover:bg-gray-600",
-  };
-
-  return (
-    <a
-      href={href}
-      className="block bg-white rounded-lg shadow-lg border border-amber-200 hover:shadow-xl transition-all duration-200 hover:scale-105"
-    >
-      <div className="p-6">
-        <div
-          className={`inline-flex p-3 rounded-lg text-white ${colorClasses[color]}`}
-        >
-          {icon}
-        </div>
-        <h3 className="mt-4 text-lg font-serif font-medium text-green-800">
-          {title}
-        </h3>
-        <p className="mt-2 text-sm text-green-600">{description}</p>
-      </div>
-    </a>
   );
 }

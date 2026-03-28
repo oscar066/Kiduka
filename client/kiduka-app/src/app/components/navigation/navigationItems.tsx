@@ -3,13 +3,13 @@ import {
   BarChart3,
   Beaker,
   FileText,
-  History,
   Leaf,
   MapPin,
   Settings,
   TrendingUp,
   Shield,
   Users,
+  MessageCircle,
 } from "lucide-react";
 import { UserRole } from "@/lib/api-client";
 
@@ -35,9 +35,9 @@ const navigationItems: NavItem[] = [
     href: "/analysis",
   },
   {
-    label: "Field Management",
-    icon: <MapPin className="h-4 w-4" />,
-    href: "/fields",
+    label: "Chat with AI",
+    icon: <MessageCircle className="h-4 w-4" />,
+    href: "/chat",
   },
   {
     label: "My Reports",
@@ -45,9 +45,9 @@ const navigationItems: NavItem[] = [
     href: "/reports",
   },
   {
-    label: "History",
-    icon: <History className="h-4 w-4" />,
-    href: "/history",
+    label: "Field Management",
+    icon: <MapPin className="h-4 w-4" />,
+    href: "/fields",
   },
   {
     label: "Analytics",

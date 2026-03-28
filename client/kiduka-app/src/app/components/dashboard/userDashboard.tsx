@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,69 +11,110 @@ import {
   History,
   TrendingUp,
   MapPin,
-  Loader2,
   Settings,
   BarChart3,
   Calendar,
   ArrowRight,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 
-interface UserStats {
-  totalPredictions: number;
-  recentPredictions: number;
-  averageSHI: string;
-  averageFertility: string;
-}
+import { UserDashboardStatCard as StatCard } from "./components/UserDashboardStatCard";
+import { UserDashboardPredictionRow as PredictionRow } from "./components/UserDashboardPredictionRow";
+import {
+  deriveStats,
+  isCacheValid,
+  cache,
+  type Prediction,
+  type PredictionsData,
+  type UserStats,
+} from "./components/userDashboardUtils";
 
 export function UserDashboard() {
   const { user, token } = useAuth();
+
+  // Separate loading flags so static sections render immediately
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [predictionsLoading, setPredictionsLoading] = useState(true);
+
   const [stats, setStats] = useState<UserStats | null>(null);
-  const [recentPredictions, setRecentPredictions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [recentPredictions, setRecentPredictions] = useState<Prediction[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (token) {
-      loadUserDashboardData();
-    }
-  }, [token]);
+  // Prevent double-fetch in Strict Mode
+  const fetchedRef = useRef(false);
 
-  const loadUserDashboardData = async () => {
-    try {
-      setLoading(true);
+  const loadData = useCallback(
+    async (force = false) => {
+      if (!token) return;
+
+      // Use cache unless forced refresh
+      if (!force && isCacheValid()) {
+        const { data } = cache.current!;
+        setStats(deriveStats(data));
+        setRecentPredictions(data.predictions);
+        setStatsLoading(false);
+        setPredictionsLoading(false);
+        return;
+      }
+
       setError(null);
-      const predictionsData = await apiClient.getPredictionHistory(
-        token!,
-        1,
-        5
-      );
-      setRecentPredictions(predictionsData.predictions || []);
-      const totalPredictions = predictionsData.total || 0;
-      const recentCount = predictionsData.predictions?.length || 0;
-      setStats({
-        totalPredictions,
-        recentPredictions: recentCount,
-        averageSHI: "--",
-        averageFertility: "Medium",
-      });
-    } catch (error) {
-      console.error("Error loading dashboard data:", error);
-      setError("Failed to load dashboard data");
-    } finally {
-      setLoading(false);
-    }
-  };
 
+      try {
+        const response = await apiClient.getPredictionHistory(token, 1, 5);
+        const data: PredictionsData = {
+          predictions: response.predictions ?? [],
+          total: response.total,
+        };
+
+        // Populate cache
+        cache.current = { data, timestamp: Date.now() };
+
+        // Stats and predictions can resolve in one go since it's one request,
+        // but we set them separately so StatCards can unblock independently.
+        setStats(deriveStats(data));
+        setStatsLoading(false);
+
+        setRecentPredictions(data.predictions ?? []);
+        setPredictionsLoading(false);
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+        setError("Failed to load dashboard data. Please try again.");
+        setStatsLoading(false);
+        setPredictionsLoading(false);
+      }
+    },
+    [token]
+  );
+
+  useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    loadData();
+  }, [loadData]);
+
+  // Error state
   if (error) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md space-y-4">
           <Alert variant="destructive" className="border-red-300">
             <AlertTitle className="font-serif">Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              setStatsLoading(true);
+              setPredictionsLoading(true);
+              loadData(true);
+            }}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Retry
+          </Button>
         </div>
       </div>
     );
@@ -81,231 +122,155 @@ export function UserDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Welcome Section with Gradient */}
-      <div className="space-y-3">
-        <h1 className="text-4xl font-serif font-bold bg-gradient-to-r from-green-700 via-emerald-600 to-green-600 bg-clip-text text-transparent">
-          Welcome back, {user?.full_name || user?.username}!
-        </h1>
-        <p className="text-lg text-gray-600 font-serif">
-          Ready to analyze your soil and get personalized recommendations?
-        </p>
+      {/* Welcome — renders immediately, no loading dependency */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
+            Welcome back, {user?.full_name ?? user?.username}!
+          </h1>
+          <p className="text-lg text-gray-600 font-serif">
+            Ready to analyze your soil and get personalized recommendations?
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-gray-400 hover:text-green-600 mt-1"
+          title="Refresh dashboard"
+          onClick={() => {
+            setStatsLoading(true);
+            setPredictionsLoading(true);
+            loadData(true);
+          }}
+        >
+          <RefreshCw className="h-5 w-5" />
+        </Button>
       </div>
 
-      {/* Quick Stats - Enhanced */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-amber-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="p-3 bg-blue-100 rounded-xl">
-                  <BarChart3 className="h-7 w-7 text-blue-600" />
-                </div>
-                {!loading && <TrendingUp className="h-5 w-5 text-blue-500" />}
-              </div>
-              <div>
-                {loading ? (
-                  <>
-                    <div className="h-9 w-16 bg-gray-200 rounded animate-pulse" />
-                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mt-2" />
-                  </>
-                ) : (
-                  <>
-                    <div className="text-3xl font-bold text-gray-900">
-                      {stats?.totalPredictions || 0}
-                    </div>
-                    <div className="text-sm text-gray-600 font-medium mt-1">
-                      Total Predictions
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-amber-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="p-3 bg-green-100 rounded-xl">
-                  <Calendar className="h-7 w-7 text-green-600" />
-                </div>
-                {!loading && <Sparkles className="h-5 w-5 text-green-500" />}
-              </div>
-              <div>
-                {loading ? (
-                  <>
-                    <div className="h-9 w-16 bg-gray-200 rounded animate-pulse" />
-                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mt-2" />
-                  </>
-                ) : (
-                  <>
-                    <div className="text-3xl font-bold text-gray-900">
-                      {stats?.recentPredictions || 0}
-                    </div>
-                    <div className="text-sm text-gray-600 font-medium mt-1">
-                      This Month
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-amber-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="p-3 bg-amber-100 rounded-xl">
-                  <Leaf className="h-7 w-7 text-amber-600" />
-                </div>
-                {!loading && (
-                  <div className="px-2 py-1 bg-amber-100 rounded text-xs font-semibold text-amber-700">
-                    AVG
-                  </div>
-                )}
-              </div>
-              <div>
-                {loading ? (
-                  <>
-                    <div className="h-9 w-20 bg-gray-200 rounded animate-pulse" />
-                    <div className="h-4 w-28 bg-gray-200 rounded animate-pulse mt-2" />
-                  </>
-                ) : (
-                  <>
-                    <div className="text-3xl font-bold text-gray-900">
-                      {stats?.averageFertility}
-                    </div>
-                    <div className="text-sm text-gray-600 font-medium mt-1">
-                      Avg. Fertility
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-amber-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="p-3 bg-emerald-100 rounded-xl">
-                  <MapPin className="h-7 w-7 text-emerald-600" />
-                </div>
-              </div>
-              <div>
-                {loading ? (
-                  <>
-                    <div className="h-8 w-24 bg-gray-200 rounded animate-pulse" />
-                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mt-2" />
-                  </>
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold text-gray-900">
-                      {stats?.averageSHI}
-                    </div>
-                    <div className="text-sm text-gray-600 font-medium mt-1">
-                      Avg. SHI Score
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats — each card shares one loading flag but they're visually independent */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          loading={statsLoading}
+          iconBg="from-blue-100 to-cyan-100"
+          icon={<BarChart3 className="h-8 w-8 text-blue-600" />}
+          badge={<TrendingUp className="h-4 w-4 text-blue-400" />}
+          value={stats?.totalPredictions ?? 0}
+          label="Total Predictions"
+        />
+        <StatCard
+          loading={statsLoading}
+          iconBg="from-green-100 to-emerald-100"
+          icon={<Calendar className="h-8 w-8 text-green-600" />}
+          badge={<Sparkles className="h-4 w-4 text-green-400" />}
+          value={stats?.thisMonthPredictions ?? 0}
+          label="This Month"
+        />
+        <StatCard
+          loading={statsLoading}
+          iconBg="from-amber-100 to-yellow-100"
+          icon={<Leaf className="h-8 w-8 text-amber-600" />}
+          badge={
+            <span className="px-1.5 py-0.5 bg-amber-100 rounded text-[10px] font-semibold text-amber-700">
+              AVG
+            </span>
+          }
+          value={stats?.averageFertility ?? "--"}
+          label="Avg. Fertility"
+        />
+        <StatCard
+          loading={statsLoading}
+          iconBg="from-emerald-100 to-teal-100"
+          icon={<MapPin className="h-8 w-8 text-emerald-600" />}
+          value={stats?.averageSHI ?? "--"}
+          label="Avg. SHI Score"
+        />
       </div>
 
-      {/* Quick Actions - Enhanced */}
+      {/* Quick Actions — static, renders immediately */}
       <div>
         <h2 className="text-2xl font-serif font-bold text-green-800 mb-4">
           Quick Actions
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Link href="/analysis">
-            <Card className="cursor-pointer group border-amber-200 hover:border-green-400 hover:shadow-xl transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="p-4 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                    <Leaf className="h-8 w-8 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 text-lg mb-1 group-hover:text-green-700 transition-colors">
-                      New Soil Analysis
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-3">
-                      Analyze your soil and get fertilizer recommendations
-                    </p>
-                    <div className="flex items-center text-green-600 text-sm font-medium">
-                      Start analysis
-                      <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          {[
+            {
+              href: "/analysis",
+              hoverBorder: "hover:border-green-400",
+              iconBg: "from-green-100 to-emerald-100",
+              icon: <Leaf className="h-8 w-8 text-green-600" />,
+              title: "New Soil Analysis",
+              desc: "Analyze your soil and get fertilizer recommendations",
+              cta: "Start analysis",
+              ctaColor: "text-green-600",
+            },
+            {
+              href: "/reports",
+              hoverBorder: "hover:border-blue-400",
+              iconBg: "from-blue-100 to-cyan-100",
+              icon: <History className="h-8 w-8 text-blue-600" />,
+              title: "Prediction History",
+              desc: "View your past soil analyses and recommendations",
+              cta: "View history",
+              ctaColor: "text-blue-600",
+            },
+            {
+              href: "/profile",
+              hoverBorder: "hover:border-gray-400",
+              iconBg: "from-gray-100 to-slate-100",
+              icon: <Settings className="h-8 w-8 text-gray-600" />,
+              title: "Profile Settings",
+              desc: "Update your account information and preferences",
+              cta: "Manage profile",
+              ctaColor: "text-gray-600",
+            },
+          ].map(({ href, hoverBorder, iconBg, icon, title, desc, cta, ctaColor }) => (
+            <Link key={href} href={href}>
+              <Card
+                className={`cursor-pointer group border-amber-200 ${hoverBorder} hover:shadow-xl transition-all duration-300`}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={`p-4 bg-gradient-to-br ${iconBg} rounded-2xl group-hover:scale-110 transition-transform duration-300`}
+                    >
+                      {icon}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900 text-lg mb-1">{title}</h3>
+                      <p className="text-gray-600 text-sm mb-3">{desc}</p>
+                      <div className={`flex items-center ${ctaColor} text-sm font-medium`}>
+                        {cta}
+                        <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/reports">
-            <Card className="cursor-pointer group border-amber-200 hover:border-blue-400 hover:shadow-xl transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="p-4 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                    <History className="h-8 w-8 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 text-lg mb-1 group-hover:text-blue-700 transition-colors">
-                      Prediction History
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-3">
-                      View your past soil analyses and recommendations
-                    </p>
-                    <div className="flex items-center text-blue-600 text-sm font-medium">
-                      View history
-                      <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/profile">
-            <Card className="cursor-pointer group border-amber-200 hover:border-gray-400 hover:shadow-xl transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="p-4 bg-gradient-to-br from-gray-100 to-slate-100 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                    <Settings className="h-8 w-8 text-gray-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 text-lg mb-1 group-hover:text-gray-700 transition-colors">
-                      Profile Settings
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-3">
-                      Update your account information and preferences
-                    </p>
-                    <div className="flex items-center text-gray-600 text-sm font-medium">
-                      Manage profile
-                      <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
         </div>
       </div>
 
-      {/* Recent Predictions - Enhanced */}
-      {recentPredictions.length > 0 && (
+      {/* Recent Predictions */}
+      {predictionsLoading ? (
+        <Card className="border-amber-200 shadow-lg">
+          <CardContent className="p-6 space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />
+            ))}
+          </CardContent>
+        </Card>
+      ) : recentPredictions.length > 0 ? (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-serif font-bold text-green-800">
               Recent Predictions
             </h2>
             <Link href="/reports">
-              <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
+              <Button
+                variant="ghost"
+                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+              >
                 View All
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -320,48 +285,15 @@ export function UserDashboard() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-3">
-                {recentPredictions.slice(0, 5).map((prediction: any, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-green-50/50 rounded-xl border border-gray-100 hover:border-green-200 hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <Leaf className="h-5 w-5 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          Soil Analysis
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {new Date(prediction.created_at).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="px-3 py-1 bg-green-100 rounded-full">
-                        <p className="text-sm font-semibold text-green-800">
-                          {prediction.soil_fertility_status}
-                        </p>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        SHI: {prediction.soil_health_index?.toFixed(2) || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
+                {recentPredictions.map((prediction, index) => (
+                  <PredictionRow key={prediction.created_at ?? index} prediction={prediction} index={index} />
                 ))}
               </div>
             </CardContent>
           </Card>
         </div>
-      )}
-
-      {/* Empty State if No Predictions */}
-      {recentPredictions.length === 0 && (
+      ) : (
+        /* Empty state */
         <Card className="border-amber-200">
           <CardContent className="p-12 text-center">
             <div className="max-w-md mx-auto space-y-4">
@@ -372,7 +304,8 @@ export function UserDashboard() {
                 Start Your First Analysis
               </h3>
               <p className="text-gray-600">
-                You haven't analyzed any soil samples yet. Get started now to receive personalized fertilizer recommendations!
+                You haven't analyzed any soil samples yet. Get started now to receive
+                personalized fertilizer recommendations!
               </p>
               <Link href="/analysis">
                 <Button className="bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all mt-4">

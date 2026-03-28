@@ -44,14 +44,33 @@ class PredictionService:
             optional_nutrients = ["n", "p", "k", "organic_carbon", "ca", "mg"]
             provided_nutrients = {n: getattr(soil_data, n) for n in optional_nutrients if getattr(soil_data, n) is not None}
             
-            all_provided = len(provided_nutrients) == len(optional_nutrients)
-            logger.info(f"Provided nutrients: {list(provided_nutrients.keys())}, All provided: {all_provided}")
+            logger.info(f"Provided nutrients: {list(provided_nutrients.keys())}")
             
             classification_result = {}
             prediction_mode = "FORMULA"
             ml_extra_data = {}
             
-            if not all_provided:
+            # Decide prediction mode based on hierarchical rules
+            provided_keys = set(provided_nutrients.keys())
+            num_provided = len(provided_keys)
+            high_weight = {"n", "organic_carbon", "p", "ca"}
+            low_weight = {"k", "mg"}
+
+            use_ml_mode = True # Default
+            if "organic_carbon" in provided_keys:
+                use_ml_mode = False
+            elif num_provided >= 3:
+                use_ml_mode = False
+            elif len(provided_keys.intersection(high_weight)) >= 2:
+                use_ml_mode = False
+            elif num_provided == 2 and provided_keys.issubset(low_weight):
+                use_ml_mode = True
+            elif num_provided == 0 or (num_provided == 1 and "organic_carbon" not in provided_keys):
+                use_ml_mode = True
+            else:
+                use_ml_mode = True # Fallback for exactly 2 measurements (one high, one low, not OC)
+            
+            if use_ml_mode:
                 if not ml_predictor:
                     raise ValueError("ML Predictor is required for incomplete soil data but not available")
                 

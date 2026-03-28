@@ -6,16 +6,14 @@ import { cn } from "@/lib/utils";
 import {
   CheckCircle,
   AlertTriangle,
-  XCircle,
   Activity,
   Leaf,
   Calendar,
   AlertCircle,
   TrendingUp,
-  Info,
-  HelpCircle,
 } from "lucide-react";
 import { PredictionResponse, SoilInput } from "@/types/soil-analysis";
+import { getStatusIcon, getStatusColor, getSHIColor, getPhStatus } from "@/lib/soil-health-utils";
 
 interface StatusSummaryCardsProps {
   results: PredictionResponse;
@@ -24,55 +22,11 @@ interface StatusSummaryCardsProps {
 
 export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsProps) {
   
-  // Helper functions for soil health status
-  const getStatusIcon = () => {
-    const status = results.soil_fertility_status?.toLowerCase() || "";
-    switch (status) {
-      case "healthy":
-        return <CheckCircle className="h-6 w-6 text-green-600" />;
-      case "moderately healthy":
-        return <Info className="h-6 w-6 text-yellow-600" />;
-      case "poor":
-        return <XCircle className="h-6 w-6 text-orange-600" />;
-      case "very poor":
-        return <XCircle className="h-6 w-6 text-red-600" />;
-      default:
-        return <HelpCircle className="h-6 w-6 text-gray-600" />;
-    }
-  };
+  const statusText = results.soil_fertility_status || "";
+  const shiScore = results.soil_health_index;
+  const phValue = soilInput.ph || 0;
 
-  const getStatusColor = () => {
-    const status = results.soil_fertility_status?.toLowerCase() || "";
-    switch (status) {
-      case "healthy":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "moderately healthy":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "poor":
-        return "bg-orange-100 text-orange-800 border-orange-200";
-      case "very poor":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  const getSHIColor = () => {
-    const shi = results.soil_health_index;
-    if (shi >= 3.5) return "text-green-600";
-    if (shi >= 2.5) return "text-yellow-600";
-    if (shi >= 1.5) return "text-orange-600";
-    return "text-red-600";
-  };
-
-  const getPhStatus = () => {
-    const ph = soilInput.ph || 0;
-    if (ph < 6.0) return { text: "Acidic", color: "text-orange-600" };
-    if (ph > 7.5) return { text: "Alkaline", color: "text-blue-600" };
-    return { text: "Neutral", color: "text-green-600" };
-  };
-
-  const phStatus = getPhStatus();
+  const phStatus = getPhStatus(phValue);
   const wasDowngraded = results.initial_soil_fertility_status !== results.soil_fertility_status;
 
   return (
@@ -80,8 +34,8 @@ export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsPro
       {/* Soil Health Index Card */}
       <Card className="bg-gradient-to-br from-green-50 to-amber-50 border-amber-200">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-green-800">
-            {getStatusIcon()}
+        <CardTitle className="flex items-center gap-2 text-green-800">
+            {getStatusIcon(statusText)}
             Soil Health Overview
           </CardTitle>
         </CardHeader>
@@ -91,8 +45,8 @@ export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsPro
             <span className="text-sm font-medium text-gray-700">
               Soil Health Index (SHI):
             </span>
-            <span className={`text-2xl font-bold ${getSHIColor()}`}>
-              {results.soil_health_index.toFixed(2)}/4
+            <span className={`text-2xl font-bold ${getSHIColor(shiScore)}`}>
+              {shiScore.toFixed(2)}/4
             </span>
           </div>
 
@@ -102,8 +56,8 @@ export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsPro
               <span className="text-sm font-medium text-gray-700">
                 Final Status:
               </span>
-              <Badge className={getStatusColor()}>
-                {results.soil_fertility_status || "Unknown"}
+              <Badge className={getStatusColor(statusText)}>
+                {statusText || "Unknown"}
               </Badge>
             </div>
             
@@ -127,7 +81,7 @@ export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsPro
                 )}
               </div>
             </div>
-
+            
             {results.prediction_mode === "ML" && results.confidence && (
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">

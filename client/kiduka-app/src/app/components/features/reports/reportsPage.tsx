@@ -1,4 +1,3 @@
-// components/ReportsPage.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -26,11 +25,10 @@ import { Navbar } from "../../layout/navbar";
 import { apiClient } from "@/lib/api-client";
 
 // Import shared components
-import { ComprehensiveAnalysis } from "../analysis/soil-analysis/comprehensiveAnalysis";
-import { ActionPlanRecommendations } from "../analysis/soil-analysis/actionPlanRecommendation";
 import { NutrientDisplay } from "../analysis/soil-analysis/nutrientDisplay";
 import { AgrovetsDisplay } from "../analysis/soil-analysis/agrovetDisplay";
 import { StatusSummaryCards } from "../analysis/soil-analysis/statusSummaryCard";
+import { SessionGuard } from "../../shared/SessionGuard";
 
 import {
   Beaker,
@@ -40,7 +38,6 @@ import {
   TrendingUp,
   AlertCircle,
   Loader2,
-  Lock,
   ChevronLeft,
   ChevronRight,
   Search,
@@ -77,13 +74,7 @@ export default function ReportsPage() {
   const [sortBy, setSortBy] = useState("created_at");
   const [sortOrder, setSortOrder] = useState("desc");
 
-  // Authentication logic (same as dashboard)
-  useEffect(() => {
-    if (status === "loading") return;
-    if (status === "unauthenticated") {
-      router.push("/auth/login");
-    }
-  }, [status, router]);
+
 
   // Fetch reports function
   const fetchReports = async () => {
@@ -157,56 +148,11 @@ export default function ReportsPage() {
         .includes(searchTerm.toLowerCase())
   );
 
-  // Loading and access denied screens (same as dashboard)
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-25 via-amber-25 to-green-25">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-          <div className="text-center">
-            <h3 className="text-lg font-medium text-green-800">Loading...</h3>
-            <p className="text-green-600">Checking authentication status</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
-  if (status === "unauthenticated") {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-25 via-amber-25 to-green-25">
-        <Card className="w-full max-w-md border-red-200 bg-white shadow-lg">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <Lock className="h-6 w-6 text-red-600" />
-            </div>
-            <CardTitle className="text-red-800">Access Denied</CardTitle>
-            <CardDescription className="text-red-600">
-              You need to be logged in to access your reports.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              onClick={() => router.push("/auth/login")}
-              className="w-full bg-green-600 hover:bg-green-700"
-            >
-              Sign In
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => router.push("/")}
-              className="w-full border-green-200 text-green-700 hover:bg-green-50"
-            >
-              Go Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
-    <SidebarProvider>
+    <SessionGuard message="You need to be logged in to access your reports.">
+      <SidebarProvider>
       <UnifiedSidebar />
       <SidebarInset>
         <Navbar />
@@ -498,27 +444,6 @@ export default function ReportsPage() {
                 }} 
               />
 
-              {/* Comprehensive Analysis - Using shared component */}
-              <ComprehensiveAnalysis
-                results={selectedReport as any}
-                soilInput={{
-                  ph: selectedReport.soil_ph || 0,
-                  n: selectedReport.nitrogen || 0,
-                  p: selectedReport.phosphorus || 0,
-                  k: selectedReport.potassium || 0,
-                  organic_carbon: selectedReport.organic_carbon || 0,
-                  ca: selectedReport.calcium || 0,
-                  mg: selectedReport.magnesium || 0,
-                  latitude: selectedReport.location_lat || 0,
-                  longitude: selectedReport.location_lng || 0,
-                }}
-              />
-
-              {/* Action Plan & Recommendations - Using shared component */}
-              <ActionPlanRecommendations
-                recommendations={selectedReport.recommendations || []}
-              />
-
               {/* Agrovets - Using shared component */}
               {selectedReport.agrovets && (
                 <AgrovetsDisplay agrovets={selectedReport.agrovets} />
@@ -573,5 +498,6 @@ export default function ReportsPage() {
         </main>
       </SidebarInset>
     </SidebarProvider>
+    </SessionGuard>
   );
 }

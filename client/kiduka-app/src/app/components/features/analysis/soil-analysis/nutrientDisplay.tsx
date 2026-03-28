@@ -1,4 +1,3 @@
-// components/soil-analysis/NutrientDisplay.tsx
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +14,7 @@ import {
   Atom,
 } from "lucide-react";
 import { SoilInput, PredictionResponse } from "@/types/soil-analysis";
+import { getNutrientStatusColor, getNutrientProgressColor, getNutrientStatusText } from "@/lib/soil-health-utils";
 
 interface NutrientDisplayProps {
   soilInput: SoilInput;
@@ -30,6 +30,7 @@ interface NutrientGaugeItemProps {
   optimal: { min: number; max: number };
   icon: React.ReactNode;
   scoreData?: { score: number; label: string };
+  confidenceData?: { within_one_accuracy: string; r2: number; flag_low: boolean; };
   isML?: boolean;
   isMeasured?: boolean;
 }
@@ -41,6 +42,7 @@ function NutrientGaugeItem({
   optimal,
   icon,
   scoreData,
+  confidenceData,
   isML = false,
   isMeasured = false,
 }: NutrientGaugeItemProps) {
@@ -54,63 +56,9 @@ function NutrientGaugeItem({
   const status = (isML && !isMeasured && scoreData)
     ? scoreData.label.toLowerCase()
     : value < optimal.min ? "low" : value > optimal.max ? "high" : "optimal";
-
-  const getStatusColor = () => {
-    if (isML && !isMeasured && scoreData) {
-      const s = scoreData.label.toLowerCase();
-      if (s.includes("very poor")) return "text-red-700";
-      if (s.includes("poor")) return "text-red-500";
-      if (s.includes("moderately")) return "text-yellow-600";
-      if (s.includes("healthy")) return "text-green-600";
-    }
-
-    switch (status) {
-      case "low":
-        return "text-red-600";
-      case "high":
-        return "text-blue-600";
-      case "optimal":
-        return "text-green-600";
-      default:
-        return "text-gray-600";
-    }
-  };
-
-  const getProgressColor = () => {
-    if (isML && !isMeasured && scoreData) {
-      const s = scoreData.label.toLowerCase();
-      if (s.includes("very poor")) return "[&>div]:bg-red-700";
-      if (s.includes("poor")) return "[&>div]:bg-red-500";
-      if (s.includes("moderately")) return "[&>div]:bg-yellow-500";
-      if (s.includes("healthy")) return "[&>div]:bg-green-500";
-    }
-
-    switch (status) {
-      case "low":
-        return "[&>div]:bg-red-500";
-      case "high":
-        return "[&>div]:bg-blue-500";
-      case "optimal":
-        return "[&>div]:bg-green-500";
-      default:
-        return "[&>div]:bg-gray-500";
-    }
-  };
-
-  const getStatusText = () => {
-    if (isML && !isMeasured && scoreData) return scoreData.label;
-    
-    switch (status) {
-      case "low":
-        return "Below Optimal";
-      case "high":
-        return "High / Excess";
-      case "optimal":
-        return "Optimal Range";
-      default:
-        return "Unknown";
-    }
-  };
+        
+  const isMLEstimate = Boolean(isML && !isMeasured && scoreData);
+  const mlLabel = scoreData?.label;
 
   return (
     <div className="bg-white rounded-lg border border-amber-200 p-4 shadow-sm hover:shadow-md transition-shadow relative">
@@ -142,7 +90,7 @@ function NutrientGaugeItem({
       <div className="space-y-2">
         <Progress
           value={percentage}
-          className={`h-3 bg-gray-200 ${getProgressColor()}`}
+          className={`h-3 bg-gray-200 ${getNutrientProgressColor(isMLEstimate, status, mlLabel)}`}
         />
         <div className="flex justify-between text-xs text-gray-500">
           {(!isML || isMeasured) ? (
@@ -152,8 +100,8 @@ function NutrientGaugeItem({
           ) : (
             <span></span>
           )}
-          <span className={`font-semibold ${getStatusColor()}`}>
-            {getStatusText()}
+          <span className={`font-semibold ${getNutrientStatusColor(isMLEstimate, status, mlLabel)}`}>
+            {getNutrientStatusText(isMLEstimate, status, mlLabel)}
           </span>
           {(!isML || isMeasured) ? (
             <span className="font-medium">
@@ -177,6 +125,7 @@ export function NutrientDisplay({
   
   const isML = results?.prediction_mode === "ML";
   const scores = results?.nutrients || {};
+  const confidenceNutrients = results?.confidence?.nutrients || [];
   const isHybrid = results?.mentions?.some(m => m.toLowerCase().includes("hybrid"));
 
   const getTitle = () => {
@@ -257,6 +206,7 @@ export function NutrientDisplay({
             // Special mapping for OC vs organic_carbon in soilInput
             const inputKey = nutrient.id === "OC" ? "organic_carbon" : nutrient.id.toLowerCase();
             const isMeasured = !!soilInput[inputKey as keyof SoilInput] && soilInput[inputKey as keyof SoilInput]! > 0;
+            const confData = confidenceNutrients.find((n: any) => n.nutrient === nutrient.id);
             
             return (
               <NutrientGaugeItem
@@ -269,6 +219,7 @@ export function NutrientDisplay({
                 isML={isML}
                 isMeasured={isMeasured}
                 scoreData={scores[nutrient.id]}
+                confidenceData={confData}
               />
             );
           })}
