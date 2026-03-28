@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   CheckCircle,
   AlertTriangle,
@@ -110,9 +111,21 @@ export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsPro
               <span className="text-sm font-medium text-gray-700">
                 Prediction Mode:
               </span>
-              <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50">
-                {results.prediction_mode === "ML" ? "Machine Learning" : "Standard Formula"}
-              </Badge>
+              <div className="flex flex-col items-end gap-1">
+                <Badge variant="outline" className={cn(
+                  "border-green-200 text-green-700 bg-green-50",
+                  results.mentions?.some(m => m.toLowerCase().includes("hybrid")) && "bg-amber-50 border-amber-200 text-amber-700"
+                )}>
+                  {results.mentions?.some(m => m.toLowerCase().includes("hybrid")) 
+                    ? "Hybrid Analysis" 
+                    : (results.prediction_mode === "ML" ? "Machine Learning" : "Standard Formula")}
+                </Badge>
+                {results.mentions?.some(m => m.toLowerCase().includes("hybrid")) && (
+                  <span className="text-[10px] text-amber-600 font-medium italic">
+                    User Input + AI Prediction
+                  </span>
+                )}
+              </div>
             </div>
 
             {results.prediction_mode === "ML" && results.confidence && (

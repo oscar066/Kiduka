@@ -12,43 +12,43 @@ class SoilHealthClassifier:
         self.CLASSIFICATION_RANK = {"Very Poor": 1, "Poor": 2, "Moderately Healthy": 3, "Healthy": 4}
 
     # Individual Parameter Classifiers 
-    def _classify_ph(self, ph):
+    def classify_ph(self, ph):
         if 5.5 < ph <= 7.0: return 4
         elif (5.0 <= ph <= 5.5) or (7.0 < ph <= 7.5): return 3
         elif (4.5 <= ph < 5.0) or (7.5 < ph <= 8.0): return 2
         else: return 1
 
-    def _classify_n(self, n_pct):
+    def classify_n(self, n_pct):
         if n_pct > 0.25: return 4
         elif 0.15 <= n_pct <= 0.25: return 3
         elif 0.10 <= n_pct < 0.15: return 2
         else: return 1
 
-    def _classify_oc(self, oc_pct):
+    def classify_oc(self, oc_pct):
         if oc_pct > 3.0: return 4
         elif 2.0 <= oc_pct <= 3.0: return 3
         elif 1.0 <= oc_pct < 2.0: return 2
         else: return 1
 
-    def _classify_p(self, p_ppm):
+    def classify_p(self, p_ppm):
         if p_ppm > 40: return 4
         elif 20 <= p_ppm <= 40: return 3
         elif 10 <= p_ppm < 20: return 2
         else: return 1
 
-    def _classify_k(self, k_ppm):
+    def classify_k(self, k_ppm):
         if k_ppm > 160: return 4
         elif 80 <= k_ppm <= 160: return 3
         elif 40 <= k_ppm < 80: return 2
         else: return 1
 
-    def _classify_ca(self, ca_ppm):
+    def classify_ca(self, ca_ppm):
         if ca_ppm > 2000: return 4
         elif 1000 <= ca_ppm <= 2000: return 3
         elif 500 <= ca_ppm < 1000: return 2
         else: return 1
 
-    def _classify_mg(self, mg_ppm):
+    def classify_mg(self, mg_ppm):
         if mg_ppm > 300: return 4
         elif 150 <= mg_ppm <= 300: return 3
         elif 50 <= mg_ppm < 150: return 2
@@ -152,13 +152,13 @@ class SoilHealthClassifier:
 
             # Calculate Scores dynamically only for provided values
             scores = {}
-            if vals["pH"] is not None: scores["pH"] = self._classify_ph(vals["pH"])
-            if vals["N"] is not None:  scores["N"]  = self._classify_n(vals["N"])
-            if vals["OC"] is not None: scores["OC"] = self._classify_oc(vals["OC"])
-            if vals["P"] is not None:  scores["P"]  = self._classify_p(vals["P"])
-            if vals["K"] is not None:  scores["K"]  = self._classify_k(vals["K"])
-            if vals["Ca"] is not None: scores["Ca"] = self._classify_ca(vals["Ca"])
-            if vals["Mg"] is not None: scores["Mg"] = self._classify_mg(vals["Mg"])
+            if vals["pH"] is not None: scores["pH"] = self.classify_ph(vals["pH"])
+            if vals["N"] is not None:  scores["N"]  = self.classify_n(vals["N"])
+            if vals["OC"] is not None: scores["OC"] = self.classify_oc(vals["OC"])
+            if vals["P"] is not None:  scores["P"]  = self.classify_p(vals["P"])
+            if vals["K"] is not None:  scores["K"]  = self.classify_k(vals["K"])
+            if vals["Ca"] is not None: scores["Ca"] = self.classify_ca(vals["Ca"])
+            if vals["Mg"] is not None: scores["Mg"] = self.classify_mg(vals["Mg"])
 
             # Calculate SHI using dynamic total weight
             if not scores:
@@ -198,3 +198,25 @@ class SoilHealthClassifier:
                 "Recommendations": f"Error processing row: {str(e)}",
                 "Mentions": []
             }
+
+    def get_analysis_from_scores(self, scores, ph_val=None):
+        """Calculates analysis results from a dictionary of scores (1-4)."""
+        if not scores:
+            raise ValueError("No scores provided for analysis.")
+
+        weighted_sum = sum(scores[k] * self.WEIGHTS.get(k, 1.0) for k in scores)
+        total_weight = sum(self.WEIGHTS.get(k, 1.0) for k in scores)
+        shi = round(weighted_sum / total_weight, 2)
+        shi_class = self._get_shi_class(shi)
+        
+        final_status, rules = self._apply_overrides(scores, shi_class)
+        recommendations = self._generate_recommendations(ph_val, scores)
+
+        return {
+            "SHI_Score": shi,
+            "Initial_Class": shi_class,
+            "Final_Soil_Status": final_status,
+            "Recommendations": recommendations,
+            "Mentions": rules,
+            "Parameter_Scores": scores
+        }
