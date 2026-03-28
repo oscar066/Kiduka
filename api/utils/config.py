@@ -27,18 +27,18 @@ class AppConfig:
 
     # Known model accuracy per class (from test set evaluation)
     CLASS_ACCURACY = {
-        "Very Poor":          {"accuracy": 0.50, "within_one": 0.88},
-        "Poor":               {"accuracy": 0.62, "within_one": 0.91},
-        "Moderately Healthy": {"accuracy": 0.55, "within_one": 0.84},
-        "Healthy":            {"accuracy": 0.35, "within_one": 0.72},
+        "Very Poor":          {"accuracy": 0.57, "within_one": 0.94},
+        "Poor":               {"accuracy": 0.57, "within_one": 0.88},
+        "Moderately Healthy": {"accuracy": 0.57, "within_one": 0.88},
+        "Healthy":            {"accuracy": 0.57, "within_one": 0.88},
     }
 
     # Per-nutrient model accuracy (from test set)
     NUTRIENT_ACCURACY = {
-        "N":  {"r2": 0.197, "within_one": 0.953},
-        "OC": {"r2": 0.188, "within_one": 0.960},
-        "P":  {"r2": 0.161, "within_one": 0.854},
-        "K":  {"r2": 0.165, "within_one": 0.935},
-        "Ca": {"r2": 0.405, "within_one": 0.908},
-        "Mg": {"r2": 0.247, "within_one": 0.934},
+        "N":  {"r2": 0.321, "within_one": 0.933},
+        "OC": {"r2": 0.244, "within_one": 0.904},
+        "P":  {"r2": 0.316, "within_one": 0.922},
+        "K":  {"r2": 0.123, "within_one": 0.944},
+        "Ca": {"r2": 0.212, "within_one": 0.889},
+        "Mg": {"r2": 0.130, "within_one": 0.970},
     }

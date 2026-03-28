@@ -77,14 +77,17 @@ class MLPredictor:
         if not base_path.endswith('/'):
             base_path += '/'
             
-        required_models = ["nutrient_model", "class_model", "imputer", "scaler"]
+        required_models = ["spatial_nutrient_model", "spatial_class_model", "spatial_imputer", "spatial_scaler"]
         for name in required_models:
             file_path = f"{base_path}{name}.pkl"
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"Missing model file: {file_path}")
-            self.models[name] = joblib.load(file_path)
             
-        features_path = f"{base_path}input_features.json"
+            # Remove prefix when adding to models dict to not break internal code
+            key_name = name.replace("spatial_", "")
+            self.models[key_name] = joblib.load(file_path)
+            
+        features_path = f"{base_path}spatial_input_features.json"
         if not os.path.exists(features_path):
             raise FileNotFoundError(f"Missing features file: {features_path}")
         with open(features_path) as f:
@@ -92,104 +95,187 @@ class MLPredictor:
         logger.info("  ML Models loaded!")
 
     # GEE Data Fetching Methods
-    def _fetch_terrain(self, point: ee.Geometry.Point) -> Tuple[float, float]:
+    def _sample(self, image: ee.Image, point: ee.Geometry.Point, scale: int = 30) -> Dict[str, Any]:
+        """Sample an EE image at a point. Returns properties dict or {}."""
+        try:
+            result = image.sample(point, scale=scale).first().getInfo()
+            return result["properties"] if result else {}
+        except Exception as e:
+            logger.warning(f"Sample failed: {str(e)[:80]}")
+            return {}
+
+    def _fetch_terrain(self, point: ee.Geometry.Point) -> Dict[str, Any]:
         srtm = ee.Image("USGS/SRTMGL1_003")
-        elevation = srtm.select("elevation").rename("elev_m")
-        slope = ee.Terrain.slope(srtm).rename("slope_deg")
-        terrain = elevation.addBands(slope).sample(point, scale=30).first().getInfo()
-        if terrain:
-            p = terrain["properties"]
-            return p.get("elev_m", np.nan), p.get("slope_deg", np.nan)
-        return np.nan, np.nan
-
-    def _fetch_landcover(self, point: ee.Geometry.Point) -> float:
+        elev = srtm.select("elevation").rename("elevation_m")
+        slope = ee.Terrain.slope(srtm).rename("slope_degrees")
+        aspect = ee.Terrain.aspect(srtm).rename("aspect_degrees")
+        tpi = elev.subtract(
+                  elev.focal_mean(radius=100, kernelType="circle", units="meters")
+              ).rename("tpi")
+        wetness = slope.multiply(np.pi/180).tan().add(0.001).log().multiply(-1).rename("wetness_index")
+        
         try:
-            lc = (ee.ImageCollection("ESA/WorldCover/v200")
-                  .first().select("Map").rename("landcover")
-                  .sample(point, scale=10).first().getInfo())
-            return lc["properties"].get("landcover", np.nan) if lc else np.nan
-        except:
-            return np.nan
+            lc = ee.ImageCollection("ESA/WorldCover/v200").first().select("Map").rename("landcover_class")
+        except Exception:
+            lc = ee.Image("MODIS/061/MCD12Q1/2022_01_01").select("LC_Type1").rename("landcover_class")
 
-    def _fetch_soil_texture(self, point: ee.Geometry.Point) -> Tuple[float, float]:
-        try:
-            soil = (ee.Image("OpenLandMap/SOL/SOL_TEXTURE-CLASS_USDA-TT_M/v02")
-                    .sample(point, scale=250).first().getInfo())
-            if not soil:
-                return 25.0, 45.0
-            clay_raw = soil["properties"].get("b0", np.nan)
-            if np.isnan(float(clay_raw)):
-                return 25.0, 45.0
-            clay_lookup = {1:55,2:50,3:35,4:35,5:35,6:30,7:25,8:15,9:10,10:5,11:5,12:3}
-            sand_lookup = {1:25,2:5,3:55,4:30,5:10,6:55,7:40,8:15,9:65,10:5,11:70,12:90}
-            return float(clay_lookup.get(int(clay_raw), 25)), float(sand_lookup.get(int(clay_raw), 45))
-        except:
-            return 25.0, 45.0
+        props = self._sample(ee.Image.cat([elev, slope, aspect, tpi, wetness, lc]), point, scale=30)
+        return {
+            "elevation_m":     props.get("elevation_m",     np.nan),
+            "slope_degrees":   props.get("slope_degrees",   np.nan),
+            "aspect_degrees":  props.get("aspect_degrees",  np.nan),
+            "tpi":             props.get("tpi",             np.nan),
+            "wetness_index":   props.get("wetness_index",   np.nan),
+            "landcover_class": props.get("landcover_class", np.nan),
+        }
 
-    def _fetch_ndvi(self, point: ee.Geometry.Point, year: int) -> float:
-        try:
-            ndvi = (ee.ImageCollection("MODIS/061/MOD13A2")
-                    .filterDate(f"{year}-01-01", f"{year}-12-31")
-                    .select("NDVI").mean().multiply(0.0001).rename("ndvi")
-                    .sample(point, scale=500).first().getInfo())
-            return ndvi["properties"].get("ndvi", np.nan) if ndvi else np.nan
-        except:
-            return np.nan
+    def _fetch_sentinel2(self, point: ee.Geometry.Point, year: int) -> Dict[str, Any]:
+        """Dry-season annual median with SCL pixel cloud masking. Full-year fallback."""
+        def mask_scl(img):
+            scl = img.select("SCL")
+            mask = scl.eq(4).Or(scl.eq(5)).Or(scl.eq(6)).Or(scl.eq(11))
+            return img.updateMask(mask)
 
-    def _fetch_sar(self, point: ee.Geometry.Point, year: int) -> Tuple[float, float, float]:
+        for (start, end), label in [
+            ((f"{year}-06-01", f"{year}-09-30"), "dry season"),
+            ((f"{year}-01-01", f"{year}-12-31"), "full year"),
+        ]:
+            try:
+                s2 = (ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
+                      .filterBounds(point).filterDate(start, end)
+                      .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 50))
+                      .map(mask_scl))
+                if s2.size().getInfo() > 0:
+                    img = s2.median().select(
+                        ["B2","B3","B4","B5","B6","B7","B8","B11","B12"],
+                        ["blue","green","red","red_edge1","red_edge2",
+                         "red_edge3","nir","swir1","swir2"])
+                    p = self._sample(img, point, scale=30)
+                    b = {k: p.get(k, np.nan) for k in ["blue","green","red","nir",
+                           "swir1","swir2","red_edge1","red_edge2","red_edge3"]}
+                    eps = 1e-10
+                    b["ndvi"] = (b["nir"]-b["red"])/(b["nir"]+b["red"]+eps) \
+                                 if not any(np.isnan([b["nir"],b["red"]])) else np.nan
+                    b["savi"] = ((b["nir"]-b["red"])/(b["nir"]+b["red"]+0.5))*1.5 \
+                                 if not np.isnan(b.get("ndvi", np.nan)) else np.nan
+                    b["ndmi"] = (b["nir"]-b["swir1"])/(b["nir"]+b["swir1"]+eps) \
+                                 if not any(np.isnan([b["nir"],b["swir1"]])) else np.nan
+                    b["evi"]  = 2.5*((b["nir"]-b["red"])/(b["nir"]+6*b["red"]-7.5*b["blue"]+1)) \
+                                 if not any(np.isnan([b["nir"],b["red"],b["blue"]])) else np.nan
+                    b["clay_ratio"]  = b["swir1"]/(b["swir2"]+eps) \
+                                        if not any(np.isnan([b["swir1"],b["swir2"]])) else np.nan
+                    b["iron_ratio"]  = b["red"]/(b["blue"]+eps) \
+                                        if not any(np.isnan([b["red"],b["blue"]])) else np.nan
+                    b["ndre"]        = (b["nir"]-b["red_edge1"])/(b["nir"]+b["red_edge1"]+eps) \
+                                        if not any(np.isnan([b["nir"],b["red_edge1"]])) else np.nan
+                    return b
+            except Exception as e:
+                logger.warning(f"S2 {label} failed: {str(e)[:80]}")
+
+        return {k: np.nan for k in ["blue","green","red","nir","swir1","swir2",
+                                      "red_edge1","red_edge2","red_edge3",
+                                      "ndvi","ndmi","evi","savi","ndre",
+                                      "clay_ratio","iron_ratio"]}
+
+    def _fetch_sentinel1(self, point: ee.Geometry.Point, year: int) -> Dict[str, Any]:
+        """Annual median SAR. Cloud-transparent — always available."""
         try:
             s1 = (ee.ImageCollection("COPERNICUS/S1_GRD")
                   .filterBounds(point)
                   .filterDate(f"{year}-01-01", f"{year}-12-31")
                   .filter(ee.Filter.eq("instrumentMode", "IW"))
-                  .filter(ee.Filter.listContains("transmitterReceiverPolarisation", "VV"))
-                  .filter(ee.Filter.listContains("transmitterReceiverPolarisation", "VH"))
-                  .select(["VV","VH"]))
-            s1_med = s1.median().rename(["vv","vh"])
-            s1_diff = s1_med.select("vv").subtract(s1_med.select("vh")).rename("vv_minus_vh")
-            result = s1_med.addBands(s1_diff).sample(point, scale=10).first().getInfo()
-            if result:
-                p = result["properties"]
-                return p.get("vv", np.nan), p.get("vh", np.nan), p.get("vv_minus_vh", np.nan)
-        except:
-            pass
-        return np.nan, np.nan, np.nan
+                  .filter(ee.Filter.listContains("transmitterReceiverPolarisation","VV"))
+                  .filter(ee.Filter.listContains("transmitterReceiverPolarisation","VH"))
+                  .select(["VV","VH"])) 
+            if s1.size().getInfo() == 0:
+                return {"VV": np.nan, "VH": np.nan, "sar_vv_vh_ratio": np.nan}
+            img = s1.median()
+            ratio = img.select("VV").divide(img.select("VH").abs().add(1e-10)).rename("sar_vv_vh_ratio")
+            p = self._sample(ee.Image.cat([img, ratio]), point, scale=10)
+            return {"VV": p.get("VV", np.nan),
+                    "VH": p.get("VH", np.nan),
+                    "sar_vv_vh_ratio": p.get("sar_vv_vh_ratio", np.nan)}
+        except Exception as e:
+            logger.warning(f"S1 SAR failed: {str(e)[:80]}")
+            return {"VV": np.nan, "VH": np.nan, "sar_vv_vh_ratio": np.nan}
 
-    def _fetch_rainfall(self, point: ee.Geometry.Point, year: int) -> Tuple[float, float, float, float]:
-        def get_sum(start, end, name):
+    def _fetch_chirps(self, point: ee.Geometry.Point, year: int) -> Dict[str, Any]:
+        """Annual total precipitation (mm)."""
+        try:
+            chirps = (ee.ImageCollection("UCSB-CHG/CHIRPS/DAILY")
+                      .filterBounds(point)
+                      .filterDate(f"{year}-01-01", f"{year}-12-31"))
+            p = self._sample(chirps.sum().rename("precip_annual_mm"), point, scale=5000)
+            return {"precip_annual_mm": p.get("precip_annual_mm", np.nan)}
+        except Exception as e:
+            logger.warning(f"CHIRPS failed: {str(e)[:80]}")
+            return {"precip_annual_mm": np.nan}
+
+    def _fetch_era5(self, point: ee.Geometry.Point, year: int) -> Dict[str, Any]:
+        """ERA5-Land annual means — replaces Open-Meteo, all inside GEE."""
+        try:
+            era5 = (ee.ImageCollection("ECMWF/ERA5_LAND/DAILY_AGGR")
+                    .filterBounds(point)
+                    .filterDate(f"{year}-01-01", f"{year}-12-31"))
+            if era5.size().getInfo() == 0:
+                raise ValueError("No ERA5 data")
+            img = era5.mean().select(
+                ["temperature_2m","soil_temperature_level_1","soil_temperature_level_2",
+                 "volumetric_soil_water_layer_1","volumetric_soil_water_layer_2",
+                 "surface_net_solar_radiation_sum"],
+                ["temp_2m_mean","soil_temp_0_7cm","soil_temp_7_28cm",
+                 "soil_moisture_0_7cm","soil_moisture_7_28cm","solar_radiation_annual"])
+            p = self._sample(img, point, scale=11132)
+            return {k: p.get(k, np.nan) for k in
+                    ["temp_2m_mean","soil_temp_0_7cm","soil_temp_7_28cm",
+                     "soil_moisture_0_7cm","soil_moisture_7_28cm","solar_radiation_annual"]}
+        except Exception as e:
+            logger.warning(f"ERA5 failed: {str(e)[:80]}")
+            return {k: np.nan for k in ["temp_2m_mean","soil_temp_0_7cm","soil_temp_7_28cm",
+                                         "soil_moisture_0_7cm","soil_moisture_7_28cm",
+                                         "solar_radiation_annual"]}
+
+    def _fetch_spatial_layers(self, point: ee.Geometry.Point) -> Dict[str, Any]:
+        """OpenLandMap soil properties + JRC distance to water."""
+        result = {}
+        try:
+            perm = ee.Image("JRC/GSW1_4/GlobalSurfaceWater").select("occurrence").gte(80).selfMask()
+            dist = perm.distance(ee.Kernel.euclidean(20000,"meters")).unmask(20000).rename("dist_to_water_m")
+            p = self._sample(dist, point, scale=300)
+            result["dist_to_water_m"] = p.get("dist_to_water_m", np.nan)
+        except Exception as e:
+            logger.warning(f"Distance to water failed: {str(e)[:60]}")
+            result["dist_to_water_m"] = np.nan
+
+        for asset, col, factor in [
+            ("OpenLandMap/SOL/SOL_TEXTURE-CLASS_USDA-TT_M/v02",   "soil_texture_class", 1.0),
+            ("OpenLandMap/SOL/SOL_ORGANIC-CARBON_USDA-6A1C_M/v02","soil_oc_0_5cm",      0.1),
+            ("OpenLandMap/SOL/SOL_PH-H2O_USDA-4C1A2A_M/v02",      "soil_ph_remote",     0.1),
+            ("OpenLandMap/SOL/SOL_WATERCONTENT-33KPA_USDA-4B1C_M/v01","soil_water_capacity",1.0),
+        ]:
             try:
-                val = (ee.ImageCollection("UCSB-CHG/CHIRPS/DAILY")
-                       .filterBounds(point).filterDate(start, end)
-                       .sum().rename(name)
-                       .sample(point, scale=5000).first().getInfo())
-                return val["properties"].get(name, np.nan) if val else np.nan
-            except:
-                return np.nan
+                img = ee.Image(asset).select("b0").multiply(factor).rename(col)
+                p = self._sample(img, point, scale=300)
+                result[col] = p.get(col, np.nan)
+            except Exception as e:
+                logger.warning(f"{col} failed: {str(e)[:60]}")
+                result[col] = np.nan
 
-        total = get_sum(f"{year}-01-01", f"{year}-12-31", "total")
-        long_r = get_sum(f"{year}-03-01", f"{year}-05-31", "long")
-        short_r = get_sum(f"{year}-10-01", f"{year}-12-31", "short")
-        dry1 = get_sum(f"{year}-01-01", f"{year}-02-28", "dry1")
-        dry2 = get_sum(f"{year}-06-01", f"{year}-09-30", "dry2")
-        dry = (0 if np.isnan(dry1) else dry1) + (0 if np.isnan(dry2) else dry2)
-        return total, long_r, short_r, float(dry)
+        return result
 
     def _fetch_satellite_features(self, latitude: float, longitude: float, year: int = 2025) -> Dict[str, Any]:
+        """Fetch all satellite features for a GPS point."""
         point = ee.Geometry.Point([longitude, latitude])
-        elev, slope = self._fetch_terrain(point)
-        lc = self._fetch_landcover(point)
-        clay, sand = self._fetch_soil_texture(point)
-        ndvi = self._fetch_ndvi(point, year)
-        vv, vh, vv_vh = self._fetch_sar(point, year)
-        total, long_r, short_r, dry = self._fetch_rainfall(point, year)
-        return {
-            "elev_m": elev, "slope_deg": slope, "landcover": lc,
-            "clay_pct": clay, "sand_pct": sand, "ndvi_2025_modis": ndvi,
-            "s1_vv_med": vv, "s1_vh_med": vh, "s1_vv_minus_vh": vv_vh,
-            "rain_2025_total_mm": total, "rain_2025_long_mm": long_r,
-            "rain_2025_short_mm": short_r, "rain_2025_dry_mm": dry,
-            "Latitude": latitude, "Longitude": longitude
-        }
+        sat = {}
+        sat.update(self._fetch_terrain(point))
+        sat.update(self._fetch_sentinel2(point, year))
+        sat.update(self._fetch_sentinel1(point, year))
+        sat.update(self._fetch_chirps(point, year))
+        sat.update(self._fetch_era5(point, year))
+        sat.update(self._fetch_spatial_layers(point))
+        sat["latitude"] = latitude
+        sat["longitude"] = longitude
+        return sat
 
     # Utility Logic
     def ph_to_score(self, ph: float) -> int:
@@ -198,58 +284,50 @@ class MLPredictor:
                 return score
         return 4
 
-    def _engineer_features(self, sat: Dict[str, Any]) -> Dict[str, float]:
+    def _engineer_features(self, sat: Dict[str, Any]) -> Dict[str, Any]:
         eps = 1e-6
-        return {
-            "sar_ratio": sat["s1_vv_med"] / (sat["s1_vh_med"] + eps),
-            "rain_dry_fraction": sat["rain_2025_dry_mm"] / (sat["rain_2025_total_mm"] + eps),
-            "elev_slope_ratio": sat["elev_m"] / (sat["slope_deg"] + 0.1),
-            "clay_sand_ratio": sat["clay_pct"] / (sat["sand_pct"] + eps),
-            "ndvi_rain": sat["ndvi_2025_modis"] * sat["rain_2025_total_mm"]
-        }
+        elev  = sat.get("elevation_m",        np.nan)
+        slope = sat.get("slope_degrees",      np.nan)
+        sm0   = sat.get("soil_moisture_0_7cm",np.nan)
+        sm1   = sat.get("soil_moisture_7_28cm",np.nan)
+        st0   = sat.get("soil_temp_0_7cm",    np.nan)
+        st1   = sat.get("soil_temp_7_28cm",   np.nan)
+        dtw   = sat.get("dist_to_water_m",    np.nan)
+
+        sat["elev_slope_ratio"]    = elev/(slope+0.1)        if not any(np.isnan([elev,slope])) else np.nan
+        sat["soil_moisture_ratio"] = sm0/(sm1+eps)           if not any(np.isnan([sm0,sm1]))   else np.nan
+        sat["soil_temp_diff"]      = st0-st1                 if not any(np.isnan([st0,st1]))   else np.nan
+        sat["log_dist_to_water"]   = np.log1p(dtw)           if not np.isnan(dtw)              else np.nan
+        return sat
 
     def calculate_shi(self, ph_score: int, nutrients: np.ndarray) -> float:
         n, oc, p, k, ca, mg = nutrients
-        weights = [3.0, 2.5, 2.0, 2.0, 1.5, 1.0, 1.0]
-        values = [ph_score, oc, n, p, k, ca, mg]
-        return float(sum(w * v for w, v in zip(weights, values)) / sum(weights))
+        return float((ph_score*3.0 + oc*2.5 + n*2.0 + p*2.0 + k*1.5 + ca*1.0 + mg*1.0) / 13.0)
 
     def _round_to_score(self, values: np.ndarray) -> np.ndarray:
         return np.clip(np.rint(values), 1, 4).astype(int)
 
     def get_prediction_confidence(self, class_name: str, nutrient_scores: np.ndarray) -> Dict[str, Any]:
         fc_acc = AppConfig.CLASS_ACCURACY.get(class_name, {})
-
-        # Overall confidence level
-        if class_name in ["Very Poor", "Poor"]:
-            confidence_level = "moderate"
-            flag = True
-        elif class_name == "Healthy":
-            confidence_level = "low"
-            flag = True
-        else:
-            confidence_level = "moderate"
-            flag = False
+        flag = bool(class_name in ["Very Poor", "Poor", "Healthy"])
+        confidence_level = "low" if class_name == "Healthy" else "moderate"
         
-        flag = bool(flag)
-
-        # Per-nutrient accuracy info
         nutrient_names = ["N", "OC", "P", "K", "Ca", "Mg"]
         nutrient_detail = []
         for name, score in zip(nutrient_names, nutrient_scores):
             acc = AppConfig.NUTRIENT_ACCURACY.get(name, {})
-            warn = score <= 2  # Poor or Very Poor
+            warn = bool(score <= 2)
             nutrient_detail.append({
                 "nutrient": name,
                 "score": int(score),
                 "label": AppConfig.CLASS_NAMES[int(score)],
-                "within_one_accuracy": f"{round(float(acc.get('within_one', 0))*100)}%",
-                "r2": round(float(acc.get("r2", 0)), 3),
-                "flag_low": bool(warn)
+                "within_one_accuracy": f"{round(acc.get('within_one',0)*100)}%",
+                "r2": round(acc.get("r2", 0), 3),
+                "flag_low": warn
             })
 
         return {
-            "confidence_level": confidence_level,
+            "confidence_level": "moderate",
             "flag_poor_result": flag,
             "model_fc_accuracy": f"{round(fc_acc.get('accuracy',0)*100)}%",
             "model_within_one": f"{round(fc_acc.get('within_one',0)*100)}%",
@@ -266,7 +344,7 @@ class MLPredictor:
         logger.info(f"ML Prediction for ({latitude}, {longitude})...")
         sat = self._fetch_satellite_features(latitude, longitude, year)
         sat["pH"] = ph
-        sat.update(self._engineer_features(sat))
+        sat = self._engineer_features(sat)
 
         if ph_score is None:
             ph_score = self.ph_to_score(ph)
@@ -298,7 +376,7 @@ class MLPredictor:
             },
             "prediction": {
                 "final_classification": final_class,
-                "SHI": round(shi, 3),
+                "SHI": round(float(shi), 3),
                 "nutrients": {
                     "N": {"score": int(nutrient_scores[0]), "label": AppConfig.CLASS_NAMES[int(nutrient_scores[0])]},
                     "OC": {"score": int(nutrient_scores[1]), "label": AppConfig.CLASS_NAMES[int(nutrient_scores[1])]},
