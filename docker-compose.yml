@@ -39,17 +39,17 @@ services:
   # FastAPI Backend
   api:
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: api/Dockerfile
     container_name: agricultural_api
     ports:
       - "8000:8000" # Exposed for direct testing (usually via Nginx)
     volumes:
-      - ./api:/api
+      - ./api:/app/api
+      - ./chatbot:/app/chatbot
     env_file:
       - .env
     environment:
-      # Override DATABASE_URL to use postgres service name instead of localhost
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     networks:
       - agri-network
