@@ -1,16 +1,13 @@
-// app/admin/users/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { ProtectedPage } from "../../components/auth/roleBasedGaurd";
 import { AdminLayout } from "../../components/layout/roleBasedLayout";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  apiClient,
-  AdminUserResponse,
-  UserRole,
-  PaginatedResponse,
-} from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
+import { UserRole } from "@/types/auth";
+import type { AdminUserResponse } from "@/types/auth";
+import type { PaginatedResponse } from "@/types/api";
 import {
   Plus,
   Search,

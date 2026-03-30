@@ -2,11 +2,9 @@
 import type React from "react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  apiClient,
-  type AdminDashboardResponse,
-  UserRole,
-} from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
+import { UserRole } from "@/types/auth";
+import type { AdminDashboardResponse } from "@/types/admin";
 import {
   Users,
   BarChart3,

@@ -11,7 +11,7 @@ import {
   Users,
   MessageCircle,
 } from "lucide-react";
-import { UserRole } from "@/lib/api-client";
+import { UserRole } from "@/types/auth";
 
 
 export interface NavItem {
@@ -52,17 +52,17 @@ const navigationItems: NavItem[] = [
   {
     label: "Analytics",
     icon: <TrendingUp className="h-4 w-4" />,
-    href: "/analytics",
+    href: "#",
     children: [
       {
         label: "Fertility Trends",
         icon: <TrendingUp className="h-4 w-4" />,
-        href: "/analytics/fertility",
+        href: "#",
       },
       {
         label: "Crop Recommendations",
         icon: <Leaf className="h-4 w-4" />,
-        href: "/analytics/crops",
+        href: "#",
       },
     ],
   },
@@ -119,7 +119,7 @@ const navigationItems: NavItem[] = [
   {
     label: "Settings",
     icon: <Settings className="h-4 w-4" />,
-    href: "/settings",
+    href: "#",
   },
 ];
 

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth, useRoleBasedAccess } from "@/hooks/useAuth";
-import { UserRole } from "@/lib/api-client";
+import { UserRole } from "@/types/auth";
 import {
   Leaf,
   Menu,

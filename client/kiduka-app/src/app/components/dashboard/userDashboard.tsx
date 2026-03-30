@@ -17,6 +17,7 @@ import {
   ArrowRight,
   Sparkles,
   RefreshCw,
+  MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -214,14 +215,14 @@ export function UserDashboard() {
               ctaColor: "text-blue-600",
             },
             {
-              href: "/profile",
-              hoverBorder: "hover:border-gray-400",
-              iconBg: "from-gray-100 to-slate-100",
-              icon: <Settings className="h-8 w-8 text-gray-600" />,
-              title: "Profile Settings",
-              desc: "Update your account information and preferences",
-              cta: "Manage profile",
-              ctaColor: "text-gray-600",
+              href: "/chat",
+              hoverBorder: "hover:border-emerald-400",
+              iconBg: "from-emerald-100 to-green-100",
+              icon: <MessageCircle className="h-8 w-8 text-emerald-600" />,
+              title: "Chat with AI",
+              desc: "Get instant agricultural advice and analysis insights",
+              cta: "Open Chat",
+              ctaColor: "text-emerald-600",
             },
           ].map(({ href, hoverBorder, iconBg, icon, title, desc, cta, ctaColor }) => (
             <Link key={href} href={href}>

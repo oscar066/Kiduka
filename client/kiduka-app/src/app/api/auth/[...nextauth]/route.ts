@@ -1,10 +1,11 @@
-// app/api/auth/[...nextauth]/route.ts
 import { NextAuthOptions } from "next-auth";
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { DefaultSession } from "next-auth";
-import { apiClient, UserRole } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
+import { UserRole } from "@/types/auth";
+
 
 // Extend NextAuth types to include role information
 declare module "next-auth" {

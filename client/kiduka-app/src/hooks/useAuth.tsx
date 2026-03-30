@@ -1,7 +1,10 @@
 // hooks/useAuth.ts
 import { useState, useEffect, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { apiClient, UserResponse, UserRole } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
+import { UserRole } from "@/types/auth";
+import type { UserResponse } from "@/types/auth";
+
 import { useRouter } from "next/navigation";
 
 interface AuthPermissions {

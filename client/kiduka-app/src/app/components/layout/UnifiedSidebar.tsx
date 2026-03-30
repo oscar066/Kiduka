@@ -18,7 +18,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { UserRole } from "@/lib/api-client";
+import { UserRole } from "@/types/auth";
 
 function filterNavItems(
   items: NavItem[],

@@ -3,7 +3,7 @@
 import React, { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, useRoleBasedAccess, usePermission } from "@/hooks/useAuth";
-import { UserRole } from "@/lib/api-client";
+import { UserRole } from "@/types/auth";
 import { Loader2, ShieldX, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
