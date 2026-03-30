@@ -4,84 +4,33 @@
  */
 
 import type { SoilInput, PredictionResponse } from '@/types/soil-analysis';
+import { UserRole } from '@/types/auth';
+import type { 
+  UserResponse, 
+  AdminUserResponse, 
+  LoginResponse, 
+  TokenData 
+} from '@/types/auth';
+import type { 
+  AdminDashboardResponse,
+  AdminDashboardStats,
+} from '@/types/admin';
+import type { 
+  PaginatedResponse, 
+  ApiError 
+} from '@/types/api';
 
-// User Role Types
-export enum UserRole {
-  USER = "user",
-  ADMIN = "admin",
-  SUPER_ADMIN = "super_admin"
-}
-
-// Enhanced User Types
-export interface UserResponse {
-  id: string;
-  username: string;
-  email: string;
-  full_name: string | null;
-  role: UserRole;
-  is_active: boolean;
-  is_verified: boolean;
-  created_at: string;
-  updated_at: string;
-  last_login: string | null;
-}
-
-export interface AdminUserResponse extends UserResponse {
-  created_by: string | null;
-  notes: string | null;
-  prediction_count: number | null;
-  session_count: number | null;
-}
-
-// Auth Types
-export interface LoginResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  user_role: UserRole;
-}
-
-export interface TokenData {
-  user_id: string;
-  username: string;
-  role: UserRole;
-}
-
-// Admin Dashboard Types
-export interface AdminDashboardStats {
-  total_users: number;
-  active_users: number;
-  total_predictions: number;
-  flagged_predictions: number;
-  recent_users: number;
-  recent_predictions: number;
-  users_by_role: Record<string, number>;
-  predictions_by_status: Record<string, number>;
-}
-
-export interface AdminDashboardResponse {
-  stats: AdminDashboardStats;
-  recent_users: AdminUserResponse[];
-  recent_predictions: any[];
-  recent_audit_logs: any[];
-}
-
-// List Response Types
-export interface PaginatedResponse<T> {
-  items?: T[];
-  users?: T[];
-  predictions?: T[];
-  logs?: T[];
-  total: number;
-  page: number;
-  size: number;
-  pages: number;
-}
-
-export interface ApiError {
-  detail: string;
-  status_code?: number;
-}
+export { UserRole };
+export type { 
+  UserResponse, 
+  AdminUserResponse, 
+  LoginResponse, 
+  TokenData,
+  AdminDashboardResponse,
+  AdminDashboardStats,
+  PaginatedResponse,
+  ApiError
+};
 
 export class ApiClient {
   /**
@@ -539,6 +488,18 @@ export class ApiClient {
     return this.request(`/predictions/history/${predictionId}`, {
       method: 'DELETE',
       headers: this.getAuthHeaders(token),
+    });
+  }
+
+  // CHATBOT ENDPOINTS
+  /**
+   * Send a message to the AI chatbot
+   */
+  async chat(query: string, token: string, threadId?: string): Promise<{ response: string; thread_id: string }> {
+    return this.request('/chat', {
+      method: 'POST',
+      headers: this.getAuthHeaders(token),
+      body: JSON.stringify({ query, thread_id: threadId }),
     });
   }
 }
