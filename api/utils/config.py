@@ -20,7 +20,7 @@ class AppConfig:
     GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     
     # Model configuration
-    MODEL_PATH = os.getenv("MODEL_PATH", "ml_models/")
+    MODEL_PATH = os.getenv("MODEL_PATH", "api/ml_models/")
     
     CLASS_NAMES = {1: "Very Poor", 2: "Poor", 3: "Moderately Healthy", 4: "Healthy"}
     PH_TO_SCORE = [(4.5, 1), (5.5, 2), (7.0, 3), (float("inf"), 4)]

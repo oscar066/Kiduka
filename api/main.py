@@ -7,6 +7,9 @@ from typing import Optional
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
+# Load environment variables at the very beginning
+load_dotenv()
+
 # FastAPI imports
 import logging
 from fastapi import FastAPI, HTTPException, Request, Depends
@@ -23,7 +26,6 @@ from api.utils.initialization import initialize_app_components
 from api.utils.logging_config import setup_logger
 from api.utils.dependencies import dependency_manager
 from api.utils.session import SessionManager
-# from api.workflow.prediction_workflow import create_prediction_workflow # Removed
 
 # Import database components
 from api.db.connection import db_manager, get_db
@@ -32,6 +34,7 @@ from api.db.connection import db_manager, get_db
 from api.routers.auth import router as auth_router
 from api.routers.prediction import router as prediction_router
 from api.routers.admin import router as admin_router
+from chatbot.app import router as chat_router
 
 # Import auth utilities for role checking
 from api.utils.auth import get_current_user_optional, get_current_admin_user
@@ -115,13 +118,11 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(prediction_router)
 app.include_router(admin_router)  # New admin router
+app.include_router(chat_router)
 
 # Make components and session manager available globally for routers
 def get_app_components():
     return app_components
-
-# def get_prediction_workflow(): # Removed
-#     return prediction_workflow
 
 def get_session_manager():
     return session_manager
