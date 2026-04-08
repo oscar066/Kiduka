@@ -3,7 +3,7 @@ import json
 from contextlib import asynccontextmanager
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessage, AIMessageChunk
-from fastapi import APIRouter, Request, UploadFile, File, Form, BackgroundTasks, FastAPI
+from fastapi import APIRouter, Request, UploadFile, File, Form, BackgroundTasks, FastAPI, Depends
 
 # Import agent, schema, utils, and services
 from chatbot.agent import agent_graph
@@ -15,6 +15,7 @@ from chatbot.utils import (
     get_vector_store, 
 )
 from chatbot.utils.config import PINECONE_INDEX_NAME
+from api.utils.auth import get_current_user
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,7 +33,7 @@ async def lifespan(app: FastAPI):
         logger.error(f"Error during pre-warming: {e}")  
     yield
 
-router = APIRouter(tags=["Agent"])
+router = APIRouter(tags=["Agent"], dependencies=[Depends(get_current_user)])
 
 @router.post("/chat")
 async def chat_endpoint(request: ChatRequest):
