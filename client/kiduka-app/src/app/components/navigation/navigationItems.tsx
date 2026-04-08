@@ -45,9 +45,9 @@ const navigationItems: NavItem[] = [
     href: "/reports",
   },
   {
-    label: "Field Management",
+    label: "Fertilizer Optimization",
     icon: <MapPin className="h-4 w-4" />,
-    href: "/fields",
+    href: "/optimization",
   },
   {
     label: "Analytics",
