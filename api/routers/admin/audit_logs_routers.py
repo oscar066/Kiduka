@@ -11,7 +11,9 @@ from api.db.connection import get_db
 from api.db.models.database import User
 from api.schema.auth_schema import AuditLogResponse
 from api.services.admin.audit_service import AdminAuditService
-from api.utils.auth import get_current_admin_user, AuthManager
+from api.utils.auth import get_current_admin_user
+from api.utils.auth import get_current_admin_user
+from api.services.auth.auth_manager import AuthManager
 
 logger = logging.getLogger(__name__)
 

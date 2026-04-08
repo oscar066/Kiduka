@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.schema.schema import SoilData, PredictionResponse
-from api.utils.auth import get_current_user_optional
+from api.utils.auth import get_current_user
 from api.db.connection import get_db
 from api.db.models.database import User
 from api.services.prediction import PredictionService
@@ -25,7 +25,7 @@ async def get_prediction_service(db: AsyncSession = Depends(get_db)) -> Predicti
 async def predict_soil_fertility(
     soil_data: SoilData,
     request: Request,
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    current_user: User = Depends(get_current_user),
     prediction_service: PredictionService = Depends(get_prediction_service)
 ):
     # Predict soil fertility status

@@ -1,15 +1,13 @@
-"""
-Authentication service with business logic separated from routes
-"""
-import logging
 from datetime import timedelta
+import logging
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
 from api.db.models.database import User, UserRole
 from api.schema.auth_schema import UserCreate, UserLogin, UserUpdate, UserResponse, UserRoleEnum
-from api.utils.auth import AuthManager, ACCESS_TOKEN_EXPIRE_MINUTES
+from api.services.auth.core import AuthSecurityManager, ACCESS_TOKEN_EXPIRE_MINUTES
+from api.services.auth.auth_manager import AuthManager
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +15,8 @@ class AuthService:
     """Service class for authentication operations"""
     
     def __init__(self, db: AsyncSession):
-        self.db = db
-    
+        self.db = db  
+          
     async def register_user(self, user_data: UserCreate) -> UserResponse:
         """Register a new user with validation"""
         logger.info(f"Registration attempt for user: {user_data.username}")
@@ -29,7 +27,7 @@ class AuthService:
         
         try:
             # Create new user
-            hashed_password = AuthManager.get_password_hash(user_data.password)
+            hashed_password = AuthSecurityManager.get_password_hash(user_data.password)
             db_user = User(
                 email=user_data.email,
                 username=user_data.username,
@@ -68,7 +66,7 @@ class AuthService:
         
         # Create access token with role information
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = AuthManager.create_access_token(
+        access_token = AuthSecurityManager.create_access_token(
             data={
                 "sub": str(user.id),
                 "username": user.username,
@@ -102,12 +100,9 @@ class AuthService:
                     raise ValueError("Username already taken")
                 user.username = user_update.username
             
-            # Update other basic fields (users cannot change role or admin fields)
+            # Update other basic fields
             if user_update.full_name is not None:
                 user.full_name = user_update.full_name
-            
-            # Note: Regular users cannot change is_active status (only admins can)
-            # user_update.is_active is ignored for regular users
             
             await self.db.commit()
             await self.db.refresh(user)
@@ -125,12 +120,12 @@ class AuthService:
         logger.info(f"Password change request for: {user.username}")
         
         # Verify current password
-        if not AuthManager.verify_password(current_password, user.hashed_password):
+        if not AuthSecurityManager.verify_password(current_password, user.hashed_password):
             raise ValueError("Current password is incorrect")
         
         try:
             # Update password
-            user.hashed_password = AuthManager.get_password_hash(new_password)
+            user.hashed_password = AuthSecurityManager.get_password_hash(new_password)
             await self.db.commit()
             
             logger.info(f"Password changed successfully for: {user.username}")

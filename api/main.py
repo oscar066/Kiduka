@@ -34,6 +34,7 @@ from api.db.connection import db_manager, get_db
 from api.routers.auth import router as auth_router
 from api.routers.prediction import router as prediction_router
 from api.routers.admin import router as admin_router
+from api.routers.optimization import router as optimization_router
 from chatbot.app import router as chat_router
 
 # Import auth utilities for role checking
@@ -48,7 +49,7 @@ logger = setup_logger("API", level=logging.INFO, console_level=logging.INFO)
 
 # Global components dictionary
 app_components = {}
-# prediction_workflow = None # Removed
+
 session_manager = SessionManager()
 
 # Initialize app configuration
@@ -119,6 +120,7 @@ app.include_router(auth_router)
 app.include_router(prediction_router)
 app.include_router(admin_router)  # New admin router
 app.include_router(chat_router)
+app.include_router(optimization_router)
 
 # Make components and session manager available globally for routers
 def get_app_components():

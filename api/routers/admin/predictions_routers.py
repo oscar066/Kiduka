@@ -12,7 +12,9 @@ from api.schema.auth_schema import (
     AdminPredictionResponse, AdminPredictionUpdate, AdminPredictionListResponse
 )
 from api.services.admin.prediction_service import AdminPredictionService
-from api.utils.auth import get_current_admin_user, AuthManager
+from api.utils.auth import get_current_admin_user
+from api.utils.auth import get_current_admin_user
+from api.services.auth.auth_manager import AuthManager
 
 logger = logging.getLogger(__name__)
 

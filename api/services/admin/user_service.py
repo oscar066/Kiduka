@@ -14,7 +14,9 @@ from api.schema.auth_schema import (
     AdminUserCreate, AdminUserResponse, AdminUserUpdate, UserListResponse,
     AdminPasswordReset, UserRoleEnum
 )
-from api.utils.auth import AuthManager
+from api.services.auth.auth_service import AuthService
+from api.services.auth.auth_manager import AuthManager
+from api.services.auth.core import AuthSecurityManager
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +138,7 @@ class AdminUserService:
                 raise ValueError("User with this email or username already exists")
             
             # Create new user
-            hashed_password = AuthManager.get_password_hash(user_data.password)
+            hashed_password = AuthSecurityManager.get_password_hash(user_data.password)
             db_user = User(
                 email=user_data.email,
                 username=user_data.username,
@@ -271,7 +273,7 @@ class AdminUserService:
                 raise ValueError("Insufficient permissions to reset this user's password")
             
             # Update password
-            target_user.hashed_password = AuthManager.get_password_hash(new_password)
+            target_user.hashed_password = AuthSecurityManager.get_password_hash(new_password)
             await self.db.commit()
             
             logger.info(f"Password reset by admin for user: {target_user.username}")

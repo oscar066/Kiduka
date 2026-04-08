@@ -13,7 +13,9 @@ from api.schema.auth_schema import (
     AdminPasswordReset, UserRoleEnum
 )
 from api.services.admin.user_service import AdminUserService
-from api.utils.auth import get_current_admin_user, AuthManager
+from api.utils.auth import get_current_admin_user
+from api.utils.auth import get_current_admin_user
+from api.services.auth.auth_manager import AuthManager
 
 logger = logging.getLogger(__name__)
 

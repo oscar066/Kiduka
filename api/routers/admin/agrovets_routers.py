@@ -9,7 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.db.connection import get_db
 from api.db.models.database import User
 from api.services.admin.agrovet_service import AdminAgrovetService
-from api.utils.auth import get_current_admin_user, AuthManager
+from api.utils.auth import get_current_admin_user
+from api.utils.auth import get_current_admin_user
+from api.services.auth.auth_manager import AuthManager
 
 logger = logging.getLogger(__name__)
 
