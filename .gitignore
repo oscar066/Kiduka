@@ -6,6 +6,9 @@ __pycache__
 
 .DS_Store
 
+# Ignore fake server certificates
+.server-certificates/
+
 # Ignore the initial server files
 api/apo.py 
 api/app.py

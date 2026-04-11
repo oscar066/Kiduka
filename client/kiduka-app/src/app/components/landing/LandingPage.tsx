@@ -6,12 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Leaf, 
-  CheckCircle, 
+  Leaf,
+  CheckCircle,
   ArrowRight, 
-  Sprout, 
-  TestTube, 
-  TrendingUp,
   Menu,
   X,
   Star,
@@ -24,7 +21,6 @@ import {
   Beaker,
   Layers,
   Zap,
-  ShieldCheck,
   Search
 } from "lucide-react";
 
@@ -341,7 +337,7 @@ export default function LandingPage() {
                 <span className="text-green-400">Intelligence Engine</span>
               </h3>
               <p className="text-xl text-gray-600 font-serif leading-relaxed text-left">
-                Kiduka fetches and processes high-resolution satellite data from the Google Earth Engine to understand your farm's unique environmental signature.
+                Kiduka fetches and processes high-resolution satellite data from the Google Earth Engine to understand your farm&apos;s unique environmental signature.
               </p>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -387,7 +383,7 @@ export default function LandingPage() {
                   <Cpu className="h-3 w-3" /> NEURAL NETWORK MODELS
                 </div>
                 <p className="text-lg font-serif italic text-white/90">
-                  "Turning complex geospatial data into field-level macronutrient estimations."
+                  &quot;Turning complex geospatial data into field-level macronutrient estimations.&quot;
                 </p>
               </div>
             </div>
@@ -467,7 +463,7 @@ export default function LandingPage() {
                 <span className="text-green-600">Localized Input Access</span>
               </h3>
               <p className="text-xl text-gray-600 font-serif leading-relaxed">
-                Kiduka doesn't just diagnose—it streamlines procurement. Our mapping engine uses the Haversine formula to connect you with the exact nutrients your soil needs.
+                Kiduka doesn&apos;t just diagnose—it streamlines procurement. Our mapping engine uses the Haversine formula to connect you with the exact nutrients your soil needs.
               </p>
 
               <div className="space-y-6">
@@ -520,7 +516,7 @@ export default function LandingPage() {
                     ))}
                   </div>
                   <p className="text-gray-700 italic text-center">
-                    "{testimonial.content}"
+                    &quot;{testimonial.content}&quot;
                   </p>
                   <div className="text-center pt-4 border-t border-gray-100">
                     <p className="font-semibold text-green-800">{testimonial.name}</p>

@@ -2,11 +2,13 @@ services:
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
-    container_name: agricultural_nginx
+    container_name: agricultural_nginx_prod
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./.server-certificates:/etc/nginx/ssl:ro
     depends_on:
       - client
       - api
@@ -22,9 +24,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: /api
         API_URL: http://api:8000
-    container_name: agricultural_client
-    ports:
-      - "3000:3000"
+    container_name: agricultural_client_prod
     networks:
       - agri-network
     environment:
@@ -40,9 +40,7 @@ services:
     build:
       context: .
       dockerfile: api/Dockerfile
-    container_name: agricultural_api
-    ports:
-      - "8000:8000" # Exposed for direct testing (usually via Nginx)
+    container_name: agricultural_api_prod
     volumes:
       - ./api:/app/api
       - ./chatbot:/app/chatbot
@@ -60,14 +58,11 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: agricultural_db
+    container_name: agricultural_db_prod
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_HOST_AUTH_METHOD: trust
-    ports:
-      - "5432:5432" # Exposed for local development
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
@@ -79,27 +74,12 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    restart: always
 
-  # pgAdmin
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
-    ports:
-      - "5050:80" # Keep exposed for admin access, or proxy via Nginx too if desired
-    networks:
-      - agri-network
-    depends_on:
-      - postgres
-
-# Explicit network definition
 networks:
   agri-network:
     driver: bridge
 
-# Persistent volume for database data
 volumes:
   postgres_data:
     driver: local

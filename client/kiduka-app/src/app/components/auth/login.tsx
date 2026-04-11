@@ -7,7 +7,7 @@ import { signIn, getSession, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, Loader2, Leaf, ArrowRight, CheckCircle } from "lucide-react";
+import { Loader2, Leaf, ArrowRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { FaGoogle } from "react-icons/fa";
 import { BsEyeFill, BsEyeSlashFill } from "react-icons/bs";
@@ -20,7 +20,7 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -293,7 +293,7 @@ export default function LoginPage() {
             </Button>
 
             <p className="mt-8 text-center text-sm text-gray-600">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/auth/signup"
                 className="font-semibold text-green-600 hover:text-green-700 hover:underline transition-colors"

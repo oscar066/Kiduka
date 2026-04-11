@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, UserPlus, Leaf, ArrowRight, CheckCircle, Shield } from "lucide-react";
+import { Loader2, Leaf, ArrowRight, CheckCircle, Shield } from "lucide-react";
 import Link from "next/link";
 import { FaGoogle } from "react-icons/fa";
 import { BsEyeFill, BsEyeSlashFill } from "react-icons/bs";
@@ -28,7 +28,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -90,9 +90,10 @@ export default function SignupPage() {
           router.push("/auth/login");
         }, 2000);
       }
-    } catch (err: any) {
-      console.error("Registration failed:", err);
-      setErrorMessage(err.message || "Registration failed. Please try again.");
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.error("Registration failed:", error);
+      setErrorMessage(error.message || "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
