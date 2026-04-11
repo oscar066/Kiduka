@@ -1,4 +1,3 @@
-// dashboard/normal user
 'use client';
 
 import React from 'react';

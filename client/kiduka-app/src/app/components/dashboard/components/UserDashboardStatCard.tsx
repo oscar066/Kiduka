@@ -1,5 +1,6 @@
 import type React from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface StatCardProps {
   icon: React.ReactNode;
@@ -19,11 +20,11 @@ export function UserDashboardStatCard({ icon, iconBg, badge, value, label, loadi
             <div className={`p-4 bg-gradient-to-br ${iconBg} rounded-2xl`}>{icon}</div>
             {!loading && badge && <span className="text-gray-400">{badge}</span>}
           </div>
-          <div>
+          <div className="space-y-2">
             {loading ? (
               <>
-                <div className="h-7 w-20 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-28 bg-gray-200 rounded animate-pulse mt-2" />
+                <Skeleton className="h-7 w-20" />
+                <Skeleton className="h-4 w-28" />
               </>
             ) : (
               <>

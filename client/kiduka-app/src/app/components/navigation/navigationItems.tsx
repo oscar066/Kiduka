@@ -10,6 +10,7 @@ import {
   Shield,
   Users,
   MessageCircle,
+  Zap,
 } from "lucide-react";
 import { UserRole } from "@/types/auth";
 
@@ -46,7 +47,7 @@ const navigationItems: NavItem[] = [
   },
   {
     label: "Optimization",
-    icon: <MapPin className="h-4 w-4" />,
+    icon: <Zap className="h-4 w-4" />,
     href: "/optimization",
   },
   {

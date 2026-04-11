@@ -87,18 +87,18 @@ export function SoilInputForm({
               <Label htmlFor="ph" className="text-green-700 font-medium">
                 pH Level <span className="text-red-500 font-bold">*</span>
               </Label>
-              <Input
-                id="ph"
-                type="number"
-                step="0.1"
-                placeholder="6.8"
-                value={soilData.ph || ""}
+                <Input
+                  id="ph"
+                  type="number"
+                  step="0.1"
+                  placeholder="6.8"
+                  value={soilData.ph || ""}
                 className="border-amber-200 focus:border-green-500"
-                onChange={(e) => {
-                  const val = e.target.value;
-                  handleInputChange("ph", val === "" ? undefined : (Number.parseFloat(val) || 0));
-                }}
-              />
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    handleInputChange("ph", val === "" ? undefined : (Number.parseFloat(val) || 0));
+                  }}
+                />
             </div>
           </TabsContent>
 

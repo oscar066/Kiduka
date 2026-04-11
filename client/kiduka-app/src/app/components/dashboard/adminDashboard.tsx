@@ -20,35 +20,29 @@ import { SuperAdminOnly } from "../auth/roleBasedGaurd";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AdminMetricCard } from "./components/AdminMetricCard";
 import { AdminActionCard } from "./components/AdminActionCard";
 
+import useSWR from "swr";
+import { swrFetcher } from "@/lib/swr-config";
+
 export function AdminDashboard() {
   const { user, token, isSuperAdmin } = useAuth();
-  const [dashboardData, setDashboardData] =
-    useState<AdminDashboardResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  // Use SWR for fetching and caching dashboard data
+  const { 
+    data: dashboardData, 
+    error: fetchError, 
+    isLoading,
+    mutate 
+  } = useSWR<AdminDashboardResponse>(
+    token ? ["getAdminDashboard", token] : null,
+    swrFetcher
+  );
 
-  useEffect(() => {
-    if (token) {
-      loadAdminDashboard();
-    }
-  }, [token]);
-
-  const loadAdminDashboard = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await apiClient.getAdminDashboard(token!);
-      setDashboardData(data);
-    } catch (err) {
-      console.error("Error loading admin dashboard:", err);
-      setError("Failed to load dashboard data");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const error = fetchError ? "Failed to load dashboard data" : null;
+  const loading = isLoading;
 
   if (error) {
     return (
@@ -69,17 +63,26 @@ export function AdminDashboard() {
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-serif font-bold text-green-800">
-          Admin Dashboard
-        </h1>
-        <p className="text-green-600 font-serif">
-          Welcome back, {user?.full_name || user?.username}
-          {isSuperAdmin && (
-            <span className="ml-2 font-semibold text-blue-700">
-              (Super Admin)
-            </span>
-          )}
-        </p>
+        {loading && !user ? (
+          <>
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-6 w-48" />
+          </>
+        ) : (
+          <>
+            <h1 className="text-3xl font-serif font-bold text-green-800">
+              Admin Dashboard
+            </h1>
+            <p className="text-green-600 font-serif">
+              Welcome back, {user?.full_name || user?.username}
+              {isSuperAdmin && (
+                <span className="ml-2 font-semibold text-blue-700">
+                  (Super Admin)
+                </span>
+              )}
+            </p>
+          </>
+        )}
       </div>
 
       {/* Key Metrics */}
@@ -137,9 +140,9 @@ export function AdminDashboard() {
             {loading ? (
               <>
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-                    <div className="h-6 w-12 bg-gray-200 rounded-full animate-pulse" />
+                  <div key={i} className="flex items-center justify-between py-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-6 w-12 rounded-full" />
                   </div>
                 ))}
               </>
@@ -168,9 +171,9 @@ export function AdminDashboard() {
             {loading ? (
               <>
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
-                    <div className="h-6 w-12 bg-gray-200 rounded-full animate-pulse" />
+                  <div key={i} className="flex items-center justify-between py-1">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-6 w-12 rounded-full" />
                   </div>
                 ))}
               </>
@@ -259,13 +262,13 @@ export function AdminDashboard() {
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between p-3 bg-green-50 rounded-lg animate-pulse"
+                    className="flex items-center justify-between p-3 bg-green-50/50 rounded-lg"
                   >
                     <div className="space-y-2">
-                      <div className="h-4 w-32 bg-gray-200 rounded" />
-                      <div className="h-3 w-48 bg-gray-200 rounded" />
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-48" />
                     </div>
-                    <div className="h-6 w-16 bg-gray-200 rounded-full" />
+                    <Skeleton className="h-6 w-16 rounded-full" />
                   </div>
                 ))}
               </>
@@ -312,12 +315,12 @@ export function AdminDashboard() {
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div
                     key={i}
-                    className="flex items-start space-x-3 p-3 bg-amber-50 rounded-lg animate-pulse"
+                    className="flex items-start space-x-3 p-3 bg-amber-50/50 rounded-lg"
                   >
-                    <div className="h-4 w-4 bg-gray-200 rounded mt-1" />
+                    <Skeleton className="h-4 w-4 rounded-full mt-1" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-3 w-3/4 bg-gray-200 rounded" />
-                      <div className="h-3 w-24 bg-gray-200 rounded" />
+                      <Skeleton className="h-3 w-3/4" />
+                      <Skeleton className="h-3 w-24" />
                     </div>
                   </div>
                 ))}

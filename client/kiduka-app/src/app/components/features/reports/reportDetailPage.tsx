@@ -12,6 +12,8 @@ import UnifiedSidebar from "../../layout/UnifiedSidebar";
 import { Navbar } from "../../layout/navbar";
 import { SessionGuard } from "../../shared/SessionGuard";
 import { apiClient } from "@/lib/api-client";
+import useSWR from "swr";
+import { swrFetcher } from "@/lib/swr-config";
 
 import { NutrientDisplay } from "../analysis/components/nutrientDisplay";
 import { AgrovetsDisplay } from "../analysis/components/agrovetDisplay";
@@ -36,35 +38,19 @@ export default function ReportDetailPage({ reportId }: Props) {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [report, setReport] = useState<PredictionHistory | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Use SWR for fetching and caching single report data
+  const {
+    data: report,
+    error: fetchError,
+    isLoading
+  } = useSWR<PredictionHistory>(
+    status === "authenticated" && session?.accessToken 
+      ? ["getPrediction", reportId, session.accessToken] 
+      : null,
+    swrFetcher
+  );
 
-  useEffect(() => {
-    if (status === "authenticated") {
-      fetchReport();
-    }
-  }, [status, reportId]);
-
-  const fetchReport = async () => {
-    if (!session?.accessToken) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await apiClient.getPrediction(reportId, session.accessToken);
-      setReport(data);
-    } catch (err) {
-      console.error("Error fetching report:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to load report"
-      );
-      if (err instanceof Error && err.message.includes("Authentication")) {
-        setTimeout(() => signOut({ callbackUrl: "/auth/login" }), 2000);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const error = fetchError ? (fetchError instanceof Error ? fetchError.message : "Failed to load report") : null;
 
   const handleDelete = async () => {
     if (!session?.accessToken || !report) return;
@@ -73,7 +59,8 @@ export default function ReportDetailPage({ reportId }: Props) {
       await apiClient.deletePredictionHistory(report.id, session.accessToken);
       router.push("/reports");
     } catch (err) {
-      setError("Failed to delete report");
+      console.error("Error deleting report:", err);
+      alert("Failed to delete report");
     }
   };
 

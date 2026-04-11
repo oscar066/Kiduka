@@ -40,6 +40,9 @@ import UnifiedSidebar from "../../layout/UnifiedSidebar";
 import { Navbar } from "../../layout/navbar";
 import { apiClient } from "@/lib/api-client";
 import { SessionGuard } from "../../shared/SessionGuard";
+import useSWR from "swr";
+import { swrFetcher } from "@/lib/swr-config";
+import type { PaginatedResponse } from "@/types/api";
 
 import {
   Beaker,
@@ -62,62 +65,41 @@ export default function ReportsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [reports, setReports] = useState<PredictionHistory[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalReports, setTotalReports] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("created_at");
   const [sortOrder, setSortOrder] = useState("desc");
 
-  const fetchReports = async () => {
-    if (!session?.accessToken) {
-      setError("Authentication token not found. Please sign in again.");
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await apiClient.getPredictionHistory(
-        session.accessToken,
-        currentPage,
-        pageSize,
-        sortBy,
-        sortOrder
-      );
-      setReports(response.predictions || []);
-      setTotalPages(response.pages);
-      setTotalReports(response.total);
-    } catch (err) {
-      console.error("Error fetching reports:", err);
-      setError(
-        err instanceof Error ? err.message : "An error occurred while fetching reports"
-      );
-      if (err instanceof Error && err.message.includes("Authentication")) {
-        setTimeout(() => signOut({ callbackUrl: "/auth/login" }), 2000);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Use SWR for fetching and caching reports list
+  const {
+    data: response,
+    error: fetchError,
+    isLoading,
+    isValidating,
+    mutate
+  } = useSWR<PaginatedResponse<PredictionHistory>>(
+    session?.accessToken 
+      ? ["getPredictionHistory", session.accessToken, currentPage, pageSize, sortBy, sortOrder] 
+      : null,
+    swrFetcher
+  );
 
-  useEffect(() => {
-    if (status === "authenticated") {
-      fetchReports();
-    }
-  }, [status, currentPage, sortBy, sortOrder]);
+  const reports = response?.predictions || [];
+  const totalPages = response?.pages || 0;
+  const totalReports = response?.total || 0;
+  const error = fetchError ? "An error occurred while fetching reports" : null;
 
   const deleteReport = async (reportId: string) => {
     if (!session?.accessToken) return;
     try {
       await apiClient.deletePredictionHistory(reportId, session.accessToken);
-      fetchReports();
+      // Revalidate the current page after deletion
+      mutate();
     } catch (err) {
       console.error("Error deleting report:", err);
-      setError("Failed to delete report");
+      // We'll let the global error state handle this or just alert
+      alert("Failed to delete report");
     }
   };
 
@@ -224,11 +206,11 @@ export default function ReportsPage() {
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={fetchReports}
+                        onClick={() => mutate()}
                         disabled={isLoading}
                         className="h-10 w-10 border-amber-200 bg-white shadow-sm text-green-700 hover:bg-green-50 rounded-lg shrink-0"
                       >
-                        <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                        <RefreshCw className={`h-4 w-4 ${isValidating ? "animate-spin" : ""}`} />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Refresh reports</TooltipContent>

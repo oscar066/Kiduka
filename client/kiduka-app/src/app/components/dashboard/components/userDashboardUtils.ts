@@ -16,21 +16,6 @@ export interface UserStats {
   averageFertility: string;
 }
 
-const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
-
-export interface CacheEntry {
-  data: PredictionsData;
-  timestamp: number;
-}
-
-// Module-level cache so it persists across re-renders but resets on page refresh
-export const cache: { current: CacheEntry | null } = { current: null };
-
-export function isCacheValid(): boolean {
-  if (!cache.current) return false;
-  return Date.now() - cache.current.timestamp < CACHE_TTL_MS;
-}
-
 export function deriveStats(data: PredictionsData): UserStats {
   const predictions = data.predictions ?? [];
 

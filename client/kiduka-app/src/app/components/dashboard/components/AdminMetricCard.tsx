@@ -1,5 +1,6 @@
 import type React from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface MetricCardProps {
   title: string;
@@ -28,12 +29,12 @@ export function AdminMetricCard({
     <Card>
       <CardHeader className="flex items-center">
         <div className="p-2 bg-green-50 rounded-lg">{icon}</div>
-        <div className="ml-4">
+        <div className="ml-4 flex-1">
           <CardTitle className="text-sm font-medium text-green-700">
             {title}
           </CardTitle>
           {loading ? (
-            <div className="h-8 w-20 bg-gray-200 rounded animate-pulse mt-1" />
+            <Skeleton className="h-8 w-24 mt-1" />
           ) : (
             <div className="text-2xl font-semibold text-green-900">
               {value.toLocaleString()}
@@ -43,7 +44,7 @@ export function AdminMetricCard({
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+          <Skeleton className="h-4 w-3/4" />
         ) : (
           <p className={`text-sm ${changeColorClass}`}>{change}</p>
         )}

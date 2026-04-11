@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -11,89 +10,48 @@ import {
   History,
   TrendingUp,
   MapPin,
-  Settings,
-  BarChart3,
   Calendar,
   ArrowRight,
   Sparkles,
   RefreshCw,
   MessageCircle,
+  BarChart3,
 } from "lucide-react";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
+import useSWR from "swr";
+import { swrFetcher } from "@/lib/swr-config";
 
 import { UserDashboardStatCard as StatCard } from "./components/UserDashboardStatCard";
 import { UserDashboardPredictionRow as PredictionRow } from "./components/UserDashboardPredictionRow";
 import {
   deriveStats,
-  isCacheValid,
-  cache,
-  type Prediction,
   type PredictionsData,
-  type UserStats,
 } from "./components/userDashboardUtils";
 
 export function UserDashboard() {
   const { user, token } = useAuth();
 
-  // Separate loading flags so static sections render immediately
-  const [statsLoading, setStatsLoading] = useState(true);
-  const [predictionsLoading, setPredictionsLoading] = useState(true);
-
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [recentPredictions, setRecentPredictions] = useState<Prediction[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  // Prevent double-fetch in Strict Mode
-  const fetchedRef = useRef(false);
-
-  const loadData = useCallback(
-    async (force = false) => {
-      if (!token) return;
-
-      // Use cache unless forced refresh
-      if (!force && isCacheValid()) {
-        const { data } = cache.current!;
-        setStats(deriveStats(data));
-        setRecentPredictions(data.predictions);
-        setStatsLoading(false);
-        setPredictionsLoading(false);
-        return;
-      }
-
-      setError(null);
-
-      try {
-        const response = await apiClient.getPredictionHistory(token, 1, 5);
-        const data: PredictionsData = {
-          predictions: response.predictions ?? [],
-          total: response.total,
-        };
-
-        // Populate cache
-        cache.current = { data, timestamp: Date.now() };
-
-        // Stats and predictions can resolve in one go since it's one request,
-        // but we set them separately so StatCards can unblock independently.
-        setStats(deriveStats(data));
-        setStatsLoading(false);
-
-        setRecentPredictions(data.predictions ?? []);
-        setPredictionsLoading(false);
-      } catch (err) {
-        console.error("Dashboard fetch error:", err);
-        setError("Failed to load dashboard data. Please try again.");
-        setStatsLoading(false);
-        setPredictionsLoading(false);
-      }
-    },
-    [token]
+  const {
+    data,
+    error,
+    isLoading,
+    isValidating,
+    mutate
+  } = useSWR<PredictionsData>(
+    token ? ["getPredictionHistory", token, 1, 5] : null,
+    swrFetcher
   );
 
-  useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-    loadData();
-  }, [loadData]);
+  const stats = useMemo(() => data ? deriveStats(data) : null, [data]);
+  const recentPredictions = data?.predictions ?? [];
+  const statsLoading = isLoading;
+  const predictionsLoading = isLoading;
+
+  // Handle manual refresh
+  const handleRefresh = () => {
+    mutate();
+  };
 
   // Error state
   if (error) {
@@ -102,18 +60,14 @@ export function UserDashboard() {
         <div className="w-full max-w-md space-y-4">
           <Alert variant="destructive" className="border-red-300">
             <AlertTitle className="font-serif">Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>Failed to load dashboard data. Please try again.</AlertDescription>
           </Alert>
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => {
-              setStatsLoading(true);
-              setPredictionsLoading(true);
-              loadData(true);
-            }}
+            onClick={handleRefresh}
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <RefreshCw className={`mr-2 h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
             Retry
           </Button>
         </div>
@@ -126,23 +80,28 @@ export function UserDashboard() {
       {/* Welcome — renders immediately, no loading dependency */}
       <div className="flex items-start justify-between">
         <div className="space-y-2">
-          <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
-            Welcome back, {user?.full_name ?? user?.username}!
-          </h1>
-          <p className="text-lg text-gray-600 font-serif">
-            Ready to analyze your soil and get personalized recommendations?
-          </p>
+          {statsLoading && !user ? (
+            <>
+              <Skeleton className="h-9 w-64" />
+              <Skeleton className="h-6 w-80" />
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
+                Welcome back, {user?.full_name ?? user?.username}!
+              </h1>
+              <p className="text-lg text-gray-600 font-serif">
+                Ready to analyze your soil and get personalized recommendations?
+              </p>
+            </>
+          )}
         </div>
         <Button
           variant="ghost"
           size="icon"
           className="text-gray-400 hover:text-green-600 mt-1"
           title="Refresh dashboard"
-          onClick={() => {
-            setStatsLoading(true);
-            setPredictionsLoading(true);
-            loadData(true);
-          }}
+          onClick={handleRefresh}
         >
           <RefreshCw className="h-5 w-5" />
         </Button>
@@ -255,9 +214,21 @@ export function UserDashboard() {
       {/* Recent Predictions */}
       {predictionsLoading ? (
         <Card className="border-amber-200 shadow-lg">
-          <CardContent className="p-6 space-y-3">
+          <CardContent className="p-6 space-y-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />
+              <div key={i} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-xl border border-transparent">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-10 w-10 rounded-lg" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                </div>
+                <div className="space-y-2 text-right">
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </div>
             ))}
           </CardContent>
         </Card>

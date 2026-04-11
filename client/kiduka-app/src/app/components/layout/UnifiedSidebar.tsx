@@ -57,7 +57,7 @@ export default function UnifiedSidebar() {
 
   return (
     <Sidebar className="border-r border-amber-200 bg-gradient-to-b from-green-50 to-amber-50">
-      <SidebarHeader className="h-16 flex items-center border-b border-amber-200 px-4">
+      <SidebarHeader className="h-16 flex items-center border-b border-amber-200 px-2">
         <Link
           href="/dashboard"
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
