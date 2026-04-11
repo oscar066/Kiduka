@@ -60,20 +60,27 @@ echo "✅ Certificates found."
 
 # Build and start containers
 echo "Building and starting containers..."
-# We use sudo if the user isn't in the docker group yet (which happens on first run)
-if groups | grep -q "docker"; then
-    docker compose -f docker-compose.prod.yml up -d --build
-    docker compose -f docker-compose.prod.yml restart nginx
-    
-    echo "Running database migrations..."
-    docker compose -f docker-compose.prod.yml exec -T postgres psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-agricultural_api} -f /docker-entrypoint-initdb.d/02-migrate.sql
-else
-    sudo docker compose -f docker-compose.prod.yml up -d --build
-    sudo docker compose -f docker-compose.prod.yml restart nginx
-    
-    echo "Running database migrations..."
-    sudo docker compose -f docker-compose.prod.yml exec -T postgres psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-agricultural_api} -f /docker-entrypoint-initdb.d/02-migrate.sql
+DOCKER_CMD="docker compose -f docker-compose.prod.yml"
+if ! groups | grep -q "docker"; then
+    DOCKER_CMD="sudo $DOCKER_CMD"
 fi
+
+$DOCKER_CMD up -d --build
+$DOCKER_CMD restart nginx
+
+# Run database migrations
+echo "Running database migrations..."
+echo "Waiting for database to be healthy..."
+for i in {1..10}; do
+    if $DOCKER_CMD exec -T postgres pg_isready -U ${POSTGRES_USER:-agri_user} -d ${POSTGRES_DB:-agricultural_api} > /dev/null 2>&1; then
+        echo "✅ Database is ready."
+        break
+    fi
+    echo "Waiting... ($i/10)"
+    sleep 3
+done
+
+$DOCKER_CMD exec -T postgres psql -U ${POSTGRES_USER:-agri_user} -d ${POSTGRES_DB:-agricultural_api} -f /docker-entrypoint-initdb.d/02-migrate.sql
 
 echo "Deployment complete! Services should be running."
 echo "Check status with: docker compose -f docker-compose.prod.yml ps"
