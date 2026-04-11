@@ -103,44 +103,53 @@ export default function LoginPage() {
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-amber-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
       
       {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-green-600 via-emerald-600 to-green-700 p-12 flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-green-600 via-emerald-600 to-green-700 p-16 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItNHYyczIgMCAyIDJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-10"></div>
         
         <div className="relative z-10">
-          <Link href="/" className="flex items-center space-x-3">
-            <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm border border-white/30">
+          <Link href="/" className="flex items-center space-x-4 group">
+            <div className="p-3 bg-white/15 rounded-2xl backdrop-blur-md border border-white/25 group-hover:bg-white/25 transition-all duration-300">
               <Leaf className="h-8 w-8 text-white" />
             </div>
-            <span className="text-3xl font-serif font-bold text-white">Kiduka Labs</span>
+            <span className="text-3xl font-serif font-bold text-white tracking-tight">Kiduka Labs</span>
           </Link>
         </div>
 
-        <div className="relative z-10 space-y-8">
-          <h2 className="text-4xl font-serif font-bold text-white leading-tight">
-            Welcome back to your<br />soil analysis platform
-          </h2>
-          <p className="text-xl text-green-100 leading-relaxed">
-            Access powerful AI-driven insights for optimal crop yields and sustainable farming practices.
-          </p>
+        <div className="relative z-10 max-w-lg">
+          <div className="space-y-6">
+            <h2 className="text-5xl font-serif font-bold text-white leading-[1.15]">
+              Welcome back to your<br />
+              <span className="text-green-200">soil analysis platform</span>
+            </h2>
+            <p className="text-xl text-green-50 leading-relaxed font-light opacity-90">
+              Access powerful AI-driven insights for optimal crop yields and sustainable farming practices.
+            </p>
+          </div>
           
-          <div className="space-y-4 pt-8">
+          <div className="space-y-5 mt-12">
             {[
               "Real-time soil health monitoring",
               "Personalized fertilizer recommendations",
               "Historical data tracking"
             ].map((feature, index) => (
-              <div key={index} className="flex items-center space-x-3">
-                <div className="flex-shrink-0 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                  <CheckCircle className="h-4 w-4 text-white" />
+              <div key={index} className="flex items-center space-x-4 animate-in fade-in slide-in-from-left-4 duration-500 fill-mode-both" style={{ animationDelay: `${index * 150}ms` }}>
+                <div className="flex-shrink-0 w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10">
+                  <CheckCircle className="h-5 w-5 text-green-300" />
                 </div>
-                <span className="text-green-100">{feature}</span>
+                <span className="text-green-50 font-medium text-lg leading-none">{feature}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="relative z-10 text-green-200 text-sm">
-          © {new Date().getFullYear()} Kiduka Labs. All rights reserved.
+        <div className="relative z-10 border-t border-white/10 pt-8 flex items-center justify-between">
+          <div className="text-green-200 text-sm font-medium">
+            © {new Date().getFullYear()} Kiduka Labs
+          </div>
+          <div className="flex space-x-6 text-green-200/60 text-xs">
+            <Link href="#" className="hover:text-white transition-colors">Privacy</Link>
+            <Link href="#" className="hover:text-white transition-colors">Terms</Link>
+          </div>
         </div>
       </div>
 
