@@ -36,7 +36,6 @@ export function ChatHeader() {
           Online
         </Badge>
       </motion.div>
-      <Separator className="mt-4 bg-green-100" />
     </div>
   );
 }
