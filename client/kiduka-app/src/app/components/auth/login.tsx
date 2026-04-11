@@ -11,6 +11,7 @@ import { LogIn, Loader2, Leaf, ArrowRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { FaGoogle } from "react-icons/fa";
 import { BsEyeFill, BsEyeSlashFill } from "react-icons/bs";
+import { DecorativeBackground } from "../shared/DecorativeBackground";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -87,7 +88,7 @@ export default function LoginPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-amber-50">
+      <div className="min-h-screen w-full flex items-center justify-center">
         <div className="flex items-center space-x-2">
           <Loader2 className="h-6 w-6 animate-spin text-green-600" />
           <span className="text-green-800 font-serif">Loading...</span>
@@ -97,10 +98,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex bg-gradient-to-br from-green-50 via-white to-amber-50 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-amber-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
+    <div className="min-h-screen w-full flex relative overflow-hidden">
+      <DecorativeBackground />
       
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-green-600 via-emerald-600 to-green-700 p-16 flex-col justify-between relative overflow-hidden">

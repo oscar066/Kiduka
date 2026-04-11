@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { 
   Leaf, 
   CheckCircle, 
@@ -15,7 +16,16 @@ import {
   X,
   Star,
   Quote,
-  ChevronDown
+  ChevronDown,
+  Cpu,
+  Database,
+  Globe,
+  Map,
+  Beaker,
+  Layers,
+  Zap,
+  ShieldCheck,
+  Search
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -47,54 +57,54 @@ export default function LandingPage() {
 
   const testimonials = [
     {
-      name: "John Kamau",
-      role: "Maize Farmer, Nakuru",
-      content: "Kiduka has transformed my farming! The soil analysis helped me increase my yield by 40% in just one season.",
+      name: "Dr. John Kamau",
+      role: "Agriculture Research Officer",
+      content: "Kiduka's triple-mode architecture is a game-changer. The way it prioritizes lab data while using ML for gap-filling provides a level of precision I haven't seen in other platforms.",
       rating: 5,
     },
     {
       name: "David Omondi",
-      role: "Agronomist, Kisumu",
-      content: "The fertilizer recommendations are spot-on. I now advise all my clients to use Kiduka for soil testing.",
+      role: "Commercial Maize Farmer",
+      content: "The localized Agrovet recommendations saved me days of searching. It pointed me exactly to where I could find the DAP and CAN for my specific soil needs.",
       rating: 5,
     },
     {
       name: "Sarah Wanjiru",
-      role: "Vegetable Farmer, Kiambu",
-      content: "Easy to use and very accurate. The reports are detailed and help me make better farming decisions.",
+      role: "Precision Agronomist",
+      content: "The integration with Google Earth Engine for NDVI and SAR data provides a highly accurate environmental signature. It's sophisticated yet remarkably easy for my clients to use.",
       rating: 5,
     },
   ];
 
   const faqs = [
     {
-      question: "How accurate is the soil analysis?",
-      answer: "Our AI-powered analysis uses advanced machine learning algorithms trained on thousands of soil samples. The accuracy rate is over 95% for nutrient assessment and soil fertility predictions.",
+      question: "How accurate is the ML Predictive Engine?",
+      answer: "Our ML engine uses high-resolution satellite data from the Google Earth Engine (Sentinel-1 and MODIS). It achieves over 95% accuracy in estimating Soil Health Index (SHI) by analyzing vegetation trends, soil texture, and surface roughness.",
     },
     {
-      question: "How do I collect soil samples?",
-      answer: "You can collect soil samples from different parts of your farm at a depth of 6-8 inches. Mix them together and take a representative sample for testing. Detailed instructions are provided in your dashboard.",
+      question: "What is Hybrid Prediction Mode?",
+      answer: "Hybrid mode activates when you provide some lab results but not all. The system uses AI to 'gap-fill' missing nutrients while ensuring your actual lab measurements always override predicted values for total precision.",
     },
     {
-      question: "What information do I need to provide?",
-      answer: "You'll need to input basic soil properties like pH, nitrogen (N), phosphorus (P), potassium (K), and other macro and micro nutrients. Our system guides you through the entire process.",
+      question: "What information do I need to get started?",
+      answer: "The minimum requirement is your GPS location and soil pH level. This transitions the system to ML mode. For higher precision, you can optionally provide N, P, K, Organic Carbon, Calcium, and Magnesium levels.",
     },
     {
-      question: "Is there a free trial available?",
-      answer: "Yes! New users get 3 free soil analyses to try out the platform. After that, you can choose from our flexible pricing plans based on your needs.",
+      question: "How does the Agrovet recommendation work?",
+      answer: "We use the Haversine formula to calculate your distance to local agrovets. We then match your specific nutrient deficiencies (e.g., Nitrogen) with the correct products (e.g., CAN) available at those coordinates.",
     },
     {
       question: "Can I track multiple farms?",
-      answer: "Absolutely! Our platform allows you to manage multiple farm locations and track soil health separately for each plot or field.",
+      answer: "Absolutely. Kiduka allows you to manage multiple geographical coordinates and track the historical soil health trends for each field independently.",
     },
     {
-      question: "How quickly do I get results?",
-      answer: "Results are instant! Once you input your soil data, our AI analyzes it immediately and provides comprehensive reports and recommendations within seconds.",
+      question: "What are the scientific rules for SHI Calculation?",
+      answer: "Our expert system uses Diagnostic Engine rules—such as the 'pH Cap' where a very poor pH restricts the overall health status, or the 'OC Downgrade' based on Organic Carbon levels.",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-amber-50" suppressHydrationWarning>
+    <div className="min-h-screen" suppressHydrationWarning>
       {/* Sticky Navigation Bar */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled ? "bg-white shadow-md" : "bg-white/80 backdrop-blur-sm"
@@ -114,8 +124,11 @@ export default function LandingPage() {
               <button onClick={() => scrollToSection("home")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
                 Home
               </button>
-              <button onClick={() => scrollToSection("features")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
-                Features
+              <button onClick={() => scrollToSection("architecture")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
+                Architecture
+              </button>
+              <button onClick={() => scrollToSection("agrovets")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
+                Agrovets
               </button>
               <button onClick={() => scrollToSection("how-it-works")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
                 How It Works
@@ -159,8 +172,11 @@ export default function LandingPage() {
               <button onClick={() => scrollToSection("home")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
                 Home
               </button>
-              <button onClick={() => scrollToSection("features")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
-                Features
+              <button onClick={() => scrollToSection("architecture")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
+                Architecture
+              </button>
+              <button onClick={() => scrollToSection("agrovets")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
+                Agrovets
               </button>
               <button onClick={() => scrollToSection("how-it-works")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
                 How It Works
@@ -189,13 +205,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
           <div className="text-center space-y-8">
             <div className="space-y-4">
-              <h2 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-bold text-green-900 leading-tight">
-                Smart Soil Analysis
+              <h2 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-bold text-green-900 leading-[1.1]">
+                Precision Agriculture
                 <br />
-                <span className="text-green-600">Made Simple</span>
+                <span className="text-green-600">Driven by Data</span>
               </h2>
-              <p className="text-xl sm:text-2xl text-gray-600 font-serif max-w-3xl mx-auto">
-                Harness the power of AI to analyze your soil, get personalized fertilizer recommendations, and optimize your agricultural yields.
+              <p className="text-xl sm:text-2xl text-gray-600 font-serif max-w-3xl mx-auto leading-relaxed">
+                Kiduka is a sophisticated decision-support system that bridges the gap between satellite environmental data and actionable farming practices.
               </p>
             </div>
 
@@ -231,62 +247,150 @@ export default function LandingPage() {
         <div className="absolute bottom-0 right-0 w-64 h-64 bg-amber-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
       </section>
 
+      {/* Triple Prediction Mode Architecture */}
+      <section id="architecture" className="py-24 bg-white/50 backdrop-blur-sm relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-20">
+            <h3 className="text-3xl sm:text-5xl font-serif font-bold text-green-800 mb-6 font-serif">
+              Triple Prediction Architecture
+            </h3>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto font-serif">
+              Kiduka intelligently routes analysis through three dynamic modes based on your available data precision.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-10">
+            {/* ML Predictive Engine */}
+            <Card className="border-amber-200 shadow-sm hover:shadow-xl transition-all duration-300 group">
+              <CardContent className="p-10 space-y-6">
+                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center group-hover:bg-green-600 transition-colors duration-300">
+                  <Cpu className="h-8 w-8 text-green-600 group-hover:text-white transition-colors duration-300" />
+                </div>
+                <div className="space-y-3">
+                  <h4 className="text-2xl font-serif font-bold text-green-900">ML Predictive Engine</h4>
+                  <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50 px-3 py-1">Rapid Satellite Analysis</Badge>
+                </div>
+                <p className="text-gray-600 leading-relaxed font-serif">
+                  Leverages Google Earth Engine and high-resolution satellite imagery (NDVI, SAR, SRTM) to estimate nutrients when lab results are unavailable.
+                </p>
+                <div className="pt-4 border-t border-amber-100">
+                  <p className="text-sm font-medium text-green-700 font-serif">Ideal for: Quick environmental assessments</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Hybrid Prediction */}
+            <Card className="border-amber-200 shadow-sm hover:shadow-xl transition-all duration-300 group ring-2 ring-green-100 ring-offset-4 ring-offset-transparent">
+              <CardContent className="p-10 space-y-6">
+                <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center group-hover:bg-amber-600 transition-colors duration-300">
+                  <Zap className="h-8 w-8 text-amber-600 group-hover:text-white transition-colors duration-300" />
+                </div>
+                <div className="space-y-3">
+                  <h4 className="text-2xl font-serif font-bold text-green-900">Hybrid Analysis</h4>
+                  <Badge variant="outline" className="border-amber-200 text-amber-700 bg-amber-50 px-3 py-1">ML-Enhanced Lab Data</Badge>
+                </div>
+                <p className="text-gray-600 leading-relaxed font-serif">
+                  Fills data gaps by merging lab measurements with ML estimations. Real measurements always override predictions for maximum accuracy.
+                </p>
+                <div className="pt-4 border-t border-amber-100">
+                  <p className="text-sm font-medium text-amber-700 font-serif">Ideal for: Partial lab results</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Formula-Based Diagnostic */}
+            <Card className="border-amber-200 shadow-sm hover:shadow-xl transition-all duration-300 group">
+              <CardContent className="p-10 space-y-6">
+                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-300">
+                  <Beaker className="h-8 w-8 text-blue-600 group-hover:text-white transition-colors duration-300" />
+                </div>
+                <div className="space-y-3">
+                  <h4 className="text-2xl font-serif font-bold text-green-900">Diagnostic Engine</h4>
+                  <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50 px-3 py-1">High-Precision Formulaic</Badge>
+                </div>
+                <p className="text-gray-600 leading-relaxed font-serif">
+                  A high-precision rule-based model using scientific weighting and expert system filters for precise nutrient recommendations.
+                </p>
+                <div className="pt-4 border-t border-amber-100">
+                  <p className="text-sm font-medium text-blue-700 font-serif">Ideal for: Full laboratory samples</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
 
 
       {/* Features Section */}
       <section id="features" className="py-20 bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h3 className="text-3xl sm:text-4xl font-serif font-bold text-green-800 mb-4">
-              Why Choose Kiduka?
+            <h3 className="text-3xl sm:text-5xl font-serif font-bold text-green-800 mb-6 font-serif">
+              Data-Driven Agricultural Intelligence
             </h3>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Our platform combines cutting-edge technology with agricultural expertise to deliver accurate, actionable insights.
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto font-serif">
+              Our platform harmonizes localized lab data with global satellite imagery through a sophisticated triple-mode architecture.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="border-amber-200 hover:shadow-xl transition-shadow">
-              <CardContent className="p-8 text-center space-y-4">
-                <div className="inline-flex p-4 bg-green-100 rounded-2xl">
-                  <TestTube className="h-10 w-10 text-green-600" />
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="space-y-8 animate-in fade-in slide-in-from-left-8 duration-700">
+              <h3 className="text-4xl sm:text-5xl font-serif font-bold leading-tight text-left">
+                Advanced Environmental <br />
+                <span className="text-green-400">Intelligence Engine</span>
+              </h3>
+              <p className="text-xl text-gray-600 font-serif leading-relaxed text-left">
+                Kiduka fetches and processes high-resolution satellite data from the Google Earth Engine to understand your farm's unique environmental signature.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-green-50 rounded-lg"><Globe className="h-5 w-5 text-green-600" /></div>
+                  <div className="text-left">
+                    <h5 className="font-bold font-serif text-green-900">Vegetation Trends</h5>
+                    <p className="text-sm text-gray-600">NDVI imagery assesses historical plant health patterns.</p>
+                  </div>
                 </div>
-                <h4 className="text-xl font-serif font-bold text-green-800">
-                  AI-Powered Analysis
-                </h4>
-                <p className="text-gray-600">
-                  Advanced machine learning algorithms analyze your soil composition and provide precise nutrient assessments.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-amber-200 hover:shadow-xl transition-shadow">
-              <CardContent className="p-8 text-center space-y-4">
-                <div className="inline-flex p-4 bg-amber-100 rounded-2xl">
-                  <Sprout className="h-10 w-10 text-amber-600" />
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-green-50 rounded-lg"><Layers className="h-5 w-5 text-green-600" /></div>
+                  <div className="text-left">
+                    <h5 className="font-bold font-serif text-green-900">Soil Texture</h5>
+                    <p className="text-sm text-gray-600">Sand-to-clay ratios via global OpenLandMap data.</p>
+                  </div>
                 </div>
-                <h4 className="text-xl font-serif font-bold text-green-800">
-                  Personalized Recommendations
-                </h4>
-                <p className="text-gray-600">
-                  Get tailored fertilizer recommendations based on your soil type, crop needs, and local conditions.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-amber-200 hover:shadow-xl transition-shadow">
-              <CardContent className="p-8 text-center space-y-4">
-                <div className="inline-flex p-4 bg-blue-100 rounded-2xl">
-                  <TrendingUp className="h-10 w-10 text-blue-600" />
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-green-50 rounded-lg"><Zap className="h-5 w-5 text-green-600" /></div>
+                  <div className="text-left">
+                    <h5 className="font-bold font-serif text-green-900">SAR Data</h5>
+                    <p className="text-sm text-gray-600">Sentinel-1 Synthetic Aperture Radar for moisture profiles.</p>
+                  </div>
                 </div>
-                <h4 className="text-xl font-serif font-bold text-green-800">
-                  Track Your Progress
-                </h4>
-                <p className="text-gray-600">
-                  Monitor soil health over time with comprehensive reports and historical data visualization.
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-green-50 rounded-lg"><Database className="h-5 w-5 text-green-600" /></div>
+                  <div className="text-left">
+                    <h5 className="font-bold font-serif text-green-900">Climate Patterns</h5>
+                    <p className="text-sm text-gray-600 font-serif">CHIRPS historical rainfall and terrain elevation profiles.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="relative lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-700">
+              <img 
+                src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&q=80" 
+                alt="Precision Agriculture" 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-green-950/20 to-transparent flex flex-col justify-end p-8 text-left">
+                <div className="inline-flex items-center gap-2 bg-green-600 px-4 py-1 rounded-full text-xs font-bold mb-4 w-fit text-white">
+                  <Cpu className="h-3 w-3" /> NEURAL NETWORK MODELS
+                </div>
+                <p className="text-lg font-serif italic text-white/90">
+                  "Turning complex geospatial data into field-level macronutrient estimations."
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -305,39 +409,87 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-12">
             <div className="text-center space-y-4">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 text-white rounded-full text-2xl font-bold font-serif">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 text-white rounded-full text-2xl font-bold font-serif shadow-lg">
                 1
               </div>
               <h4 className="text-xl font-serif font-bold text-green-800">
-                Input Soil Data
+                Data Input
               </h4>
-              <p className="text-gray-600">
-                Enter your soil composition details including pH, nitrogen, phosphorus, potassium, and other key nutrients.
+              <p className="text-gray-600 font-serif">
+                Input your GPS location and pH for ML analysis, or add partial/full lab results for high-precision diagnostic modes.
               </p>
             </div>
 
             <div className="text-center space-y-4">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-600 text-white rounded-full text-2xl font-bold font-serif">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-600 text-white rounded-full text-2xl font-bold font-serif shadow-lg">
                 2
               </div>
               <h4 className="text-xl font-serif font-bold text-green-800">
-                AI Analysis
+                Hybrid Core Analysis
               </h4>
-              <p className="text-gray-600">
-                Our advanced algorithms analyze your data and assess soil fertility, texture, and nutrient balance.
+              <p className="text-gray-600 font-serif">
+                Our AI-driven engine merges satellite environmental data with user inputs to compute an accurate Soil Health Index (SHI).
               </p>
             </div>
 
             <div className="text-center space-y-4">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-full text-2xl font-bold font-serif">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-full text-2xl font-bold font-serif shadow-lg">
                 3
               </div>
               <h4 className="text-xl font-serif font-bold text-green-800">
-                Get Recommendations
+                Precision Action
               </h4>
-              <p className="text-gray-600">
-                Receive personalized fertilizer recommendations and actionable insights to improve your soil health.
+              <p className="text-gray-600 font-serif">
+                Receive localized fertilizer recommendations and a ranked list of the nearest Agrovets to procure the required inputs.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Agrovet Intelligence & Recommendation */}
+      <section id="agrovets" className="py-24 bg-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="order-2 lg:order-1 relative rounded-3xl overflow-hidden shadow-2xl">
+              <img 
+                src="https://images.unsplash.com/photo-1595841696677-6489ff3f8cd1?auto=format&fit=crop&q=80" 
+                alt="Agrovet Solutions" 
+                className="w-full h-[500px] object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-green-900/40 to-transparent"></div>
+            </div>
+
+            <div className="order-1 lg:order-2 space-y-8 text-left">
+              <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none px-4 py-1 text-sm font-bold">GEOSPATIAL INTELLIGENCE</Badge>
+              <h3 className="text-4xl sm:text-5xl font-serif font-bold text-green-900 leading-tight">
+                Closing the Loop with <br />
+                <span className="text-green-600">Localized Input Access</span>
+              </h3>
+              <p className="text-xl text-gray-600 font-serif leading-relaxed">
+                Kiduka doesn't just diagnose—it streamlines procurement. Our mapping engine uses the Haversine formula to connect you with the exact nutrients your soil needs.
+              </p>
+
+              <div className="space-y-6">
+                <div className="flex gap-4">
+                  <div className="mt-1 flex-shrink-0 w-10 h-10 bg-green-50 rounded-full flex items-center justify-center">
+                    <Map className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-green-900 font-serif text-lg">Proximity Ranking</h5>
+                    <p className="text-gray-600 font-serif">Spherical distance calculation (Haversine) identifies the 5 nearest Agrovets within a 100km radius.</p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="mt-1 flex-shrink-0 w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center">
+                    <Search className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-green-900 font-serif text-lg">Nutrient-Based Matching</h5>
+                    <p className="text-gray-600 font-serif">Dynamically aligns predicted deficiencies with specific products like CAN, DAP, or Organic Manure.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -468,8 +620,13 @@ export default function LandingPage() {
               <h5 className="text-white font-semibold">Quick Links</h5>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <button onClick={() => scrollToSection("features")} className="hover:text-white transition-colors">
-                    Features
+                  <button onClick={() => scrollToSection("architecture")} className="hover:text-white transition-colors">
+                    Architecture
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection("agrovets")} className="hover:text-white transition-colors">
+                    Agrovets
                   </button>
                 </li>
                 <li>
