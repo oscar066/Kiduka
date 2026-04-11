@@ -5,13 +5,23 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -19,15 +29,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../../layout/UnifiedSidebar";
 import { Navbar } from "../../layout/navbar";
 import { apiClient } from "@/lib/api-client";
-
-// Import shared components
-import { NutrientDisplay } from "../analysis/soil-analysis/nutrientDisplay";
-import { AgrovetsDisplay } from "../analysis/soil-analysis/agrovetDisplay";
-import { StatusSummaryCards } from "../analysis/soil-analysis/statusSummaryCard";
 import { SessionGuard } from "../../shared/SessionGuard";
 
 import {
@@ -35,35 +46,23 @@ import {
   FileText,
   Calendar,
   MapPin,
-  TrendingUp,
   AlertCircle,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
   Search,
   Eye,
   Trash2,
-  ArrowLeft,
+  RefreshCw,
+  SlidersHorizontal,
+  X,
 } from "lucide-react";
 
 import { PredictionHistory } from "@/types/soil-analysis";
 import { getStatusColor } from "@/lib/soil-analysis-helper";
-
-interface PredictionListResponse {
-  predictions: PredictionHistory[];
-  total: number;
-  page: number;
-  size: number;
-  pages: number;
-}
 
 export default function ReportsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   const [reports, setReports] = useState<PredictionHistory[]>([]);
-  const [selectedReport, setSelectedReport] =
-    useState<PredictionHistory | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -74,23 +73,20 @@ export default function ReportsPage() {
   const [sortBy, setSortBy] = useState("created_at");
   const [sortOrder, setSortOrder] = useState("desc");
 
-
-
-  // Fetch reports function
   const fetchReports = async () => {
     if (!session?.accessToken) {
       setError("Authentication token not found. Please sign in again.");
       return;
     }
-
     setIsLoading(true);
     setError(null);
-
     try {
       const response = await apiClient.getPredictionHistory(
         session.accessToken,
         currentPage,
-        pageSize
+        pageSize,
+        sortBy,
+        sortOrder
       );
       setReports(response.predictions || []);
       setTotalPages(response.pages);
@@ -98,15 +94,10 @@ export default function ReportsPage() {
     } catch (err) {
       console.error("Error fetching reports:", err);
       setError(
-        err instanceof Error
-          ? err.message
-          : "An error occurred while fetching reports"
+        err instanceof Error ? err.message : "An error occurred while fetching reports"
       );
-
       if (err instanceof Error && err.message.includes("Authentication")) {
-        setTimeout(() => {
-          signOut({ callbackUrl: "/auth/login" });
-        }, 2000);
+        setTimeout(() => signOut({ callbackUrl: "/auth/login" }), 2000);
       }
     } finally {
       setIsLoading(false);
@@ -121,13 +112,9 @@ export default function ReportsPage() {
 
   const deleteReport = async (reportId: string) => {
     if (!session?.accessToken) return;
-
     try {
       await apiClient.deletePredictionHistory(reportId, session.accessToken);
       fetchReports();
-      if (selectedReport?.id === reportId) {
-        setSelectedReport(null);
-      }
     } catch (err) {
       console.error("Error deleting report:", err);
       setError("Failed to delete report");
@@ -136,368 +123,339 @@ export default function ReportsPage() {
 
   const filteredReports = reports.filter(
     (report) =>
-      report.soil_fertility_status
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      report.recommendations?.[0]
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
+      report.soil_fertility_status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.recommendations?.[0]?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.location_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.simplified_texture
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase())
+      report.simplified_texture?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-
+  const getPageNumbers = (): (number | "ellipsis")[] => {
+    const pages: (number | "ellipsis")[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push("ellipsis");
+      for (
+        let i = Math.max(2, currentPage - 1);
+        i <= Math.min(totalPages - 1, currentPage + 1);
+        i++
+      )
+        pages.push(i);
+      if (currentPage < totalPages - 2) pages.push("ellipsis");
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   return (
     <SessionGuard message="You need to be logged in to access your reports.">
       <SidebarProvider>
-      <UnifiedSidebar />
-      <SidebarInset>
-        <Navbar />
+        <UnifiedSidebar />
+        <SidebarInset>
+          <Navbar />
 
-        <main className="flex-1 space-y-6 p-6 bg-gradient-to-br from-green-25 via-amber-25 to-green-25 min-h-screen">
-          {!selectedReport ? (
-            // Reports List View
-            <>
-              <div className="space-y-2">
-                <h1 className="text-3xl font-serif font-bold text-green-800">
-                  Soil Analysis Reports
-                </h1>
-                <p className="text-green-600 font-serif">
-                  View and manage your historical soil analysis reports
-                </p>
+          <main className="flex-1 space-y-6 p-6 bg-gradient-to-br from-green-25 via-amber-25 to-green-25 min-h-screen">
+            {/* Page Header */}
+            <div className="space-y-1">
+              <h1 className="text-3xl font-serif font-bold text-green-800">
+                Soil Analysis Reports
+              </h1>
+              <p className="text-green-600 font-serif">
+                View and manage your historical soil analysis reports
+              </p>
+            </div>
+
+            {/* Error Display */}
+            {error && (
+              <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span className="text-sm font-medium">{error}</span>
+              </div>
+            )}
+
+            {/* Search & Filter Bar */}
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                <Input
+                  id="reports-search"
+                  placeholder="Search by location, status, texture…"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 pr-9 h-10 rounded-lg border-amber-200 bg-white shadow-sm focus-visible:ring-green-400 placeholder:text-gray-400 text-sm"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
 
-              {/* Error Display */}
-              {error && (
-                <Card className="border-red-200 bg-red-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-red-800">
-                      <AlertCircle className="h-4 w-4" />
-                      <span className="text-sm font-medium">
-                        Error: {error}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <div className="flex items-center gap-2 shrink-0">
+                <SlidersHorizontal className="h-4 w-4 text-green-600 shrink-0" />
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-40 h-10 border-amber-200 bg-white shadow-sm text-sm rounded-lg focus:ring-green-400">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created_at">Date Created</SelectItem>
+                    <SelectItem value="soil_fertility_status">Fertility Status</SelectItem>
+                    <SelectItem value="recommendations">Fertilizer</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              {/* Search and Filter Controls */}
-              <Card className="border-amber-200 bg-white shadow-lg">
-                <CardContent className="p-4">
-                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="flex flex-col md:flex-row gap-4 flex-1">
-                      <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input
-                          placeholder="Search reports..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 border-amber-200 focus:border-green-500"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Select value={sortBy} onValueChange={setSortBy}>
-                          <SelectTrigger className="w-40 border-amber-200">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="created_at">
-                              Date Created
-                            </SelectItem>
-                            <SelectItem value="soil_fertility_status">
-                              Fertility Status
-                            </SelectItem>
-                            <SelectItem value="recommendations">
-                              Fertilizer
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Select value={sortOrder} onValueChange={setSortOrder}>
-                          <SelectTrigger className="w-32 border-amber-200">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="desc">Newest</SelectItem>
-                            <SelectItem value="asc">Oldest</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={fetchReports}
-                      variant="outline"
-                      className="border-green-200 text-green-700 hover:bg-green-50"
-                    >
-                      <TrendingUp className="h-4 w-4 mr-2" />
-                      Refresh
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                <Select value={sortOrder} onValueChange={setSortOrder}>
+                  <SelectTrigger className="w-28 h-10 border-amber-200 bg-white shadow-sm text-sm rounded-lg focus:ring-green-400">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="desc">Newest</SelectItem>
+                    <SelectItem value="asc">Oldest</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              {/* Reports List */}
-              <Card className="border-amber-200 bg-white shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200">
-                  <CardTitle className="flex items-center gap-2 text-green-800">
-                    <FileText className="h-5 w-5" />
-                    Analysis Reports ({totalReports})
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={fetchReports}
+                        disabled={isLoading}
+                        className="h-10 w-10 border-amber-200 bg-white shadow-sm text-green-700 hover:bg-green-50 rounded-lg shrink-0"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Refresh reports</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+
+            {/* Reports Table Card */}
+            <Card className="border-amber-200 bg-white shadow-lg overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200 py-4 px-5">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-green-800 text-base font-semibold">
+                    <FileText className="h-4 w-4" />
+                    Analysis Reports
                   </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {isLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+                  {!isLoading && (
+                    <Badge
+                      variant="secondary"
+                      className="bg-amber-100 text-amber-800 border border-amber-200 text-xs font-medium"
+                    >
+                      {totalReports} total
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+
+              <CardContent className="p-0">
+                {isLoading ? (
+                  <div className="divide-y divide-amber-100">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="px-5 py-5 flex items-center gap-5">
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-4 w-32 rounded-full" />
+                          <Skeleton className="h-3 w-64" />
+                        </div>
+                        <Skeleton className="h-8 w-8 rounded-md" />
+                        <Skeleton className="h-8 w-8 rounded-md" />
+                      </div>
+                    ))}
+                  </div>
+                ) : filteredReports.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+                    <div className="rounded-full bg-green-50 p-4 mb-4">
+                      <FileText className="h-8 w-8 text-green-400" />
                     </div>
-                  ) : filteredReports.length === 0 ? (
-                    <div className="text-center py-12">
-                      <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No Reports Found
-                      </h3>
-                      <p className="text-gray-500">
-                        {searchTerm
-                          ? "No reports match your search criteria."
-                          : "You haven't created any soil analysis reports yet."}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-amber-100">
-                      {filteredReports.map((report) => (
-                        <div
-                          key={report.id}
-                          className="p-4 hover:bg-amber-25 transition-colors cursor-pointer"
-                          onClick={() => setSelectedReport(report)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-4 mb-2">
-                                <span
-                                  className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                                    report.soil_fertility_status
-                                  )}`}
-                                >
-                                  {report.soil_fertility_status}
-                                </span>
-                                <span className="text-sm text-gray-600">
-                                  {report.recommendations?.[0] || "No Recommendations"}
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-600">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="h-4 w-4" />
-                                  {new Date(
-                                    report.created_at || ""
-                                  ).toLocaleDateString()}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Beaker className="h-4 w-4" />
-                                  {report.simplified_texture || "Unknown"} Soil
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-4 w-4" />
-                                  {report.location_name || "Unknown Location"}
-                                </div>
-                              </div>
+                    <h3 className="text-base font-semibold text-gray-800 mb-1">
+                      No Reports Found
+                    </h3>
+                    <p className="text-sm text-gray-500 max-w-xs">
+                      {searchTerm
+                        ? "No reports match your search. Try adjusting your query."
+                        : "You haven't created any soil analysis reports yet."}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-amber-100">
+                    {filteredReports.map((report, idx) => (
+                      <div
+                        key={report.id}
+                        className="group px-5 py-5 hover:bg-amber-50/60 transition-colors duration-150 cursor-pointer"
+                        onClick={() => router.push(`/reports/${report.id}`)}
+                      >
+                        <div className="flex items-center gap-5">
+                          <span className="text-xs font-mono text-gray-300 w-5 shrink-0 select-none">
+                            {(currentPage - 1) * pageSize + idx + 1}
+                          </span>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <Badge
+                                className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border-0 ${getStatusColor(report.soil_fertility_status)}`}
+                              >
+                                {report.soil_fertility_status || "Unknown"}
+                              </Badge>
+                              <span className="text-sm text-gray-700 font-medium truncate max-w-xs">
+                                {report.recommendations?.[0] || "No recommendation"}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedReport(report);
-                                }}
-                                className="border-green-200 text-green-700 hover:bg-green-50"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (
-                                    confirm(
-                                      "Are you sure you want to delete this report?"
-                                    )
-                                  ) {
-                                    deleteReport(report.id);
-                                  }
-                                }}
-                                className="border-red-200 text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+
+                            <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-gray-500">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-green-500" />
+                                {new Date(report.created_at || "").toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Beaker className="h-3 w-3 text-amber-500" />
+                                {report.simplified_texture || "Unknown"} Soil
+                              </span>
+                              <span className="flex items-center gap-1 truncate">
+                                <MapPin className="h-3 w-3 text-red-400 shrink-0" />
+                                <span className="truncate">
+                                  {report.location_name || "Unknown Location"}
+                                </span>
+                              </span>
                             </div>
                           </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      router.push(`/reports/${report.id}`);
+                                    }}
+                                    className="h-8 w-8 rounded-md text-green-700 hover:bg-green-100 hover:text-green-800"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>View report</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (confirm("Are you sure you want to delete this report?")) {
+                                        deleteReport(report.id);
+                                      }
+                                    }}
+                                    className="h-8 w-8 rounded-md text-red-500 hover:bg-red-50 hover:text-red-700"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Delete report</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <Card className="border-amber-200 bg-white shadow-lg">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-600">
-                        Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                        {Math.min(currentPage * pageSize, totalReports)} of{" "}
-                        {totalReports} reports
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setCurrentPage(Math.max(1, currentPage - 1))
-                          }
-                          disabled={currentPage === 1}
-                          className="border-amber-200"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm text-gray-600">
-                          Page {currentPage} of {totalPages}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setCurrentPage(
-                              Math.min(totalPages, currentPage + 1)
-                            )
-                          }
-                          disabled={currentPage === totalPages}
-                          className="border-amber-200"
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </>
-          ) : (
-            // Report Detail View - Using shared components
-            <>
-              <div className="flex items-center gap-4 mb-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedReport(null)}
-                  className="border-green-200 text-green-700 hover:bg-green-50"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Reports
-                </Button>
-                <div>
-                  <h1 className="text-3xl font-serif font-bold text-green-800">
-                    Report Details
-                  </h1>
-                  <p className="text-green-600 font-serif">
-                    Created on{" "}
-                    {new Date(
-                      selectedReport.created_at || ""
-                    ).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-
-              {/* Report Summary Cards - Using shared component */}
-              <StatusSummaryCards 
-                results={{
-                  ...selectedReport,
-                  timestamp: selectedReport.created_at,
-                  nearest_agrovets: selectedReport.agrovets
-                } as any}
-                soilInput={{
-                  ph: selectedReport.soil_ph || 0,
-                  n: selectedReport.nitrogen || 0,
-                  p: selectedReport.phosphorus || 0,
-                  k: selectedReport.potassium || 0,
-                  organic_carbon: selectedReport.organic_carbon || 0,
-                  ca: selectedReport.calcium || 0,
-                  mg: selectedReport.magnesium || 0,
-                  latitude: selectedReport.location_lat || 0,
-                  longitude: selectedReport.location_lng || 0,
-                }}
-              />
-
-              {/* Nutrient Analysis - Using shared component */}
-              <NutrientDisplay 
-                soilInput={{
-                  ph: selectedReport.soil_ph || 0,
-                  n: selectedReport.nitrogen || 0,
-                  p: selectedReport.phosphorus || 0,
-                  k: selectedReport.potassium || 0,
-                  organic_carbon: selectedReport.organic_carbon || 0,
-                  ca: selectedReport.calcium || 0,
-                  mg: selectedReport.magnesium || 0,
-                  latitude: selectedReport.location_lat || 0,
-                  longitude: selectedReport.location_lng || 0,
-                }} 
-              />
-
-              {/* Agrovets - Using shared component */}
-              {selectedReport.agrovets && (
-                <AgrovetsDisplay agrovets={selectedReport.agrovets} />
-              )}
-
-              {/* Report Actions */}
-              <Card className="border-amber-200 bg-white shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-green-800">
-                        Report Actions
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        Manage this soil analysis report
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          // Implement export functionality here
-                          console.log("Export report:", selectedReport.id);
-                        }}
-                        className="border-green-200 text-green-700 hover:bg-green-50"
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Export Report
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          if (
-                            confirm(
-                              "Are you sure you want to delete this report?"
-                            )
-                          ) {
-                            deleteReport(selectedReport.id);
-                          }
-                        }}
-                        className="border-red-200 text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Report
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-2">
+                <p className="text-sm text-gray-500 shrink-0">
+                  Showing{" "}
+                  <span className="font-medium text-gray-700">
+                    {(currentPage - 1) * pageSize + 1}–
+                    {Math.min(currentPage * pageSize, totalReports)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-medium text-gray-700">{totalReports}</span>{" "}
+                  reports
+                </p>
+
+                <Pagination className="mx-0 w-auto">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setCurrentPage(Math.max(1, currentPage - 1));
+                        }}
+                        aria-disabled={currentPage === 1}
+                        className={`border border-amber-200 bg-white text-green-700 hover:bg-green-50 hover:text-green-800 ${
+                          currentPage === 1 ? "pointer-events-none opacity-40" : ""
+                        }`}
+                      />
+                    </PaginationItem>
+
+                    {getPageNumbers().map((page, i) =>
+                      page === "ellipsis" ? (
+                        <PaginationItem key={`ellipsis-${i}`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      ) : (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            href="#"
+                            isActive={currentPage === page}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentPage(page as number);
+                            }}
+                            className={
+                              currentPage === page
+                                ? "border-0 bg-green-700 text-white hover:bg-green-800 hover:text-white"
+                                : "border border-amber-200 bg-white text-gray-700 hover:bg-amber-50"
+                            }
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )
+                    )}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setCurrentPage(Math.min(totalPages, currentPage + 1));
+                        }}
+                        aria-disabled={currentPage === totalPages}
+                        className={`border border-amber-200 bg-white text-green-700 hover:bg-green-50 hover:text-green-800 ${
+                          currentPage === totalPages ? "pointer-events-none opacity-40" : ""
+                        }`}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
     </SessionGuard>
   );
 }

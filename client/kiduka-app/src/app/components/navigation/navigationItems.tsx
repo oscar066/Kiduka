@@ -45,7 +45,7 @@ const navigationItems: NavItem[] = [
     href: "/reports",
   },
   {
-    label: "Fertilizer Optimization",
+    label: "Optimization",
     icon: <MapPin className="h-4 w-4" />,
     href: "/optimization",
   },

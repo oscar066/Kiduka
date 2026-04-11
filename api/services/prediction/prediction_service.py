@@ -40,104 +40,81 @@ class PredictionService:
             agrovet_locator = app_components.get('agrovet_locator')
             ml_predictor = app_components.get('ml_predictor')
             
-            # Decide prediction mode
+            # Identify nutrients
             optional_nutrients = ["n", "p", "k", "organic_carbon", "ca", "mg"]
             provided_nutrients = {n: getattr(soil_data, n) for n in optional_nutrients if getattr(soil_data, n) is not None}
             
             logger.info(f"Provided nutrients: {list(provided_nutrients.keys())}")
             
+            classifier = SoilHealthClassifier()
             classification_result = {}
             prediction_mode = "FORMULA"
             ml_extra_data = {}
             
-            # Decide prediction mode based on hierarchical rules
-            provided_keys = set(provided_nutrients.keys())
-            num_provided = len(provided_keys)
-            high_weight = {"n", "organic_carbon", "p", "ca"}
-            low_weight = {"k", "mg"}
-
-            use_ml_mode = True # Default
-            if "organic_carbon" in provided_keys:
-                use_ml_mode = False
-            elif num_provided >= 3:
-                use_ml_mode = False
-            elif len(provided_keys.intersection(high_weight)) >= 2:
-                use_ml_mode = False
-            elif num_provided == 2 and provided_keys.issubset(low_weight):
-                use_ml_mode = True
-            elif num_provided == 0 or (num_provided == 1 and "organic_carbon" not in provided_keys):
-                use_ml_mode = True
-            else:
-                use_ml_mode = True # Fallback for exactly 2 measurements (one high, one low, not OC)
+            # Determine if we need ML for gap-filling
+            missing_nutrients = [n for n in optional_nutrients if getattr(soil_data, n) is None]
+            needs_gap_fill = len(missing_nutrients) > 0
             
-            if use_ml_mode:
+            # 1. Start with ML if needed for gap filling or if data is very sparse
+            ml_results = None
+            if needs_gap_fill or not provided_nutrients:
                 if not ml_predictor:
-                    raise ValueError("ML Predictor is required for incomplete soil data but not available")
-                
-                logger.info(f"Running ML-based soil prediction ({'hybrid' if provided_nutrients else 'full'}) due to incomplete nutrient data...")
-                ml_res = ml_predictor.predict_soil_health(
-                    latitude=soil_data.latitude,
-                    longitude=soil_data.longitude,
-                    ph=soil_data.ph,
-                    ph_score=soil_data.ph_score,
-                    year=soil_data.year or 2025
-                )
-                
-                prediction_mode = "ML"
-                ml_extra_data = ml_res.get("confidence", {})
-                
-                # Hybrid Logic: Override ML predictions with user inputs if any
-                classifier = SoilHealthClassifier()
-                ml_nutrients = ml_res.get("prediction", {}).get("nutrients", {})
-                
-                # Extract scores from ML (N, OC, P, K, Ca, Mg)
-                merged_scores = {name: data.get("score") for name, data in ml_nutrients.items()}
-                # Ensure pH is included
-                merged_scores["pH"] = soil_data.ph_score or classifier.classify_ph(soil_data.ph)
-                
-                if provided_nutrients:
-                    logger.info(f"Overriding ML predictions with user-provided nutrients: {list(provided_nutrients.keys())}")
-                    field_to_name = {"n": "N", "p": "P", "k": "K", "organic_carbon": "OC", "ca": "Ca", "mg": "Mg"}
-                    for field, val in provided_nutrients.items():
-                        name = field_to_name[field]
-                        # Use classifier to get score for raw value
-                        if field == "n": merged_scores["N"] = classifier.classify_n(val)
-                        elif field == "p": merged_scores["P"] = classifier.classify_p(val)
-                        elif field == "k": merged_scores["K"] = classifier.classify_k(val)
-                        elif field == "organic_carbon": merged_scores["OC"] = classifier.classify_oc(val)
-                        elif field == "ca": merged_scores["Ca"] = classifier.classify_ca(val)
-                        elif field == "mg": merged_scores["Mg"] = classifier.classify_mg(val)
-
-                # Re-run analysis with merged scores for consistency
-                classification_result = classifier.get_analysis_from_scores(merged_scores, ph_val=soil_data.ph)
-                classification_result["Mentions"] = classification_result.get("Mentions", [])
-                if provided_nutrients:
-                    classification_result["Mentions"].append("Hybrid: User Input + ML Prediction")
+                    logger.warning("ML Predictor requested for gap-fill but not available")
                 else:
-                    classification_result["Mentions"].append("Predicted via GEE + ML Model")
-                    
-                # Store predicted nutrients for unification layer
-                classification_result["Predicted_Nutrients_Full"] = ml_nutrients
+                    logger.info(f"Running ML for gap-fill on: {missing_nutrients}")
+                    ml_results = ml_predictor.predict_soil_health(
+                        latitude=soil_data.latitude,
+                        longitude=soil_data.longitude,
+                        ph=soil_data.ph,
+                        ph_score=soil_data.ph_score,
+                        year=soil_data.year or 2025
+                    )
+                    ml_extra_data = ml_results.get("confidence", {})
+
+            # 2. Merge Data & Override (Hybrid Logic)
+            merged_scores = {}
+            nutrient_method = {} # Track "measured" or "estimated"
+            
+            # Always include pH (Required)
+            merged_scores["pH"] = soil_data.ph_score or classifier.classify_ph(soil_data.ph)
+            nutrient_method["pH"] = "measured"
+            
+            # Map for classifier
+            field_to_name = {"n": "N", "p": "P", "k": "K", "organic_carbon": "OC", "ca": "Ca", "mg": "Mg"}
+            
+            for field in optional_nutrients:
+                name = field_to_name[field]
+                val = getattr(soil_data, field)
+                
+                if val is not None:
+                    # Measured data ALWAYS overrides
+                    if field == "n": merged_scores["N"] = classifier.classify_n(val)
+                    elif field == "p": merged_scores["P"] = classifier.classify_p(val)
+                    elif field == "k": merged_scores["K"] = classifier.classify_k(val)
+                    elif field == "organic_carbon": merged_scores["OC"] = classifier.classify_oc(val)
+                    elif field == "ca": merged_scores["Ca"] = classifier.classify_ca(val)
+                    elif field == "mg": merged_scores["Mg"] = classifier.classify_mg(val)
+                    nutrient_method[name] = "measured"
+                elif ml_results:
+                    # Use ML prediction as gap-fill
+                    ml_nutrients = ml_results.get("prediction", {}).get("nutrients", {})
+                    if name in ml_nutrients:
+                        merged_scores[name] = ml_nutrients[name].get("score")
+                        nutrient_method[name] = "estimated"
+            
+            # 3. Recalculate SHI from unified dataset
+            classification_result = classifier.get_analysis_from_scores(merged_scores, ph_val=soil_data.ph)
+            classification_result["Mentions"] = classification_result.get("Mentions", [])
+            
+            # Determine overall prediction mode label
+            if provided_nutrients and ml_results:
+                prediction_mode = "ML" # We still call it ML mode if it involved ML, but UI will show "Hybrid"
+                classification_result["Mentions"].append("Hybrid: User Input + ML Prediction")
+            elif ml_results and not provided_nutrients:
+                prediction_mode = "ML"
+                classification_result["Mentions"].append("Predicted via GEE + ML Model")
             else:
-                # Initialize classifier
-                classifier = SoilHealthClassifier()
-                
-                # Run classification
-                logger.info("Running full formula-based soil classification...")
-                soil_dict = soil_data.model_dump()
-                
-                # Map input keys to classifier expected keys
-                mapping = {
-                    "pH": "ph",
-                    "N": "n", 
-                    "OC": "organic_carbon",
-                    "P": "p", 
-                    "K": "k", 
-                    "Ca": "ca", 
-                    "Mg": "mg"
-                }
-                
-                classification_result = classifier.process_row(soil_dict, col_map=mapping)
+                prediction_mode = "FORMULA"
             
             # Find nearest agrovets
             nearest_agrovets = []
@@ -154,6 +131,7 @@ class PredictionService:
             recommendations_str = classification_result.get("Recommendations", "")
             recommendations_list = [r.strip() for r in recommendations_str.split(";") if r.strip()]
             mentions = classification_result.get("Mentions", [])
+
             # Prepare result dictionary for storage and response
             result = {
                 "soil_health_index": shi_score,
@@ -167,20 +145,15 @@ class PredictionService:
             }
             
             # Extract unified nutrient scores for uniform display
-            if prediction_mode == "ML":
-                # Start with ML predicted labels/scores, but update with our final merged scores
-                unified_nutrients = classification_result.get("Predicted_Nutrients_Full", {})
-                final_scores = classification_result.get("Parameter_Scores", {})
-                for key, score in final_scores.items():
-                    if key == "pH": continue
-                    unified_nutrients[key] = {
-                        "score": int(score),
-                        "label": AppConfig.CLASS_NAMES.get(int(score), "Unknown")
-                    }
-            else:
-                # Formula mode - map parameter scores from classifier
-                param_scores = classification_result.get("Parameter_Scores", {})
-                unified_nutrients = self._format_nutrient_scores(param_scores)
+            unified_nutrients = {}
+            param_scores = classification_result.get("Parameter_Scores", {})
+            for key, score in param_scores.items():
+                if key == "pH": continue
+                unified_nutrients[key] = {
+                    "score": int(score),
+                    "label": AppConfig.CLASS_NAMES.get(int(score), "Unknown"),
+                    "method": nutrient_method.get(key, "estimated")
+                }
 
             result["nutrients"] = unified_nutrients
             

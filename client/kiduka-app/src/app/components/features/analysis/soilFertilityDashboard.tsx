@@ -17,10 +17,10 @@ import { SessionGuard } from "../../shared/SessionGuard";
 import { apiClient } from "@/lib/api-client";
 
 // Import shared components
-import { NutrientDisplay } from "./soil-analysis/nutrientDisplay";
-import { AgrovetsDisplay } from "./soil-analysis/agrovetDisplay";
-import { StatusSummaryCards } from "./soil-analysis/statusSummaryCard";
-import { SoilInputForm } from "./soil-analysis/soil-inputForm";
+import { NutrientDisplay } from "./components/nutrientDisplay";
+import { AgrovetsDisplay } from "./components/agrovetDisplay";
+import { StatusSummaryCards } from "./components/statusSummaryCard";
+import { SoilInputForm } from "./components/soil-inputForm";
 
 import { Leaf, AlertCircle } from "lucide-react";
 

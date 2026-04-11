@@ -460,11 +460,15 @@ export class ApiClient {
   async getPredictionHistory(
     token: string,
     page: number = 1,
-    size: number = 20
+    size: number = 20,
+    sortBy: string = 'created_at',
+    sortOrder: string = 'desc'
   ): Promise<PaginatedResponse<any>> {
     const params = new URLSearchParams({
       page: page.toString(),
       size: size.toString(),
+      sort_by: sortBy,
+      sort_order: sortOrder,
     });
 
     return this.request(`/predictions/history?${params.toString()}`, {

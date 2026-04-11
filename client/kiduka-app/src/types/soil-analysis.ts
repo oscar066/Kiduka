@@ -34,7 +34,7 @@ export interface PredictionResponse {
   mentions: string[];
   recommendations: string[];
   nearest_agrovets: AgrovetInfo[];
-  nutrients?: Record<string, { score: number; label: string }>;
+  nutrients?: Record<string, { score: number; label: string; method?: "measured" | "estimated" }>;
   prediction_mode?: "FORMULA" | "ML";
   confidence?: Record<string, any>;
   prediction_id?: string;
@@ -60,6 +60,8 @@ export interface PredictionHistory {
   mentions: string[];
   recommendations: string[];
   agrovets: AgrovetInfo[];
+  nutrients?: Record<string, { score: number; label: string; method?: "measured" | "estimated" }>;
+  prediction_mode?: "FORMULA" | "ML";
   simplified_texture?: string;
   created_at: string;
   updated_at: string;

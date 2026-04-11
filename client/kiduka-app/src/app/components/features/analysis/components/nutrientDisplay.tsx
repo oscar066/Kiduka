@@ -205,7 +205,9 @@ export function NutrientDisplay({
           {nutrientData.map((nutrient) => {
             // Special mapping for OC vs organic_carbon in soilInput
             const inputKey = nutrient.id === "OC" ? "organic_carbon" : nutrient.id.toLowerCase();
-            const isMeasured = !!soilInput[inputKey as keyof SoilInput] && soilInput[inputKey as keyof SoilInput]! > 0;
+            const scoreData = scores[nutrient.id];
+            // A nutrient is "measured" if the backend analysis confirmed it was measured
+            const isMeasured = scoreData?.method === "measured";
             const confData = confidenceNutrients.find((n: any) => n.nutrient === nutrient.id);
             
             return (
@@ -216,9 +218,9 @@ export function NutrientDisplay({
                 unit={nutrient.unit}
                 optimal={nutrient.optimal}
                 icon={nutrient.icon}
-                isML={isML}
+                isML={isML || scoreData?.method === "estimated"}
                 isMeasured={isMeasured}
-                scoreData={scores[nutrient.id]}
+                scoreData={scoreData}
                 confidenceData={confData}
               />
             );
