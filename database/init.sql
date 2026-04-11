@@ -45,6 +45,9 @@ CREATE TABLE IF NOT EXISTS soil_predictions (
     soil_fertility_status VARCHAR(100),
     mentions JSONB NOT NULL DEFAULT '[]',
     recommendations JSONB NOT NULL DEFAULT '[]',
+    prediction_mode VARCHAR(50),
+    confidence_data JSONB,
+    nutrients JSONB,
     
     -- Metadata
     is_flagged BOOLEAN DEFAULT FALSE,

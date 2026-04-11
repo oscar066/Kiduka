@@ -54,7 +54,10 @@ ADD COLUMN IF NOT EXISTS soil_health_index DECIMAL(5,2),
 ADD COLUMN IF NOT EXISTS initial_soil_fertility_status VARCHAR(100),
 ADD COLUMN IF NOT EXISTS soil_fertility_status VARCHAR(100),
 ADD COLUMN IF NOT EXISTS mentions JSONB NOT NULL DEFAULT '[]',
-ADD COLUMN IF NOT EXISTS recommendations JSONB NOT NULL DEFAULT '[]';
+ADD COLUMN IF NOT EXISTS recommendations JSONB NOT NULL DEFAULT '[]',
+ADD COLUMN IF NOT EXISTS prediction_mode VARCHAR(50),
+ADD COLUMN IF NOT EXISTS confidence_data JSONB,
+ADD COLUMN IF NOT EXISTS nutrients JSONB;
 
 -- Step 4: Add new columns to existing agrovets table
 ALTER TABLE agrovets 
