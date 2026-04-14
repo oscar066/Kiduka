@@ -374,8 +374,8 @@ export default function LandingPage() {
             
             <div className="relative lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-700">
               <img 
-                src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&q=80" 
-                alt="Precision Agriculture" 
+                src="/images/precision_ag_intelligence.png" 
+                alt="Precision Agriculture Intelligence" 
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-green-950/20 to-transparent flex flex-col justify-end p-8 text-left">
@@ -449,7 +449,7 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="order-2 lg:order-1 relative rounded-3xl overflow-hidden shadow-2xl">
               <img 
-                src="https://images.unsplash.com/photo-1595841696677-6489ff3f8cd1?auto=format&fit=crop&q=80" 
+                src="/images/agrovet_store.png" 
                 alt="Agrovet Solutions" 
                 className="w-full h-[500px] object-cover"
               />
@@ -463,7 +463,7 @@ export default function LandingPage() {
                 <span className="text-green-600">Localized Input Access</span>
               </h3>
               <p className="text-xl text-gray-600 font-serif leading-relaxed">
-                Kiduka doesn&apos;t just diagnose—it streamlines procurement. Our mapping engine uses the Haversine formula to connect you with the exact nutrients your soil needs.
+                Kiduka doesn&apos;t just diagnose it streamlines procurement. Our mapping engine uses the Haversine formula to connect you with the exact nutrients your soil needs.
               </p>
 
               <div className="space-y-6">
