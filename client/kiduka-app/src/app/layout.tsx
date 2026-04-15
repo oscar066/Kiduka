@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: {
     template: "%s | Kiduka Labs",
-    default: "Kiduka Labs - AI-Powered Soil Analysis & Agriculture",
+    default: "Kiduka Labs",
   },
   description:
     "Revolutionizing Kenyan agriculture with AI-powered soil analysis. Get instant nutrient insights, crop recommendations, and optimize your farm's productivity.",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: "Kiduka Labs - AI-Powered Soil Analysis",
+    title: "Kiduka Labs",
     description:
       "Transform your farming with data-driven soil insights. Instant analysis, personalized recommendations, and expert guides.",
     url: "https://kiduka-labs.co.ke",
