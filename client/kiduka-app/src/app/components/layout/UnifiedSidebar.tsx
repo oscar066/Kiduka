@@ -62,9 +62,8 @@ export default function UnifiedSidebar() {
           href="/dashboard"
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600">
-            {/* App logo/icon */}
-            {filteredNav[0]?.icon}
+          <div className="flex h-8 w-8 bg-white rounded-md items-center justify-center overflow-hidden">
+            <img src="/images/kiduka_logo.png" alt="Kiduka Logo" className="h-full w-full object-cover" />
           </div>
           <div>
             <h2 className="text-lg font-serif font-semibold text-green-800">
