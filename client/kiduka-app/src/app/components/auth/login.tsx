@@ -108,7 +108,9 @@ export default function LoginPage() {
         <div className="relative z-10">
           <Link href="/" className="flex items-center space-x-4 group">
             <div className="p-3 bg-white/15 rounded-2xl backdrop-blur-md border border-white/25 group-hover:bg-white/25 transition-all duration-300">
-              <Leaf className="h-8 w-8 text-white" />
+              <div className="h-8 w-8 bg-white rounded-md flex items-center justify-center overflow-hidden">
+                <img src="/images/kiduka_logo.png" alt="Kiduka Logo" className="h-full w-full object-cover" />
+              </div>
             </div>
             <span className="text-3xl font-serif font-bold text-white tracking-tight">Kiduka Labs</span>
           </Link>
@@ -161,7 +163,9 @@ export default function LoginPage() {
               <Link href="/" className="flex items-center justify-center space-x-2">
                 <div className="relative">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-600">
-                    <Leaf className="h-6 w-6 text-white" />
+                    <div className="h-6 w-6 bg-white rounded-md flex items-center justify-center overflow-hidden">
+                      <img src="/images/kiduka_logo.png" alt="Kiduka Logo" className="h-full w-full object-cover" />
+                    </div>
                   </div>
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
                 </div>
