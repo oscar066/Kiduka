@@ -54,15 +54,6 @@ export const metadata: Metadata = {
     description: "The future of smart farming in Kenya.",
     creator: "@kidukalabs",
   },
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/apple-icon.png",
-    other: {
-      rel: "apple-touch-icon-precomposed",
-      url: "/apple-icon.png",
-    },
-  },
   robots: {
     index: true,
     follow: true,
