@@ -50,9 +50,18 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kiduka Labs - AI Soil Analysis",
+    title: "Kiduka Labs",
     description: "The future of smart farming in Kenya.",
     creator: "@kidukalabs",
+  },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
+    other: {
+      rel: "apple-touch-icon-precomposed",
+      url: "/apple-icon.png",
+    },
   },
   robots: {
     index: true,
