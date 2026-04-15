@@ -5,8 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Leaf,
+import {
   CheckCircle,
   ArrowRight, 
   Menu,
@@ -38,8 +37,6 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-
-
   // Smooth scroll to section
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -48,8 +45,6 @@ export default function LandingPage() {
       setIsMenuOpen(false);
     }
   };
-
-
 
   const testimonials = [
     {
@@ -109,8 +104,8 @@ export default function LandingPage() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center space-x-2 cursor-pointer" onClick={() => scrollToSection("home")}>
-              <div className="p-2 bg-green-600 rounded-lg">
-                <Leaf className="h-6 w-6 text-white" />
+              <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center overflow-hidden shadow-sm border border-green-100">
+                <img src="/images/kiduka_logo.png" alt="Kiduka Logo" className="h-full w-full object-cover" />
               </div>
               <span className="text-xl font-serif font-bold text-green-800">Kiduka Labs</span>
             </div>
@@ -604,7 +599,9 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
-                <Leaf className="h-6 w-6 text-green-400" />
+                <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+                  <img src="/images/kiduka_logo.png" alt="Kiduka Logo" className="h-full w-full object-cover" />
+                </div>
                 <span className="text-xl font-serif font-bold text-white">Kiduka Labs</span>
               </div>
               <p className="text-green-200 text-sm">
