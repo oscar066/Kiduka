@@ -60,7 +60,7 @@ export default function UnifiedSidebar() {
       <SidebarHeader className="h-16 flex items-center border-b border-amber-200 px-2">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          className="flex items-center w-full justify-start gap-3 hover:opacity-80 transition-opacity px-2"
         >
           <div className="flex h-8 w-8 bg-white rounded-md items-center justify-center overflow-hidden">
             <img src="/images/kiduka_logo.png" alt="Kiduka Logo" className="h-full w-full object-cover" />
