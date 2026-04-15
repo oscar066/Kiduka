@@ -270,8 +270,7 @@ export default function LandingPage() {
               </CardContent>
             </Card>
 
-            {/* Hybrid Prediction */}
-            <Card className="border-amber-200 shadow-sm hover:shadow-xl transition-all duration-300 group ring-2 ring-green-100 ring-offset-4 ring-offset-transparent">
+            <Card className="border-amber-200 shadow-sm hover:shadow-xl transition-all duration-300 group">
               <CardContent className="p-10 space-y-6">
                 <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center group-hover:bg-amber-600 transition-colors duration-300">
                   <Zap className="h-8 w-8 text-amber-600 group-hover:text-white transition-colors duration-300" />
@@ -584,7 +583,7 @@ export default function LandingPage() {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="border-2 border-white text-white hover:bg-white/10 px-8 py-6 text-lg font-semibold"
+                className="bg-transparent border-2 border-white text-white hover:bg-white/10 hover:text-white px-8 py-6 text-lg font-semibold"
               >
                 Sign In
               </Button>
