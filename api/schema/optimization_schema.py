@@ -38,10 +38,24 @@ class EffectRow(BaseModel):
     fertilizer_cost_currency_per_ac: float
     net_returns_currency_per_ac: float
 
+class ScenarioResultRow(BaseModel):
+    crop: str
+    expected_yield_kg_per_ac: float
+    expected_revenue_currency: float
+    expected_revenue_currency_per_ac: float
+    fertilizer_cost_currency: float
+    fertilizer_cost_currency_per_ac: float
+    net_returns_currency: float
+    net_returns_currency_per_ac: float
+
 class OptimizationResponse(BaseModel):
     status: str
     application_rows: List[ApplicationRow]
     effect_rows: List[EffectRow]
     summary_row: Dict[str, Any]
+    baseline_rows: List[ScenarioResultRow]
+    optimal_rows: List[ScenarioResultRow]
+    baseline_summary_row: Dict[str, Any]
+    optimal_summary_row: Dict[str, Any]
     delta_rows: List[Dict[str, Any]]
     nutrient_balance_rows: List[Dict[str, Any]]

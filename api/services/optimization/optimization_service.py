@@ -88,6 +88,10 @@ class OptimizationService:
             application_rows=result.application_rows,
             effect_rows=result.effect_rows,
             summary_row=result.summary_row,
+            baseline_rows=result.baseline_rows,
+            optimal_rows=result.optimal_rows,
+            baseline_summary_row=result.baseline_summary_row,
+            optimal_summary_row=result.optimal_summary_row,
             delta_rows=result.delta_rows,
             nutrient_balance_rows=result.nutrient_balance_rows,
         )
