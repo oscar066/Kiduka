@@ -62,8 +62,15 @@ interface Fertilizer {
 }
 
 const DEFAULT_FERTILIZERS: Fertilizer[] = [
-  { product: "Urea", n_pct: 46.0, p2o5_pct: 0, k2o_pct: 0, price_currency_per_50kg: 2850.0 },
-  { product: "Diammonium phosphate, DAP", n_pct: 18.0, p2o5_pct: 46.0, k2o_pct: 0, price_currency_per_50kg: 3600.0 }
+  // Busia solid-fertilizer defaults derived from the local reference document.
+  // Midpoints are used where the document provides a price or composition range.
+  { product: "Organic Manure", n_pct: 1.0, p2o5_pct: 0.6, k2o_pct: 0.85, price_currency_per_50kg: 2000.0 },
+  { product: "NPK 23:23:23", n_pct: 23.0, p2o5_pct: 23.0, k2o_pct: 23.0, price_currency_per_50kg: 5750.0 },
+  { product: "NPK 17:17:17", n_pct: 17.0, p2o5_pct: 17.0, k2o_pct: 17.0, price_currency_per_50kg: 6200.0 },
+  { product: "Urea", n_pct: 46.0, p2o5_pct: 0, k2o_pct: 0, price_currency_per_50kg: 4600.0 },
+  { product: "CAN", n_pct: 26.0, p2o5_pct: 0, k2o_pct: 0, price_currency_per_50kg: 4050.0 },
+  { product: "TSP", n_pct: 0.0, p2o5_pct: 46.0, k2o_pct: 0.0, price_currency_per_50kg: 5600.0 },
+  { product: "Sulphate of Ammonia", n_pct: 21.0, p2o5_pct: 0.0, k2o_pct: 0.0, price_currency_per_50kg: 5250.0 }
 ];
 
 export default function OptimizationPage() {

@@ -59,6 +59,10 @@ class SolveResult:
     application_rows: list[dict[str, Any]]
     effect_rows: list[dict[str, Any]]
     summary_row: dict[str, Any]
+    baseline_rows: list[dict[str, Any]]
+    optimal_rows: list[dict[str, Any]]
+    baseline_summary_row: dict[str, Any]
+    optimal_summary_row: dict[str, Any]
     delta_rows: list[dict[str, Any]]
     nutrient_balance_rows: list[dict[str, Any]]
 
