@@ -33,6 +33,7 @@ import { apiClient } from "@/lib/api-client";
 // Defaults
 const DEFAULT_FERTILIZERS: FertilizerEntry[] = [
   { product: "Organic Manure",      n_pct: 1.0,  p2o5_pct: 0.6,  k2o_pct: 0.85, price_currency_per_50kg: 2000, enabled: true, isCustom: false },
+  { product: "Super Liquid Foliar", n_pct: 8.5,  p2o5_pct: 7.5,  k2o_pct: 7.5,  price_currency_per_50kg: 18000, enabled: true, isCustom: false },
   { product: "NPK 23:23:23",        n_pct: 23.0, p2o5_pct: 23.0, k2o_pct: 23.0, price_currency_per_50kg: 5750, enabled: true, isCustom: false },
   { product: "NPK 17:17:17",        n_pct: 17.0, p2o5_pct: 17.0, k2o_pct: 17.0, price_currency_per_50kg: 6200, enabled: true, isCustom: false },
   { product: "Urea",                n_pct: 46.0, p2o5_pct: 0,    k2o_pct: 0,    price_currency_per_50kg: 4600, enabled: true, isCustom: false },
