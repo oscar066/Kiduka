@@ -506,6 +506,22 @@ export class ApiClient {
       body: JSON.stringify({ query, thread_id: threadId }),
     });
   }
+
+  // OPTIMIZATION ENDPOINTS
+  /**
+   * Run fertilizer optimization algorithm
+   */
+  async optimize(payload: {
+    crops: any[];
+    fertilizers: any[];
+    scenario: { budget_currency: number };
+  }, token: string): Promise<any> {
+    return this.request('/optimization/optimize', {
+      method: 'POST',
+      headers: this.getAuthHeaders(token),
+      body: JSON.stringify(payload),
+    });
+  }
 }
 
 // Create and export a singleton instance
