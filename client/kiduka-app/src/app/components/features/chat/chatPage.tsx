@@ -45,8 +45,54 @@ export default function ChatPage() {
   const [isSending, setIsSending] = useState(false);
   const [threadId, setThreadId] = useState<string | undefined>(undefined);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [isTyping, setIsTyping] = useState(false);
+  const [isTyping, setIsTyping] = useState(true); // Added for initial loader if needed or set it correctly
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load chat history from localStorage on mount
+  React.useEffect(() => {
+    const savedMessages = localStorage.getItem("kiduka_chat_messages");
+    const savedThreadId = localStorage.getItem("kiduka_chat_thread_id");
+    
+    if (savedMessages) {
+      try {
+        const parsed = JSON.parse(savedMessages);
+        // Convert ISO strings back to Date objects
+        const messagesWithDates = parsed.map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp)
+        }));
+        setMessages(messagesWithDates);
+      } catch (e) {
+        console.error("Failed to parse saved messages", e);
+      }
+    }
+    
+    if (savedThreadId) {
+      setThreadId(savedThreadId);
+    }
+    setIsTyping(false);
+  }, []);
+
+  // Save chat history to localStorage whenever messages or threadId change
+  React.useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem("kiduka_chat_messages", JSON.stringify(messages));
+    } else {
+      localStorage.removeItem("kiduka_chat_messages");
+    }
+    if (threadId) {
+      localStorage.setItem("kiduka_chat_thread_id", threadId);
+    } else {
+      localStorage.removeItem("kiduka_chat_thread_id");
+    }
+  }, [messages, threadId]);
+
+  const handleClearChat = () => {
+    setMessages([]);
+    setThreadId(undefined);
+    localStorage.removeItem("kiduka_chat_messages");
+    localStorage.removeItem("kiduka_chat_thread_id");
+  };
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -123,7 +169,7 @@ export default function ChatPage() {
             <Navbar />
 
             <main className="flex flex-col h-[calc(100vh-64px)] bg-gradient-to-br from-green-25 via-amber-25 to-green-25 overflow-hidden">
-              <ChatHeader />
+              <ChatHeader onClear={handleClearChat} messagesLength={messages.length} />
 
               <ChatMessageList
                 messages={messages}
