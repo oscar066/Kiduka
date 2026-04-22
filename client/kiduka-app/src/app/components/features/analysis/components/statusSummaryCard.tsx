@@ -128,18 +128,18 @@ export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsPro
           {/* pH info */}
           <div className="grid grid-cols-2 gap-4 pt-2">
             <div className="space-y-1">
-              <span className="text-xs text-gray-500 uppercase tracking-wide">
+              <span className="text-xs font-serif text-gray-500 uppercase tracking-wide">
                 pH Level
               </span>
-              <p className={`font-medium ${phStatus.color}`}>
+              <p className={`font-medium font-serif ${phStatus.color}`}>
                 {soilInput.ph?.toFixed(1) || "N/A"} ({phStatus.text})
               </p>
             </div>
             <div className="space-y-1 text-right">
-              <span className="text-xs text-gray-500 uppercase tracking-wide">
+              <span className="text-xs font-serif text-gray-500 uppercase tracking-wide">
                 Initial Class
               </span>
-              <p className="font-medium text-gray-700">
+              <p className="font-medium font-serif text-green-900">
                 {results.initial_soil_fertility_status}
               </p>
             </div>
