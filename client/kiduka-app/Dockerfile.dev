@@ -1,0 +1,24 @@
+# Development Dockerfile for Next.js
+FROM node:20-alpine
+
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install dependencies including devDependencies
+RUN npm install
+
+# Copy the rest of the application code
+COPY . .
+
+# Disable telemetry
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Expose the development port
+EXPOSE 3000
+
+# Next.js development server
+CMD ["npm", "run", "dev"]
