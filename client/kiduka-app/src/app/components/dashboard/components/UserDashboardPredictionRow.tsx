@@ -12,8 +12,10 @@ export function UserDashboardPredictionRow({ prediction, index }: { prediction: 
           <Leaf className="h-5 w-5 text-green-600" />
         </div>
         <div>
-          <p className="font-semibold text-gray-900">Soil Analysis</p>
-          <p className="text-sm text-gray-500">
+          <p className="font-semibold text-gray-900 truncate max-w-[150px]">
+            {prediction.location_name || "Soil Analysis"}
+          </p>
+          <p className="text-xs text-gray-500">
             {new Date(prediction.created_at).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",

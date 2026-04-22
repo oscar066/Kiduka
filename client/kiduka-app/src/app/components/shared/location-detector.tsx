@@ -10,8 +10,10 @@ import {
   Edit3,
 } from "lucide-react";
 
+import { getReverseGeocode } from "@/lib/location-utils";
+
 interface LocationDetectorProps {
-  onLocationDetected: (lat: number, lng: number) => void;
+  onLocationDetected: (lat: number, lng: number, name?: string) => void;
 }
 
 export function LocationDetector({
@@ -21,9 +23,17 @@ export function LocationDetector({
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [error, setError] = useState<string>("");
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
+  const [location, setLocation] = useState<{ lat: number; lng: number; name?: string } | null>(
     null
   );
+  const [isResolvingName, setIsResolvingName] = useState(false);
+
+  const resolveLocationName = async (lat: number, lng: number) => {
+    setIsResolvingName(true);
+    const name = await getReverseGeocode(lat, lng);
+    setIsResolvingName(false);
+    return name;
+  };
 
   const detectLocation = () => {
     // Check if geolocation is supported
@@ -49,12 +59,20 @@ export function LocationDetector({
     setError("");
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        setLocation({ lat, lng });
+        
         setStatus("success");
-        onLocationDetected(lat, lng);
+        // We set coordinates immediately for the UI
+        setLocation({ lat, lng });
+        
+        // Resolve name in background
+        const name = await resolveLocationName(lat, lng);
+        const locationName = name || undefined;
+        
+        setLocation({ lat, lng, name: locationName });
+        onLocationDetected(lat, lng, locationName);
       },
       (error) => {
         setStatus("error");
@@ -85,7 +103,7 @@ export function LocationDetector({
     );
   };
 
-  const handleManualLocation = () => {
+  const handleManualLocation = async () => {
     const lat = prompt("Enter your latitude:");
     const lng = prompt("Enter your longitude:");
 
@@ -94,10 +112,16 @@ export function LocationDetector({
       const lngNum = parseFloat(lng);
 
       if (!isNaN(latNum) && !isNaN(lngNum)) {
-        setLocation({ lat: latNum, lng: lngNum });
         setStatus("success");
+        setLocation({ lat: latNum, lng: lngNum });
         setError("");
-        onLocationDetected(latNum, lngNum);
+        
+        // Resolve name
+        const name = await resolveLocationName(latNum, lngNum);
+        const locationName = name || undefined;
+        
+        setLocation({ lat: latNum, lng: lngNum, name: locationName });
+        onLocationDetected(latNum, lngNum, locationName);
       } else {
         setStatus("error");
         setError("Invalid coordinates entered");
@@ -121,15 +145,21 @@ export function LocationDetector({
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
                 <CheckCircle2 className="h-5 w-5 text-white" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center space-x-2">
-                  <h3 className="font-semibold text-emerald-900">
-                    Location Detected
+                  <h3 className="font-semibold text-emerald-900 truncate">
+                    {location.name || (isResolvingName ? "Resolving Address..." : "Location Detected")}
                   </h3>
-                  <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  {!isResolvingName && <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>}
                 </div>
-                <p className="text-sm text-emerald-700 font-mono">
-                  {location.lat.toFixed(6)}°, {location.lng.toFixed(6)}°
+                <p className="text-xs text-emerald-600 font-medium">
+                  {location.name ? (
+                    <span className="font-mono text-[10px] opacity-70">
+                      {location.lat.toFixed(4)}°, {location.lng.toFixed(4)}°
+                    </span>
+                  ) : (
+                    "Coordinates identified"
+                  )}
                 </p>
               </div>
             </div>
@@ -139,7 +169,7 @@ export function LocationDetector({
                 setLocation(null);
                 setError("");
               }}
-              className="flex items-center space-x-2 rounded-lg border border-emerald-300 bg-white/80 px-3 py-2 text-sm font-medium text-emerald-700 shadow-sm transition-all duration-200 hover:bg-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+              className="flex items-center space-x-2 rounded-lg border border-emerald-300 bg-white/80 px-3 py-2 text-sm font-medium text-emerald-700 shadow-sm transition-all duration-200 hover:bg-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 shrink-0 ml-4"
             >
               <Edit3 className="h-4 w-4" />
               <span>Change</span>

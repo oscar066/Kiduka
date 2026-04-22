@@ -51,11 +51,12 @@ export default function SoilFertilityDashboard() {
     }));
   };
 
-  const handleLocationDetected = (lat: number, lng: number) => {
+  const handleLocationDetected = (lat: number, lng: number, name?: string) => {
     setSoilData((prev) => ({
       ...prev,
       latitude: lat,
       longitude: lng,
+      location_name: name,
     }));
   };
 
@@ -83,6 +84,7 @@ export default function SoilFertilityDashboard() {
       ph: soilData.ph,
       latitude: soilData.latitude,
       longitude: soilData.longitude,
+      location_name: soilData.location_name,
     };
 
     const optionalFields =['n', 'p', 'k', 'organic_carbon', 'ca', 'mg'] as const;

@@ -2,6 +2,7 @@ export interface Prediction {
   created_at: string;
   soil_fertility_status: string;
   soil_health_index?: number;
+  location_name?: string;
 }
 
 export interface PredictionsData {

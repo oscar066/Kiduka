@@ -18,7 +18,7 @@ services:
   client:
     build:
       context: ./client/kiduka-app
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
       args:
         NEXT_PUBLIC_API_URL: /api
         API_URL: http://api:8000
@@ -31,6 +31,17 @@ services:
       - API_URL=http://api:8000
       - NEXTAUTH_URL=${NEXTAUTH_URL}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - WATCHPACK_POLLING=true
+    develop:
+      watch:
+        - action: sync
+          path: ./client/kiduka-app
+          target: /app
+          ignore:
+            - node_modules/
+            - .next/
+        - action: rebuild
+          path: ./client/kiduka-app/package.json
     depends_on:
       - api
     restart: always
@@ -50,6 +61,7 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - ENVIRONMENT=development
     networks:
       - agri-network
     depends_on:

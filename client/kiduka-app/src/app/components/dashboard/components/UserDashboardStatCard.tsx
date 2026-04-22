@@ -28,7 +28,7 @@ export function UserDashboardStatCard({ icon, iconBg, badge, value, label, loadi
               </>
             ) : (
               <>
-                <div className="text-2xl font-bold text-gray-900">{value}</div>
+                <div className="text-2xl font-serif font-bold text-green-900">{value}</div>
                 <div className="text-sm text-gray-500 font-medium mt-1">{label}</div>
               </>
             )}

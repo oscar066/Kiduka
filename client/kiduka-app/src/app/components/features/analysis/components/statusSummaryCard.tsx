@@ -11,6 +11,7 @@ import {
   Calendar,
   AlertCircle,
   TrendingUp,
+  MapPin,
 } from "lucide-react";
 import { PredictionResponse, SoilInput } from "@/types/soil-analysis";
 import { getStatusIcon, getStatusColor, getSHIColor, getPhStatus } from "@/lib/soil-health-utils";
@@ -25,6 +26,7 @@ export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsPro
   const statusText = results.soil_fertility_status || "";
   const shiScore = results.soil_health_index;
   const phValue = soilInput.ph || 0;
+  const locationName = results.location_name || soilInput.location_name;
 
   const phStatus = getPhStatus(phValue);
   const wasDowngraded = results.initial_soil_fertility_status !== results.soil_fertility_status;
@@ -34,10 +36,18 @@ export function StatusSummaryCards({ results, soilInput }: StatusSummaryCardsPro
       {/* Soil Health Index Card */}
       <Card className="bg-gradient-to-br from-green-50 to-amber-50 border-amber-200">
         <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-green-800">
-            {getStatusIcon(statusText)}
-            Soil Health Overview
-          </CardTitle>
+        <div className="flex items-start justify-between">
+          <CardTitle className="flex items-center gap-2 text-green-800">
+              {getStatusIcon(statusText)}
+              Soil Health Overview
+            </CardTitle>
+            {locationName && (
+              <Badge variant="outline" className="flex items-center gap-1 bg-green-50 border-green-200 text-green-700 py-1">
+                <MapPin className="h-3 w-3" />
+                {locationName}
+              </Badge>
+            )}
+        </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* SHI Score */}

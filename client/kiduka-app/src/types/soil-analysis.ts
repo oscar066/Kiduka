@@ -25,6 +25,7 @@ export interface SoilInput {
   mg?: number;
   latitude: number;
   longitude: number;
+  location_name?: string;
 }
 
 export interface PredictionResponse {
@@ -38,6 +39,7 @@ export interface PredictionResponse {
   prediction_mode?: "FORMULA" | "ML";
   confidence?: Record<string, any>;
   prediction_id?: string;
+  location_name?: string;
   timestamp: string;
 }
 

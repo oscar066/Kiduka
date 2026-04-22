@@ -16,6 +16,8 @@ import {
   RefreshCw,
   MessageCircle,
   BarChart3,
+  Zap,
+  Beaker,
 } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -77,7 +79,7 @@ export function UserDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Welcome — renders immediately, no loading dependency */}
+      {/* Welcome renders immediately, no loading dependency */}
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           {statsLoading && !user ? (
@@ -107,7 +109,7 @@ export function UserDashboard() {
         </Button>
       </div>
 
-      {/* Stats — each card shares one loading flag but they're visually independent */}
+      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           loading={statsLoading}
@@ -141,12 +143,13 @@ export function UserDashboard() {
           loading={statsLoading}
           iconBg="from-emerald-100 to-teal-100"
           icon={<MapPin className="h-8 w-8 text-emerald-600" />}
+          badge={<TrendingUp className="h-4 w-4 text-emerald-500" />}
           value={stats?.averageSHI ?? "--"}
           label="Avg. SHI Score"
         />
       </div>
 
-      {/* Quick Actions — static, renders immediately */}
+      {/* Quick Actions */}
       <div>
         <h2 className="text-2xl font-serif font-bold text-green-800 mb-4">
           Quick Actions
@@ -157,20 +160,20 @@ export function UserDashboard() {
               href: "/analysis",
               hoverBorder: "hover:border-green-400",
               iconBg: "from-green-100 to-emerald-100",
-              icon: <Leaf className="h-8 w-8 text-green-600" />,
+              icon: <Beaker className="h-8 w-8 text-green-600" />,
               title: "New Soil Analysis",
               desc: "Analyze your soil and get fertilizer recommendations",
               cta: "Start analysis",
               ctaColor: "text-green-600",
             },
             {
-              href: "/reports",
+              href: "/optimization",
               hoverBorder: "hover:border-blue-400",
               iconBg: "from-blue-100 to-cyan-100",
-              icon: <History className="h-8 w-8 text-blue-600" />,
-              title: "Prediction History",
-              desc: "View your past soil analyses and recommendations",
-              cta: "View history",
+              icon: <Zap className="h-8 w-8 text-blue-600" />,
+              title: "Fertilizer Optimization",
+              desc: "Maximize yield within your budget.",
+              cta: "Optimize now",
               ctaColor: "text-blue-600",
             },
             {
@@ -196,7 +199,7 @@ export function UserDashboard() {
                       {icon}
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-bold text-gray-900 text-lg mb-1">{title}</h3>
+                      <h3 className="font-bold font-serif text-green-900 text-lg mb-1">{title}</h3>
                       <p className="text-gray-600 text-sm mb-3">{desc}</p>
                       <div className={`flex items-center ${ctaColor} text-sm font-medium`}>
                         {cta}

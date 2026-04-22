@@ -41,14 +41,14 @@ const navigationItems: NavItem[] = [
     href: "/chat",
   },
   {
-    label: "My Reports",
-    icon: <FileText className="h-4 w-4" />,
-    href: "/reports",
-  },
-  {
     label: "Optimization",
     icon: <Zap className="h-4 w-4" />,
     href: "/optimization",
+  },
+  {
+    label: "My Reports",
+    icon: <FileText className="h-4 w-4" />,
+    href: "/reports",
   },
   {
     label: "Analytics",
@@ -74,7 +74,7 @@ const navigationItems: NavItem[] = [
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     children: [
       {
-        label: "Admin Dashboard", // void duplicate "Dashboard" title
+        label: "Admin Dashboard",
         icon: <BarChart3 className="h-4 w-4" />,
         href: "/admin/dashboard",
         roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
@@ -110,7 +110,7 @@ const navigationItems: NavItem[] = [
         roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
       },
       {
-        label: "Admin Settings", // avoid duplicate "Settings" title
+        label: "Admin Settings",
         icon: <Settings className="h-4 w-4" />,
         href: "/admin/settings",
         roles: [UserRole.SUPER_ADMIN],
