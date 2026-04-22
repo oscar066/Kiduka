@@ -6,6 +6,9 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 interface ChatMessageItemProps {
   id: string;
   role: "user" | "assistant";
@@ -66,7 +69,43 @@ export function ChatMessageItem({
               : "bg-white/90 text-gray-800 border border-green-100/80 rounded-tl-sm shadow-sm"
           )}
         >
-          <p className="whitespace-pre-wrap">{text}</p>
+          <div className={cn(
+            "flex flex-col gap-2",
+            role === "assistant" ? "font-serif text-green-900" : "text-white"
+          )}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                strong: ({ children }) => (
+                  <strong className={cn(
+                    "font-bold",
+                    role === "assistant" ? "text-green-800" : "text-white underline decoration-white/30"
+                  )}>
+                    {children}
+                  </strong>
+                ),
+                ul: ({ children }) => <ul className="list-disc pl-5 space-y-1 mb-3 last:mb-0">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1 mb-3 last:mb-0">{children}</ol>,
+                li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                a: ({ children, href }) => (
+                  <a 
+                    href={href} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className={cn(
+                      "underline transition-colors",
+                      role === "assistant" ? "text-green-700 hover:text-green-900" : "text-white hover:text-green-100"
+                    )}
+                  >
+                    {children}
+                  </a>
+                ),
+              }}
+            >
+              {text}
+            </ReactMarkdown>
+          </div>
 
           {role === "assistant" && (
             <Tooltip>

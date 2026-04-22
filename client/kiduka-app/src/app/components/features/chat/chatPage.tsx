@@ -13,6 +13,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ChatHeader } from "./components/ChatHeader";
 import { ChatMessageList } from "./components/ChatMessageList";
 import { ChatInput } from "./components/ChatInput";
+import CryptoJS from "crypto-js";
+
+const CHAT_STORAGE_KEY = "kiduka_chat_storage_v1";
+const ENCRYPTION_SECRET = "kiduka-agri-chat-privacy-key"; // In production, this could be more dynamic
 
 interface ChatMessage {
   id: string;
@@ -50,25 +54,33 @@ export default function ChatPage() {
 
   // Load chat history from sessionStorage on mount
   React.useEffect(() => {
-    const savedMessages = sessionStorage.getItem("kiduka_chat_messages");
-    const savedThreadId = sessionStorage.getItem("kiduka_chat_thread_id");
+    // Proactively clean up old unencrypted localStorage remnants from previous versions
+    localStorage.removeItem("kiduka_chat_messages");
+    localStorage.removeItem("kiduka_chat_thread_id");
     
-    if (savedMessages) {
+    const encryptedData = sessionStorage.getItem("kiduka_secured_chat");
+    
+    if (encryptedData) {
       try {
-        const parsed = JSON.parse(savedMessages);
-        // Convert ISO strings back to Date objects
-        const messagesWithDates = parsed.map((m: any) => ({
-          ...m,
-          timestamp: new Date(m.timestamp)
-        }));
-        setMessages(messagesWithDates);
+        const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_SECRET);
+        const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+        
+        if (decryptedData.messages) {
+          const messagesWithDates = decryptedData.messages.map((m: any) => ({
+            ...m,
+            timestamp: new Date(m.timestamp)
+          }));
+          setMessages(messagesWithDates);
+        }
+        
+        if (decryptedData.threadId) {
+          setThreadId(decryptedData.threadId);
+        }
       } catch (e) {
-        console.error("Failed to parse saved messages", e);
+        console.error("Failed to decrypt saved chat", e);
+        // Clear corrupted data
+        sessionStorage.removeItem("kiduka_secured_chat");
       }
-    }
-    
-    if (savedThreadId) {
-      setThreadId(savedThreadId);
     }
     setIsTyping(false);
   }, []);
@@ -76,22 +88,21 @@ export default function ChatPage() {
   // Save chat history to sessionStorage whenever messages or threadId change
   React.useEffect(() => {
     if (messages.length > 0) {
-      sessionStorage.setItem("kiduka_chat_messages", JSON.stringify(messages));
+      const dataToSave = {
+        messages,
+        threadId
+      };
+      const encrypted = CryptoJS.AES.encrypt(JSON.stringify(dataToSave), ENCRYPTION_SECRET).toString();
+      sessionStorage.setItem("kiduka_secured_chat", encrypted);
     } else {
-      sessionStorage.removeItem("kiduka_chat_messages");
-    }
-    if (threadId) {
-      sessionStorage.setItem("kiduka_chat_thread_id", threadId);
-    } else {
-      sessionStorage.removeItem("kiduka_chat_thread_id");
+      sessionStorage.removeItem("kiduka_secured_chat");
     }
   }, [messages, threadId]);
 
   const handleClearChat = () => {
     setMessages([]);
     setThreadId(undefined);
-    sessionStorage.removeItem("kiduka_chat_messages");
-    sessionStorage.removeItem("kiduka_chat_thread_id");
+    sessionStorage.removeItem("kiduka_secured_chat");
   };
 
   const copyToClipboard = (text: string, id: string) => {
