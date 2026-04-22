@@ -82,8 +82,8 @@ class PredictionHistory(BaseModel):
 
     # Analysis results
     soil_health_index: float
-    initial_soil_fertility_status: str
-    soil_fertility_status: str
+    initial_soil_fertility_status: Optional[str] = None
+    soil_fertility_status: Optional[str] = None
     mentions: List[str] = Field(default_factory=list)
     recommendations: List[str] = Field(default_factory=list)
     nutrients: Dict[str, Dict[str, Any]] = Field(default_factory=dict, description="Detailed nutrient scores")

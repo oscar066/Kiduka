@@ -157,8 +157,8 @@ class AdminPredictionResponse(BaseModel):
     
     # Analysis results
     soil_health_index: float
-    initial_soil_fertility_status: str
-    soil_fertility_status: str
+    initial_soil_fertility_status: Optional[str] = None
+    soil_fertility_status: Optional[str] = None
     mentions: List[str] = []
     recommendations: List[str] = []
     
