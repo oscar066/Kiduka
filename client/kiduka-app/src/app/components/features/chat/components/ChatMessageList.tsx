@@ -48,9 +48,10 @@ export function ChatMessageList({
     <div className="flex-1 min-h-0">
       <ScrollArea className="h-full px-4 md:px-6">
         <div className="max-w-3xl mx-auto w-full py-4 space-y-6">
-          <AnimatePresence initial={false}>
+           <AnimatePresence initial={false}>
             {messages.length === 0 ? (
               <ChatEmptyState
+                key="empty-state"
                 suggestedPrompts={suggestedPrompts}
                 onSendMessage={onSendMessage}
               />
@@ -68,6 +69,7 @@ export function ChatMessageList({
 
             {isTyping && (
               <motion.div
+                key="typing-indicator"
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}

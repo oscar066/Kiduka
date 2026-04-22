@@ -45,13 +45,13 @@ export default function ChatPage() {
   const [isSending, setIsSending] = useState(false);
   const [threadId, setThreadId] = useState<string | undefined>(undefined);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [isTyping, setIsTyping] = useState(true); // Added for initial loader if needed or set it correctly
+  const [isTyping, setIsTyping] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load chat history from localStorage on mount
+  // Load chat history from sessionStorage on mount
   React.useEffect(() => {
-    const savedMessages = localStorage.getItem("kiduka_chat_messages");
-    const savedThreadId = localStorage.getItem("kiduka_chat_thread_id");
+    const savedMessages = sessionStorage.getItem("kiduka_chat_messages");
+    const savedThreadId = sessionStorage.getItem("kiduka_chat_thread_id");
     
     if (savedMessages) {
       try {
@@ -73,25 +73,25 @@ export default function ChatPage() {
     setIsTyping(false);
   }, []);
 
-  // Save chat history to localStorage whenever messages or threadId change
+  // Save chat history to sessionStorage whenever messages or threadId change
   React.useEffect(() => {
     if (messages.length > 0) {
-      localStorage.setItem("kiduka_chat_messages", JSON.stringify(messages));
+      sessionStorage.setItem("kiduka_chat_messages", JSON.stringify(messages));
     } else {
-      localStorage.removeItem("kiduka_chat_messages");
+      sessionStorage.removeItem("kiduka_chat_messages");
     }
     if (threadId) {
-      localStorage.setItem("kiduka_chat_thread_id", threadId);
+      sessionStorage.setItem("kiduka_chat_thread_id", threadId);
     } else {
-      localStorage.removeItem("kiduka_chat_thread_id");
+      sessionStorage.removeItem("kiduka_chat_thread_id");
     }
   }, [messages, threadId]);
 
   const handleClearChat = () => {
     setMessages([]);
     setThreadId(undefined);
-    localStorage.removeItem("kiduka_chat_messages");
-    localStorage.removeItem("kiduka_chat_thread_id");
+    sessionStorage.removeItem("kiduka_chat_messages");
+    sessionStorage.removeItem("kiduka_chat_thread_id");
   };
 
   const copyToClipboard = (text: string, id: string) => {
@@ -119,7 +119,7 @@ export default function ChatPage() {
     const msgText = (overrideText ?? inputValue).trim();
     if (!msgText || isSending || !token) return;
 
-    const userMsgId = Date.now().toString();
+    const userMsgId = crypto.randomUUID();
     setMessages((prev) => [
       ...prev,
       { id: userMsgId, role: "user", text: msgText, timestamp: new Date() },
@@ -137,7 +137,7 @@ export default function ChatPage() {
       setMessages((prev) => [
         ...prev,
         {
-          id: (Date.now() + 1).toString(),
+          id: crypto.randomUUID(),
           role: "assistant",
           text: result.response,
           timestamp: new Date(),
@@ -148,7 +148,7 @@ export default function ChatPage() {
       setMessages((prev) => [
         ...prev,
         {
-          id: (Date.now() + 1).toString(),
+          id: crypto.randomUUID(),
           role: "assistant",
           text: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment.",
           timestamp: new Date(),
