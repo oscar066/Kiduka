@@ -7,9 +7,13 @@ import os
 import sys
 import logging
 from sqlalchemy import text, select
+from dotenv import load_dotenv
 
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
+# Load environment variables explicitly
+load_dotenv()
 
 from api.db.connection import db_manager
 from api.db.models.database import User, UserRole
