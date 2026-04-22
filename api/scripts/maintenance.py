@@ -9,10 +9,8 @@ import logging
 from sqlalchemy import text, select
 from dotenv import load_dotenv
 
-# Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-# Load environment variables explicitly
 load_dotenv()
 
 from api.db.connection import db_manager
@@ -40,15 +38,18 @@ async def create_admin_user(session, email, username, password):
     """Create or update a super admin user"""
     logger.info(f"Creating/Updating super admin user: {username} ({email})")
     try:
-        # Check if user exists
-        stmt = select(User).where(User.email == email)
+        # Check if user exists by email OR username to avoid unique constraint violations
+        from sqlalchemy import or_
+        stmt = select(User).where(or_(User.email == email, User.username == username))
         result = await session.execute(stmt)
         user = result.scalar_one_or_none()
         
         hashed_pw = AuthSecurityManager.get_password_hash(password)
         
         if user:
-            logger.info(f"User {username} already exists. Updating password and role...")
+            logger.info(f"User with details {username}/{email} already exists. Updating credentials and role...")
+            user.email = email  # Ensure email is set correctly
+            user.username = username  # Ensure username is set correctly
             user.hashed_password = hashed_pw
             user.role = UserRole.SUPER_ADMIN
             user.is_active = True
