@@ -203,7 +203,7 @@ export function NutrientDisplay({
       <CardContent className="p-6">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {nutrientData.map((nutrient) => {
-            // Special mapping for OC vs organic_carbon in soilInput
+            // Special mapping for OC vs organic_carbon in soilInput.
             const inputKey = nutrient.id === "OC" ? "organic_carbon" : nutrient.id.toLowerCase();
             const scoreData = scores[nutrient.id];
             // A nutrient is "measured" if the backend analysis confirmed it was measured
