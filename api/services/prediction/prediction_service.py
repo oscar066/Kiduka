@@ -169,6 +169,7 @@ class PredictionService:
                 prediction_mode=prediction_mode,
                 confidence=ml_extra_data,
                 prediction_id=uuid.uuid4(), # Generate ID if not already present
+                location_name=soil_data.location_name,
                 timestamp=datetime.now()
             )
             

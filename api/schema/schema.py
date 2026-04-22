@@ -17,6 +17,7 @@ class SoilData(BaseModel):
     year: Optional[int] = Field(2025, description="Year for Earth Engine satellite data fetch")
     latitude: float = Field(..., description="Location latitude", ge=-90, le=90)
     longitude: float = Field(..., description="Location longitude", ge=-180, le=180)
+    location_name: Optional[str] = Field(None, description="Human-readable location name")
 
 class AgrovetInfo(BaseModel):
     """Agricultural supply store information"""
@@ -57,6 +58,7 @@ class PredictionResponse(BaseModel):
     prediction_mode: Optional[str] = Field(None, description="Prediction method: 'FORMULA' or 'ML'")
     confidence: Optional[Dict[str, Any]] = Field(None, description="Confidence metrics for ML predictions")
     prediction_id: Optional[uuid.UUID] = None
+    location_name: Optional[str] = None
     timestamp: datetime
 
 class PredictionHistory(BaseModel):
