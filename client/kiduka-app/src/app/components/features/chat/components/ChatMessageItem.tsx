@@ -63,15 +63,15 @@ export function ChatMessageItem({
       >
         <div
           className={cn(
-            "group relative rounded-2xl px-4 py-3 text-sm leading-relaxed",
+            "group relative rounded-2xl px-4 py-3 text-base leading-relaxed",
             role === "user"
               ? "bg-green-600 text-white rounded-tr-sm shadow-sm"
               : "bg-white/90 text-gray-800 border border-green-100/80 rounded-tl-sm shadow-sm"
           )}
         >
           <div className={cn(
-            "flex flex-col gap-2",
-            role === "assistant" ? "font-serif text-green-900" : "text-white"
+            "flex flex-col gap-2 font-serif",
+            role === "assistant" ? "text-green-900" : "text-white"
           )}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}

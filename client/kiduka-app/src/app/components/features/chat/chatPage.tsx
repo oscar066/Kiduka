@@ -54,10 +54,6 @@ export default function ChatPage() {
 
   // Load chat history from sessionStorage on mount
   React.useEffect(() => {
-    // Proactively clean up old unencrypted localStorage remnants from previous versions
-    localStorage.removeItem("kiduka_chat_messages");
-    localStorage.removeItem("kiduka_chat_thread_id");
-    
     const encryptedData = sessionStorage.getItem("kiduka_secured_chat");
     
     if (encryptedData) {
