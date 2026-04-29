@@ -35,7 +35,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen" suppressHydrationWarning>
+    <div className="min-h-screen bg-green-950" suppressHydrationWarning>
       <NavigationBar 
         isScrolled={isScrolled}
         isMenuOpen={isMenuOpen}
