@@ -43,6 +43,10 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+html {
+  background-color: #052e16; /* green-950 — prevents white flash on overscroll */
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

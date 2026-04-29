@@ -11,53 +11,89 @@ interface NavigationBarProps {
   scrollToSection: (sectionId: string) => void;
 }
 
-export function NavigationBar({ isScrolled, isMenuOpen, setIsMenuOpen, scrollToSection }: NavigationBarProps) {
+const navLinks = [
+  { label: "Architecture", section: "architecture" },
+  { label: "Agrovets", section: "agrovets" },
+  { label: "How It Works", section: "how-it-works" },
+  { label: "Testimonials", section: "testimonials" },
+  { label: "FAQ", section: "faq" },
+];
+
+export function NavigationBar({
+  isScrolled,
+  isMenuOpen,
+  setIsMenuOpen,
+  scrollToSection,
+}: NavigationBarProps) {
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      isScrolled ? "bg-white shadow-md" : "bg-white/80 backdrop-blur-sm"
-    }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? "bg-gradient-to-r from-green-950 via-green-900 to-emerald-800 shadow-lg border-b border-green-800/40"
+          : "bg-transparent"
+      }`}
+    >
+      {/* Grid pattern — matches the hero section */}
+      {isScrolled && (
+        <div
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
+      )}
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => scrollToSection("home")}>
-            <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center overflow-hidden shadow-sm border border-green-100">
-              <img src="/images/kiduka_logo.png" alt="Kiduka Logo" className="h-full w-full object-cover" />
+          <div
+            className="flex items-center space-x-2.5 cursor-pointer"
+            onClick={() => scrollToSection("home")}
+          >
+            <div className="h-9 w-9 bg-white rounded-lg flex items-center justify-center overflow-hidden shadow-sm border border-green-100">
+              <img
+                src="/images/kiduka_logo.png"
+                alt="Kiduka Logo"
+                className="h-full w-full object-cover"
+              />
             </div>
-            <span className="text-xl font-serif font-bold text-green-800">Kiduka Labs</span>
+            <span className="text-xl font-serif font-bold text-white">
+              Kiduka Labs
+            </span>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <button onClick={() => scrollToSection("home")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
-              Home
-            </button>
-            <button onClick={() => scrollToSection("architecture")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
-              Architecture
-            </button>
-            <button onClick={() => scrollToSection("agrovets")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
-              Agrovets
-            </button>
-            <button onClick={() => scrollToSection("how-it-works")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
-              How It Works
-            </button>
-            <button onClick={() => scrollToSection("testimonials")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
-              Testimonials
-            </button>
-            <button onClick={() => scrollToSection("faq")} className="text-gray-700 hover:text-green-600 font-medium transition-colors">
-              FAQ
-            </button>
+          <div className="hidden md:flex items-center space-x-1">
+            {navLinks.map(({ label, section }) => (
+              <button
+                key={section}
+                onClick={() => scrollToSection(section)}
+                className="px-3 py-2 rounded-lg text-sm font-medium transition-colors text-green-200 hover:text-white hover:bg-white/10"
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
           {/* CTA Buttons */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-3">
             <Link href="/auth/login">
-              <Button variant="ghost" className="text-green-700 hover:text-green-800">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="font-medium transition-colors text-green-200 hover:text-white hover:bg-white/10"
+              >
                 Login
               </Button>
             </Link>
             <Link href="/auth/signup">
-              <Button className="bg-green-600 hover:bg-green-700 text-white">
-                Sign Up
+              <Button
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold shadow-sm"
+              >
+                Sign Up Free
               </Button>
             </Link>
           </div>
@@ -65,41 +101,41 @@ export function NavigationBar({ isScrolled, isMenuOpen, setIsMenuOpen, scrollToS
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+            className="md:hidden p-2 rounded-lg transition-colors text-white hover:bg-white/10"
+            aria-label="Toggle menu"
           >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMenuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </button>
         </div>
       </div>
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white border-t">
-          <div className="px-4 py-2 space-y-2">
-            <button onClick={() => scrollToSection("home")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
-              Home
-            </button>
-            <button onClick={() => scrollToSection("architecture")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
-              Architecture
-            </button>
-            <button onClick={() => scrollToSection("agrovets")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
-              Agrovets
-            </button>
-            <button onClick={() => scrollToSection("how-it-works")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
-              How It Works
-            </button>
-            <button onClick={() => scrollToSection("testimonials")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
-              Testimonials
-            </button>
-            <button onClick={() => scrollToSection("faq")} className="block w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg">
-              FAQ
-            </button>
-            <div className="pt-4 space-y-2">
+        <div className="md:hidden bg-green-950/95 backdrop-blur-md border-t border-green-800/60">
+          <div className="px-4 py-3 space-y-1">
+            {navLinks.map(({ label, section }) => (
+              <button
+                key={section}
+                onClick={() => scrollToSection(section)}
+                className="block w-full text-left px-4 py-2.5 text-green-200 hover:text-white hover:bg-white/10 rounded-lg text-sm font-medium transition-colors"
+              >
+                {label}
+              </button>
+            ))}
+            <div className="pt-3 pb-1 space-y-2 border-t border-green-800/60 mt-2">
               <Link href="/auth/login" className="block">
-                <Button variant="outline" className="w-full">Login</Button>
+                <Button variant="outline" className="w-full border-green-600 text-green-200 hover:bg-white/10 hover:text-white bg-transparent">
+                  Login
+                </Button>
               </Link>
               <Link href="/auth/signup" className="block">
-                <Button className="w-full bg-green-600 hover:bg-green-700">Sign Up</Button>
+                <Button className="w-full bg-green-400 hover:bg-green-300 text-green-950 font-semibold">
+                  Sign Up Free
+                </Button>
               </Link>
             </div>
           </div>
