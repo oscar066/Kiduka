@@ -41,7 +41,7 @@ export function HeroSection() {
 
         {/* Heading */}
         <div className="text-center space-y-6 max-w-4xl mx-auto">
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-bold text-white leading-[1.1] tracking-tight">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-white leading-[1.1] tracking-tight">
             Precision Agriculture
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-300 via-emerald-300 to-amber-300">

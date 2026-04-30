@@ -65,6 +65,17 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  icons: {
+    icon: [
+      { url: "/images/kiduka_logo.png" },
+      { url: "/images/kiduka_logo.png", sizes: "32x32", type: "image/png" },
+      { url: "/images/kiduka_logo.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [
+      { url: "/images/kiduka_logo.png" },
+    ],
+  },
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
