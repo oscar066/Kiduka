@@ -1,97 +1,164 @@
+from __future__ import annotations
+
 import logging
-from ..optimization.core.common import (
+from dataclasses import asdict
+
+from api.schema.optimization_schema import OptimizationRequest, OptimizationResponse
+from api.services.optimization.core.contracts import (
     CropInput,
     FertilizerInput,
-    ScenarioInput,
-    _resolve_phosphorus_fraction,
-    _resolve_potassium_fraction,
-    normalize_fraction,
-    SUPPORTED_CROPS,
+    GeoLocation,
+    OptimizationProblem,
+    OptimizationScenario,
+    SoilInput,
+    YAttConfig,
+    YAttSource,
 )
-from ..optimization.core.single_nutrient_nonlinear import solve_nonlinear
-from api.schema.optimization_schema import OptimizationRequest, OptimizationResponse
+from api.services.optimization.core.crop_mappings import resolve_busia_crop
+from api.services.optimization.core.unit_conversions import (
+    acres_to_hectares,
+    k2o_fraction_to_k,
+    p2o5_fraction_to_p,
+)
+from api.services.optimization.solvers.fd_oa import FdOaSolver
+from api.services.optimization.yield_models.base import YieldModel
+from api.services.optimization.yield_models.rquefts import RqueftsYieldModel
+from api.services.optimization.yield_models.yatt import build_yatt_provider
+
 
 logger = logging.getLogger(__name__)
 
+
 class OptimizationService:
     @staticmethod
-    def optimize(request: OptimizationRequest) -> OptimizationResponse:
-        # Convert API schema models to internal core models
-        crop_inputs = {}
-        for c in request.crops:
-            if c.crop not in SUPPORTED_CROPS:
-                raise ValueError(f"Crop '{c.crop}' is not supported. Supported: {SUPPORTED_CROPS}")
-            crop_inputs[c.crop] = CropInput(
-                crop=c.crop,
-                area_ac=c.area_ac,
-                grain_value_per_kg=c.grain_value_currency_per_kg,
-                initial_n_kg_per_ha=float(c.initial_n_kg_per_ha or 0.0),
-                initial_p_kg_per_ha=float(c.initial_p_kg_per_ha or 0.0),
-                initial_k_kg_per_ha=float(c.initial_k_kg_per_ha or 0.0),
-            )
-        
-        # Auto-fill missing required crops with 0 area constraints
-        missing_crops = set(SUPPORTED_CROPS) - set(crop_inputs.keys())
-        for missing_crop in missing_crops:
-            crop_inputs[missing_crop] = CropInput(
-                crop=missing_crop,
-                area_ac=0.0,
-                grain_value_per_kg=0.0,
-                initial_n_kg_per_ha=0.0,
-                initial_p_kg_per_ha=0.0,
-                initial_k_kg_per_ha=0.0,
-            )
-
-        fertilizer_inputs = {}
-        for f in request.fertilizers:
-            if not f.product:
-                 raise ValueError("Product name cannot be empty")
-            if f.product in fertilizer_inputs:
-                 raise ValueError(f"Duplicate product: {f.product}")
-                 
-            # Emulate CSV dictionary row for compatibility with provided core logic
-            row = {
-                "n_pct": str(f.n_pct) if f.n_pct is not None else "",
-                "p_pct": str(f.p_pct) if f.p_pct is not None else "",
-                "p2o5_pct": str(f.p2o5_pct) if f.p2o5_pct is not None else "",
-                "k_pct": str(f.k_pct) if f.k_pct is not None else "",
-                "k2o_pct": str(f.k2o_pct) if f.k2o_pct is not None else "",
-            }
-
-            n_frac = normalize_fraction(row["n_pct"], f"{f.product} n_pct")
-            p_frac = _resolve_phosphorus_fraction(row, f.product)
-            k_frac = _resolve_potassium_fraction(row, f.product)
-
-            fertilizer_inputs[f.product] = FertilizerInput(
-                product=f.product,
-                n_fraction=n_frac,
-                p_fraction=p_frac,
-                k_fraction=k_frac,
-                price_per_50kg=f.price_currency_per_50kg,
-            )
-
-        if not fertilizer_inputs:
-            raise ValueError("Must provide at least one fertilizer product.")
-
-        scenario_input = ScenarioInput(
-            budget=float(request.scenario.budget_currency)
-        )
-
-        logger.info("Solving fertilizer optimization...")
-        # Execute the non-linear solver
-        artifacts = solve_nonlinear(crop_inputs, fertilizer_inputs, scenario_input)
-        result = artifacts.result
-        
-        # Build API response
+    def optimize(
+        request: OptimizationRequest,
+        *,
+        yield_model: YieldModel | None = None,
+    ) -> OptimizationResponse:
+        problem = OptimizationService._build_problem(request)
+        solver = FdOaSolver(yield_model or RqueftsYieldModel())
+        result = solver.solve(problem)
         return OptimizationResponse(
             status=result.status,
             application_rows=result.application_rows,
-            effect_rows=result.effect_rows,
-            summary_row=result.summary_row,
             baseline_rows=result.baseline_rows,
-            optimal_rows=result.optimal_rows,
-            baseline_summary_row=result.baseline_summary_row,
-            optimal_summary_row=result.optimal_summary_row,
-            delta_rows=result.delta_rows,
-            nutrient_balance_rows=result.nutrient_balance_rows,
+            feasible_rows=result.feasible_rows,
+            summary_row=result.summary_row,
+            solver_log=result.solver_log,
         )
+
+    @staticmethod
+    def _build_problem(request: OptimizationRequest) -> OptimizationProblem:
+        soil = OptimizationService._resolve_soil(request)
+        yatt_provider = build_yatt_provider(OptimizationService._build_yatt_config(request))
+
+        crops: list[CropInput] = []
+        seen_crops: set[str] = set()
+        for crop_model in request.crops:
+            mapping = resolve_busia_crop(crop_model.crop)
+            if mapping.display_name in seen_crops:
+                raise ValueError(f"Duplicate crop: {mapping.display_name}")
+            seen_crops.add(mapping.display_name)
+            area_ha = crop_model.area_ha if crop_model.area_ha is not None else acres_to_hectares(crop_model.area_ac)
+            crops.append(
+                CropInput(
+                    crop=mapping.display_name,
+                    area_ha=float(area_ha),
+                    price_currency_per_kg=float(crop_model.grain_price_currency_per_kg),
+                    kephis_crop=mapping.kephis_crop,
+                    rquefts_crop=mapping.rquefts_crop,
+                    y_attainable_kg_ha=yatt_provider.get_y_attainable_kg_ha(mapping.display_name),
+                )
+            )
+
+        fertilizers: list[FertilizerInput] = []
+        seen_products: set[str] = set()
+        for fertilizer_model in request.fertilizers:
+            product = fertilizer_model.product.strip()
+            if product in seen_products:
+                raise ValueError(f"Duplicate fertilizer product: {product}")
+            seen_products.add(product)
+            fertilizers.append(
+                FertilizerInput(
+                    product=product,
+                    n_fraction=float(fertilizer_model.n_fraction),
+                    p_fraction=OptimizationService._elemental_p_fraction(fertilizer_model),
+                    k_fraction=OptimizationService._elemental_k_fraction(fertilizer_model),
+                    price_currency_per_kg=OptimizationService._price_currency_per_kg(fertilizer_model),
+                )
+            )
+
+        scenario = OptimizationScenario(
+            budget_currency=float(request.scenario.budget_currency),
+            time_limit_seconds=float(request.scenario.solver.time_limit_seconds),
+            max_iterations=int(request.scenario.solver.max_iterations),
+            no_improvement_limit=int(request.scenario.solver.no_improvement_limit),
+            status_label="Feasible",
+        )
+        return OptimizationProblem(
+            soil=soil,
+            crops=tuple(crops),
+            fertilizers=tuple(fertilizers),
+            scenario=scenario,
+        )
+
+    @staticmethod
+    def _resolve_soil(request: OptimizationRequest) -> SoilInput:
+        soil = request.soil
+        if soil.mode == "history":
+            raise ValueError(
+                "soil.mode='history' is part of the interface, but no soil-analysis resolver is wired yet. "
+                "Resolve the history record upstream and call optimization with soil.mode='direct'."
+            )
+        return SoilInput(
+            pH=float(soil.ph),
+            soc_percent=float(soil.soc_percent),
+            p_olsen_ppm=float(soil.p_olsen_ppm),
+            k_ppm=float(soil.k_exchangeable_ppm),
+        )
+
+    @staticmethod
+    def _build_yatt_config(request: OptimizationRequest) -> YAttConfig:
+        yatt = request.scenario.y_att
+        location = None
+        if request.location is not None:
+            location = GeoLocation(lat=request.location.lat, lon=request.location.lon)
+        if yatt.source == YAttSource.WOFOST.value and location is None:
+            raise ValueError("location is required when scenario.y_att.source='wofost'.")
+        return YAttConfig(
+            source=YAttSource(yatt.source),
+            kephis_quantile=float(yatt.kephis_quantile),
+            location=location,
+            wofost_sowing_date=yatt.wofost_sowing_date,
+            wofost_elevation_m=yatt.wofost_elevation_m,
+            wofost_fallback_to_kephis=bool(yatt.fallback_to_kephis),
+        )
+
+    @staticmethod
+    def _elemental_p_fraction(fertilizer_model) -> float:
+        if fertilizer_model.p_fraction is not None:
+            return float(fertilizer_model.p_fraction)
+        if fertilizer_model.p2o5_fraction is not None:
+            return p2o5_fraction_to_p(float(fertilizer_model.p2o5_fraction))
+        return 0.0
+
+    @staticmethod
+    def _elemental_k_fraction(fertilizer_model) -> float:
+        if fertilizer_model.k_fraction is not None:
+            return float(fertilizer_model.k_fraction)
+        if fertilizer_model.k2o_fraction is not None:
+            return k2o_fraction_to_k(float(fertilizer_model.k2o_fraction))
+        return 0.0
+
+    @staticmethod
+    def _price_currency_per_kg(fertilizer_model) -> float:
+        if fertilizer_model.price_currency_per_kg is not None:
+            return float(fertilizer_model.price_currency_per_kg)
+        return float(fertilizer_model.package_price_currency) / float(fertilizer_model.package_weight_kg)
+
+
+def problem_as_dict(request: OptimizationRequest) -> dict:
+    """Helper for owners wiring upstream inputs to inspect the canonical problem."""
+
+    return asdict(OptimizationService._build_problem(request))
