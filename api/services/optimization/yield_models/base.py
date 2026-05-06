@@ -17,4 +17,4 @@ class YieldModel(Protocol):
         soil: SoilInput,
         npk_rates: tuple[NPKRate, ...],
     ) -> tuple[YieldResult, ...]:
-        """Return one yield result per NPK application rate."""
+        """Return one sale-weight yield result per NPK application rate."""

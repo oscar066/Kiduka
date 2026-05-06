@@ -22,6 +22,7 @@ from api.services.optimization.core.unit_conversions import (
 )
 from api.services.optimization.solvers.fd_oa import FdOaSolver
 from api.services.optimization.yield_models.base import YieldModel
+from api.services.optimization.yield_models.kephis_yatt import KephisYAttProvider
 from api.services.optimization.yield_models.rquefts import RqueftsYieldModel
 from api.services.optimization.yield_models.yatt import build_yatt_provider
 
@@ -52,6 +53,7 @@ class OptimizationService:
     def _build_problem(request: OptimizationRequest) -> OptimizationProblem:
         soil = OptimizationService._resolve_soil(request)
         yatt_provider = build_yatt_provider(OptimizationService._build_yatt_config(request))
+        moisture_provider = KephisYAttProvider()
 
         crops: list[CropInput] = []
         seen_crops: set[str] = set()
@@ -69,6 +71,7 @@ class OptimizationService:
                     kephis_crop=mapping.kephis_crop,
                     rquefts_crop=mapping.rquefts_crop,
                     y_attainable_kg_ha=yatt_provider.get_y_attainable_kg_ha(mapping.display_name),
+                    moisture_content=moisture_provider.get_moisture_content(mapping.display_name),
                 )
             )
 
@@ -128,7 +131,6 @@ class OptimizationService:
             raise ValueError("location is required when scenario.y_att.source='wofost'.")
         return YAttConfig(
             source=YAttSource(yatt.source),
-            kephis_quantile=float(yatt.kephis_quantile),
             location=location,
             wofost_sowing_date=yatt.wofost_sowing_date,
             wofost_elevation_m=yatt.wofost_elevation_m,

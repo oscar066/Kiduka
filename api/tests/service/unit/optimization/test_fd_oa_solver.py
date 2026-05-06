@@ -28,7 +28,7 @@ class FakeConcaveYieldModel:
         results = []
         for rate in npk_rates:
             yield_kg_ha = min(
-                crop.y_attainable_kg_ha,
+                crop.y_attainable_sale_weight_kg_ha,
                 1000.0
                 + 180.0 * math.sqrt(rate.n_kg_ha + 1.0)
                 + 260.0 * math.sqrt(rate.p_kg_ha + 1.0)
@@ -58,6 +58,7 @@ def test_fd_oa_returns_budget_feasible_incumbent():
                 kephis_crop="maize",
                 rquefts_crop="Maize",
                 y_attainable_kg_ha=9000.0,
+                moisture_content=0.0,
             ),
         ),
         fertilizers=(

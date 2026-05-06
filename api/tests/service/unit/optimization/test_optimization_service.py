@@ -14,7 +14,7 @@ class FakeYieldModel:
         rows = []
         for rate in npk_rates:
             yield_kg_ha = min(
-                crop.y_attainable_kg_ha,
+                crop.y_attainable_sale_weight_kg_ha,
                 1000.0
                 + 150.0 * math.sqrt(rate.n_kg_ha + 1.0)
                 + 200.0 * math.sqrt(rate.p_kg_ha + 1.0)

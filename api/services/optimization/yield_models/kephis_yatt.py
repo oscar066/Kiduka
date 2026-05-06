@@ -1,71 +1,69 @@
 from __future__ import annotations
 
 import csv
-import math
 from functools import lru_cache
 from pathlib import Path
 
 from api.services.optimization.core.crop_mappings import resolve_busia_crop
 
 
-DEFAULT_QUANTILES_CSV = (
+DEFAULT_ATTAINABLE_CSV = (
     Path(__file__).resolve().parents[1]
     / "data"
-    / "kephis_yatt_quantiles_busia.csv"
+    / "kephis_attainable_dry_yield.csv"
 )
 
-
-def _quantile_column(index: int) -> str:
-    return f"q_{index // 100}_{index % 100:02d}"
+YIELD_BASIS_TO_COLUMN = {
+    "average_median": "average_median_dry_yield_t_ha",
+    "median": "average_median_dry_yield_t_ha",
+    "mean": "average_median_dry_yield_t_ha",
+    "average_lower": "average_lower_dry_yield_t_ha",
+    "lower": "average_lower_dry_yield_t_ha",
+}
 
 
 class KephisYAttProvider:
-    """Lookup Busia KEPHIS attainable-yield proxy values.
+    """Lookup KEPHIS attainable-yield average values.
 
-    The source CSV stores dry t/ha. This provider returns dry kg/ha.
+    The source CSV stores target market-product dry t/ha. This provider returns
+    target market-product dry kg/ha. By default QUEFTS receives the conservative
+    `average_lower_dry_yield_t_ha` column.
     """
 
     def __init__(
         self,
-        quantiles_csv: Path | str = DEFAULT_QUANTILES_CSV,
-        quantile: float = 0.01,
+        attainable_csv: Path | str = DEFAULT_ATTAINABLE_CSV,
+        yield_basis: str = "average_lower",
     ) -> None:
-        self.quantiles_csv = Path(quantiles_csv)
-        self.quantile = float(quantile)
+        self.attainable_csv = Path(attainable_csv)
+        self.yield_basis = yield_basis
 
     @lru_cache(maxsize=1)
-    def _table(self) -> dict[str, dict[str, float]]:
-        if not self.quantiles_csv.exists():
-            raise FileNotFoundError(f"Missing KEPHIS Y_att CSV: {self.quantiles_csv}")
-        table: dict[str, dict[str, float]] = {}
-        with self.quantiles_csv.open(newline="", encoding="utf-8") as handle:
+    def _table(self) -> dict[str, dict[str, str]]:
+        if not self.attainable_csv.exists():
+            raise FileNotFoundError(f"Missing KEPHIS attainable-yield CSV: {self.attainable_csv}")
+        table: dict[str, dict[str, str]] = {}
+        with self.attainable_csv.open(newline="", encoding="utf-8") as handle:
             for row in csv.DictReader(handle):
-                crop = row["crop"]
-                table[crop] = {
-                    key: float(value)
-                    for key, value in row.items()
-                    if key.startswith("q_")
-                }
+                table[row["crop"]] = row
         return table
 
     def get_y_attainable_kg_ha(self, crop: str) -> float:
-        q = float(self.quantile)
-        if not 0.0 <= q <= 1.0:
-            raise ValueError("KEPHIS quantile must be in [0, 1].")
-
         mapping = resolve_busia_crop(crop)
         table = self._table()
         if mapping.kephis_crop not in table:
-            raise ValueError(f"No KEPHIS Y_att row for crop '{mapping.kephis_crop}'.")
+            raise ValueError(f"No KEPHIS attainable-yield row for crop '{mapping.kephis_crop}'.")
 
-        scaled = q * 100.0
-        lower_index = max(0, min(100, int(math.floor(scaled + 1e-12))))
-        upper_index = max(0, min(100, int(math.ceil(scaled - 1e-12))))
-        lower_t_ha = table[mapping.kephis_crop][_quantile_column(lower_index)]
-        upper_t_ha = table[mapping.kephis_crop][_quantile_column(upper_index)]
-        if lower_index == upper_index:
-            return lower_t_ha * 1000.0
+        basis_key = self.yield_basis.strip().lower().replace(" ", "_")
+        if basis_key not in YIELD_BASIS_TO_COLUMN:
+            supported = ", ".join(sorted(YIELD_BASIS_TO_COLUMN))
+            raise ValueError(f"Unsupported KEPHIS yield_basis '{self.yield_basis}'. Supported: {supported}")
 
-        weight = scaled - lower_index
-        interpolated_t_ha = lower_t_ha + (upper_t_ha - lower_t_ha) * weight
-        return interpolated_t_ha * 1000.0
+        return float(table[mapping.kephis_crop][YIELD_BASIS_TO_COLUMN[basis_key]]) * 1000.0
+
+    def get_moisture_content(self, crop: str) -> float:
+        mapping = resolve_busia_crop(crop)
+        table = self._table()
+        if mapping.kephis_crop not in table:
+            raise ValueError(f"No KEPHIS attainable-yield row for crop '{mapping.kephis_crop}'.")
+        return float(table[mapping.kephis_crop]["moisture_content"])

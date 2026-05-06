@@ -1,0 +1,9 @@
+crop,target_market_product,average_median_dry_yield_t_ha,average_lower_dry_yield_t_ha,moisture_content
+simsim,grain,1.487500,1.275000,0.150
+soybean,grain,1.761750,1.210750,0.130
+sunflower,seed,2.289808,1.893462,0.100
+groundnut,in_shell_pods,2.004583,1.884167,0.150
+cotton,seed_cotton,5.940788,5.313360,0.085
+cassava,root,15.946304,15.436522,0.650
+maize,grain,6.091880,5.337521,0.135
+common_bean,grain,1.538872,1.294560,0.130

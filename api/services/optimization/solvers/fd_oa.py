@@ -96,7 +96,7 @@ class FdOaSolver:
         cost_vector = np.array([fert.price_currency_per_kg for fert in fertilizers], dtype=float)
         area_vector = np.array([crop.area_ha for crop in crops], dtype=float)
         price_vector = np.array([crop.price_currency_per_kg for crop in crops], dtype=float)
-        yatt_vector = np.array([crop.y_attainable_kg_ha for crop in crops], dtype=float)
+        yatt_vector = np.array([crop.y_attainable_sale_weight_kg_ha for crop in crops], dtype=float)
 
         x0 = np.zeros((len(crops), len(fertilizers)), dtype=float)
         baseline = self._evaluate_solution(problem, x0, nutrient_matrix, cost_vector, area_vector, price_vector)
@@ -206,6 +206,8 @@ class FdOaSolver:
                 raise ValueError(f"{crop.crop} price_currency_per_kg must be positive.")
             if crop.y_attainable_kg_ha <= 0:
                 raise ValueError(f"{crop.crop} y_attainable_kg_ha must be positive.")
+            if crop.moisture_content < 0 or crop.moisture_content >= 1:
+                raise ValueError(f"{crop.crop} moisture_content must be in [0, 1).")
         for fertilizer in problem.fertilizers:
             if fertilizer.price_currency_per_kg <= 0:
                 raise ValueError(f"{fertilizer.product} price_currency_per_kg must be positive.")

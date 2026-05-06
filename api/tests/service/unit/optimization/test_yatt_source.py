@@ -25,7 +25,7 @@ class FakeFallbackProvider:
 def test_yatt_provider_defaults_to_kephis():
     provider = build_yatt_provider()
     assert isinstance(provider, KephisYAttProvider)
-    assert provider.get_y_attainable_kg_ha("Maize") == pytest.approx(4310.295)
+    assert provider.get_y_attainable_kg_ha("Maize") == pytest.approx(5337.521)
 
 
 def test_yatt_provider_rejects_wofost_without_location():
@@ -38,7 +38,7 @@ def test_yatt_provider_uses_kephis_fallback_for_unsupported_wofost_crop_by_defau
         YAttConfig(source=YAttSource.WOFOST, location=GeoLocation(lat=0.46, lon=34.12))
     )
 
-    assert provider.get_y_attainable_kg_ha("Sesame (Sim sim)") == pytest.approx(1487.5)
+    assert provider.get_y_attainable_kg_ha("Sesame (Sim sim)") == pytest.approx(1275.0)
 
 
 def test_wofost_provider_passes_location_and_crop_mapping_to_service_func():

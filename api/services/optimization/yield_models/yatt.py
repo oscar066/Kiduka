@@ -12,12 +12,12 @@ def build_yatt_provider(config: YAttConfig | None = None) -> YAttProvider:
     resolved = config or YAttConfig()
     source = YAttSource(resolved.source)
     if source == YAttSource.KEPHIS:
-        return KephisYAttProvider(quantile=resolved.kephis_quantile)
+        return KephisYAttProvider()
     if source == YAttSource.WOFOST:
         if resolved.location is None:
             raise ValueError("WOFOST Y_att source requires a GeoLocation.")
         fallback_provider = (
-            KephisYAttProvider(quantile=resolved.kephis_quantile)
+            KephisYAttProvider()
             if resolved.wofost_fallback_to_kephis
             else None
         )
@@ -32,7 +32,7 @@ def build_yatt_provider(config: YAttConfig | None = None) -> YAttProvider:
 
 
 def default_kephis_yatt_config() -> YAttConfig:
-    return YAttConfig(source=YAttSource.KEPHIS, kephis_quantile=0.01)
+    return YAttConfig(source=YAttSource.KEPHIS)
 
 
 def wofost_yatt_config(

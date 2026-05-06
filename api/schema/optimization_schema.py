@@ -42,7 +42,11 @@ class CropInputModel(StrictModel):
     crop: str = Field(..., min_length=1, description="Busia crop name or supported alias.")
     area_ha: float | None = Field(None, gt=0.0, description="Planting area in hectares.")
     area_ac: float | None = Field(None, gt=0.0, description="Planting area in acres.")
-    grain_price_currency_per_kg: float = Field(..., gt=0.0, description="Farm-gate grain price per kg.")
+    grain_price_currency_per_kg: float = Field(
+        ...,
+        gt=0.0,
+        description="Farm-gate market-product sale-weight price per kg.",
+    )
 
     @model_validator(mode="after")
     def validate_area(self) -> "CropInputModel":
@@ -83,7 +87,6 @@ class FertilizerInputModel(StrictModel):
 
 class YAttConfigModel(StrictModel):
     source: Literal["kephis", "wofost"] = Field("kephis", description="Attainable-yield source.")
-    kephis_quantile: float = Field(0.01, ge=0.0, le=1.0, description="KEPHIS Busia quantile when source is KEPHIS.")
     wofost_sowing_date: str = Field("2024-03-15", description="WOFOST sowing date, ISO YYYY-MM-DD.")
     wofost_elevation_m: float | None = Field(None, description="WOFOST site elevation in meters.")
     fallback_to_kephis: bool = Field(True, description="Fallback to KEPHIS for crops without WOFOST parameters.")
@@ -124,8 +127,8 @@ class ApplicationRow(BaseModel):
 
 class CropScenarioRow(BaseModel):
     crop: str
-    yield_kg_ha: float
-    yield_kg_ac: float
+    yield_kg_ha: float = Field(..., description="Sale-weight market-product yield, kg/ha.")
+    yield_kg_ac: float = Field(..., description="Sale-weight market-product yield, kg/ac.")
     revenue_total: float
     fertilizer_cost_total: float
     net_return_total: float

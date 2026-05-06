@@ -13,7 +13,8 @@ from api.services.optimization.core.contracts import CropInput, NPKRate, SoilInp
 class RqueftsYieldModel:
     """RQUEFTS batch adapter.
 
-    All R subprocess details stay here so solvers only depend on YieldModel.
+    QUEFTS receives dry attainable yield. The adapter converts QUEFTS dry output
+    to sale-weight yield before returning results to the solver/revenue layer.
     """
 
     def __init__(
@@ -79,7 +80,7 @@ class RqueftsYieldModel:
                 n_kg_ha=float(row["N"]),
                 p_kg_ha=float(row["P"]),
                 k_kg_ha=float(row["K"]),
-                yield_kg_ha=float(row["yield_kg_ha"]),
+                yield_kg_ha=crop.dry_yield_to_sale_weight_kg_ha(float(row["yield_kg_ha"])),
                 n_gap_kg_ha=float(row["N_gap_kg_ha"]),
                 p_gap_kg_ha=float(row["P_gap_kg_ha"]),
                 k_gap_kg_ha=float(row["K_gap_kg_ha"]),

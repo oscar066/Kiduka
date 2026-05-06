@@ -51,10 +51,22 @@ class CropInput:
     kephis_crop: str
     rquefts_crop: str
     y_attainable_kg_ha: float
+    moisture_content: float
 
     @property
     def area_ac(self) -> float:
         return hectares_to_acres(self.area_ha)
+
+    @property
+    def dry_to_sale_weight_factor(self) -> float:
+        return 1.0 / (1.0 - self.moisture_content)
+
+    @property
+    def y_attainable_sale_weight_kg_ha(self) -> float:
+        return self.y_attainable_kg_ha * self.dry_to_sale_weight_factor
+
+    def dry_yield_to_sale_weight_kg_ha(self, dry_yield_kg_ha: float) -> float:
+        return float(dry_yield_kg_ha) * self.dry_to_sale_weight_factor
 
 
 @dataclass(frozen=True)
@@ -93,7 +105,6 @@ class GeoLocation:
 @dataclass(frozen=True)
 class YAttConfig:
     source: YAttSource = YAttSource.KEPHIS
-    kephis_quantile: float = 0.01
     location: GeoLocation | None = None
     wofost_sowing_date: str = "2024-03-15"
     wofost_elevation_m: float | None = None
