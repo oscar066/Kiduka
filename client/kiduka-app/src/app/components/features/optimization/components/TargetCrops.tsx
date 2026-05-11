@@ -128,45 +128,22 @@ export function TargetCrops({
                   </div>
                   <div>
                     <Label className="text-xs text-gray-500">
-                      Market Price / kg (KES)
+                      Farm-gate Price / kg (KES)
                     </Label>
                     <Input
                       type="number"
-                      value={crop.grain_value_currency_per_kg}
+                      step="0.1"
+                      value={crop.grain_price_currency_per_kg}
                       onChange={(e) =>
                         onUpdate(
                           idx,
-                          "grain_value_currency_per_kg",
+                          "grain_price_currency_per_kg",
                           Number(e.target.value)
                         )
                       }
                       className="mt-1 h-9 border-amber-200 focus-visible:ring-green-400"
                     />
                   </div>
-                </div>
-
-                <Separator className="bg-amber-100" />
-
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    ["initial_n_kg_per_ha", "N (kg/ha)"],
-                    ["initial_p_kg_per_ha", "P (kg/ha)"],
-                    ["initial_k_kg_per_ha", "K (kg/ha)"],
-                  ].map(([field, label]) => (
-                    <div key={field}>
-                      <Label className="text-[10px] text-gray-400 uppercase font-semibold">
-                        {label}
-                      </Label>
-                      <Input
-                        type="number"
-                        value={crop[field as keyof Crop]}
-                        onChange={(e) =>
-                          onUpdate(idx, field as keyof Crop, Number(e.target.value))
-                        }
-                        className="mt-1 h-8 text-xs border-amber-200 focus-visible:ring-green-400"
-                      />
-                    </div>
-                  ))}
                 </div>
               </div>
             ))}

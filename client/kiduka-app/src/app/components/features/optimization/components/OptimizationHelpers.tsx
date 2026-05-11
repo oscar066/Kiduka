@@ -9,18 +9,18 @@ import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 export interface Crop {
   crop: string;
   area_ac: number;
-  grain_value_currency_per_kg: number;
-  initial_n_kg_per_ha: number;
-  initial_p_kg_per_ha: number;
-  initial_k_kg_per_ha: number;
+  // Client UI only - not sent to API
+  grain_price_currency_per_kg: number; // API expects this for crop baseline valuation
 }
 
 export interface FertilizerEntry {
   product: string;
-  n_pct: number;
-  p2o5_pct: number;
-  k2o_pct: number;
-  price_currency_per_50kg: number;
+  // Fractions as decimals (0-1), not percentages
+  n_fraction: number; // e.g., 0.46 for 46% N
+  p2o5_fraction: number; // e.g., 0.23 for 23% P2O5
+  k2o_fraction: number; // e.g., 0.23 for 23% K2O
+  price_currency_per_kg: number; // Price per kg product
+  // Client UI only - not sent to API
   enabled: boolean;
   isCustom: boolean;
 }
@@ -29,13 +29,26 @@ export interface FertilizerEntry {
  * Constants
  */
 export const SUPPORTED_CROPS = [
-  "Maize HP >3t",
-  "Maize LP <3t",
-  "Sorghum",
-  "Finger millet",
-  "Bean",
-  "Groundnuts, unshelled",
+  "Maize",
+  "Beans",
+  "Groundnuts",
+  "Soybeans",
+  "Sunflower",
+  "Cassava",
+  "Cotton",
+  "Sesame (Sim sim)",
 ];
+
+export const DEFAULT_GRAIN_PRICES: Record<string, number> = {
+  "Maize": 30,
+  "Beans": 90,
+  "Groundnuts": 90,
+  "Soybeans": 50,
+  "Sunflower": 35,
+  "Cassava": 18,
+  "Cotton": 25,
+  "Sesame (Sim sim)": 110,
+};
 
 /**
  * Format currency to KES

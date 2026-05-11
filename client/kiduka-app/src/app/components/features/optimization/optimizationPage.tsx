@@ -23,23 +23,28 @@ import {
   AlertCircle,
   Banknote,
 } from "lucide-react";
-import { fmt, Crop, FertilizerEntry, SUPPORTED_CROPS } from "./components/OptimizationHelpers";
+import { fmt, Crop, FertilizerEntry, SUPPORTED_CROPS, DEFAULT_GRAIN_PRICES } from "./components/OptimizationHelpers";
 import { BaselineVsOptimal } from "./components/BaselineVsOptimal";
 import { AvailableFertilizers } from "./components/AvailableFertilizers";
 import { TargetCrops } from "./components/TargetCrops";
 import { ApplicationRates } from "./components/ApplicationRates";
+import { SoilInputs, SoilData } from "./components/SoilInputs";
+import { YAttConfig, YAttConfigData, DEFAULT_YATT_CONFIG } from "./components/YAttConfig";
+import { CropYieldTable } from "./components/CropYieldTable";
 import { apiClient } from "@/lib/api-client";
 
-// Defaults
+// Defaults — fractions (0–1), prices per kg (KES/50kg bag ÷ 50)
 const DEFAULT_FERTILIZERS: FertilizerEntry[] = [
-  { product: "Organic Manure",      n_pct: 1.0,  p2o5_pct: 0.6,  k2o_pct: 0.85, price_currency_per_50kg: 2000, enabled: true, isCustom: false },
-  { product: "Super Liquid Foliar", n_pct: 8.5,  p2o5_pct: 7.5,  k2o_pct: 7.5,  price_currency_per_50kg: 18000, enabled: true, isCustom: false },
-  { product: "NPK 23:23:23",        n_pct: 23.0, p2o5_pct: 23.0, k2o_pct: 23.0, price_currency_per_50kg: 5750, enabled: true, isCustom: false },
-  { product: "NPK 17:17:17",        n_pct: 17.0, p2o5_pct: 17.0, k2o_pct: 17.0, price_currency_per_50kg: 6200, enabled: true, isCustom: false },
-  { product: "Urea",                n_pct: 46.0, p2o5_pct: 0,    k2o_pct: 0,    price_currency_per_50kg: 4600, enabled: true, isCustom: false },
-  { product: "CAN",                 n_pct: 26.0, p2o5_pct: 0,    k2o_pct: 0,    price_currency_per_50kg: 4050, enabled: true, isCustom: false },
-  { product: "TSP",                 n_pct: 0.0,  p2o5_pct: 46.0, k2o_pct: 0.0,  price_currency_per_50kg: 5600, enabled: true, isCustom: false },
-  { product: "Sulphate of Ammonia", n_pct: 21.0, p2o5_pct: 0.0,  k2o_pct: 0.0,  price_currency_per_50kg: 5250, enabled: true, isCustom: false },
+  { product: "DAP",                 n_fraction: 0.18,  p2o5_fraction: 0.46,  k2o_fraction: 0,      price_currency_per_kg: 115, enabled: true,  isCustom: false }, // 5750/50
+  { product: "Urea",                n_fraction: 0.46,  p2o5_fraction: 0,     k2o_fraction: 0,      price_currency_per_kg: 92,  enabled: true,  isCustom: false }, // 4600/50
+  { product: "CAN",                 n_fraction: 0.26,  p2o5_fraction: 0,     k2o_fraction: 0,      price_currency_per_kg: 81,  enabled: true,  isCustom: false }, // 4050/50
+  { product: "TSP",                 n_fraction: 0,     p2o5_fraction: 0.46,  k2o_fraction: 0,      price_currency_per_kg: 112, enabled: true,  isCustom: false }, // 5600/50
+  { product: "MOP",                 n_fraction: 0,     p2o5_fraction: 0,     k2o_fraction: 0.60,   price_currency_per_kg: 90,  enabled: true,  isCustom: false }, // 4500/50
+  { product: "NPK 23:23:23",        n_fraction: 0.23,  p2o5_fraction: 0.23,  k2o_fraction: 0.23,   price_currency_per_kg: 115, enabled: true,  isCustom: false }, // 5750/50
+  { product: "NPK 17:17:17",        n_fraction: 0.17,  p2o5_fraction: 0.17,  k2o_fraction: 0.17,   price_currency_per_kg: 124, enabled: false, isCustom: false }, // 6200/50
+  { product: "Sulphate of Ammonia", n_fraction: 0.21,  p2o5_fraction: 0,     k2o_fraction: 0,      price_currency_per_kg: 105, enabled: false, isCustom: false }, // 5250/50
+  { product: "Organic Manure",      n_fraction: 0.010, p2o5_fraction: 0.006, k2o_fraction: 0.0085, price_currency_per_kg: 40,  enabled: false, isCustom: false }, // 2000/50
+  { product: "Super Liquid Foliar", n_fraction: 0.085, p2o5_fraction: 0.075, k2o_fraction: 0.075,  price_currency_per_kg: 360, enabled: false, isCustom: false }, // 18000/50
 ];
 
 export default function OptimizationPage() {
@@ -50,14 +55,21 @@ export default function OptimizationPage() {
   const [budget, setBudget] = useState<number>(50000);
   const [crops, setCrops] = useState<Crop[]>([
     {
-      crop: "Maize HP >3t",
+      crop: "Maize",
       area_ac: 1.0,
-      grain_value_currency_per_kg: 25.0,
-      initial_n_kg_per_ha: 0,
-      initial_p_kg_per_ha: 0,
-      initial_k_kg_per_ha: 0,
+      grain_price_currency_per_kg: DEFAULT_GRAIN_PRICES["Maize"],
     },
   ]);
+
+  const [soil, setSoil] = useState<SoilData>({
+    mode: "direct",
+    ph: 6.5,
+    soc_percent: 2.5,
+    p_olsen_ppm: 15,
+    k_exchangeable_ppm: 120,
+  });
+
+  const [yAttConfig, setYAttConfig] = useState<YAttConfigData>(DEFAULT_YATT_CONFIG);
 
   const [fertilizers, setFertilizers] =
     useState<FertilizerEntry[]>(DEFAULT_FERTILIZERS);
@@ -75,10 +87,7 @@ export default function OptimizationPage() {
       {
         crop: SUPPORTED_CROPS[0],
         area_ac: 1.0,
-        grain_value_currency_per_kg: 20.0,
-        initial_n_kg_per_ha: 0,
-        initial_p_kg_per_ha: 0,
-        initial_k_kg_per_ha: 0,
+        grain_price_currency_per_kg: DEFAULT_GRAIN_PRICES[SUPPORTED_CROPS[0]],
       },
     ]);
 
@@ -87,6 +96,10 @@ export default function OptimizationPage() {
   const updateCrop = (i: number, field: keyof Crop, value: any) => {
     const nc = [...crops];
     nc[i] = { ...nc[i], [field]: value };
+    // Auto-fill grain price when crop type changes
+    if (field === "crop" && DEFAULT_GRAIN_PRICES[value as string]) {
+      nc[i].grain_price_currency_per_kg = DEFAULT_GRAIN_PRICES[value as string];
+    }
     setCrops(nc);
   };
 
@@ -103,10 +116,10 @@ export default function OptimizationPage() {
   const addCustom = () => {
     const entry: FertilizerEntry = {
       product: "Custom NPK",
-      n_pct: 10,
-      p2o5_pct: 10,
-      k2o_pct: 10,
-      price_currency_per_50kg: 3000,
+      n_fraction: 0.10,    // 10% = 0.10 fraction
+      p2o5_fraction: 0.10, // 10% = 0.10 fraction
+      k2o_fraction: 0.10,  // 10% = 0.10 fraction
+      price_currency_per_kg: 60, // 3000 KES/50kg = 60 KES/kg
       enabled: true,
       isCustom: true,
     };
@@ -145,15 +158,38 @@ export default function OptimizationPage() {
     const payloadFerts = enabled.length > 0 ? enabled : DEFAULT_FERTILIZERS;
 
     const payload = {
-      crops,
+      soil: {
+        mode: soil.mode,
+        ph: soil.ph,
+        soc_percent: soil.soc_percent,
+        p_olsen_ppm: soil.p_olsen_ppm,
+        k_exchangeable_ppm: soil.k_exchangeable_ppm,
+      },
+      crops: crops.map((c) => ({
+        crop: c.crop,
+        area_ac: c.area_ac,
+        grain_price_currency_per_kg: c.grain_price_currency_per_kg,
+      })),
       fertilizers: payloadFerts.map((f) => ({
         product: f.product,
-        n_pct: f.n_pct,
-        p2o5_pct: f.p2o5_pct,
-        k2o_pct: f.k2o_pct,
-        price_currency_per_50kg: f.price_currency_per_50kg,
+        n_fraction: f.n_fraction,
+        p2o5_fraction: f.p2o5_fraction,
+        k2o_fraction: f.k2o_fraction,
+        price_currency_per_kg: f.price_currency_per_kg,
       })),
-      scenario: { budget_currency: budget },
+      scenario: {
+        budget_currency: budget,
+        y_att: {
+          source: yAttConfig.source,
+          kephis_quantile: yAttConfig.kephis_quantile,
+          wofost_sowing_date: yAttConfig.wofost_sowing_date,
+          wofost_elevation_m: yAttConfig.wofost_elevation_m ?? undefined,
+          fallback_to_kephis: yAttConfig.fallback_to_kephis,
+        },
+      },
+      ...(yAttConfig.source === "wofost" && yAttConfig.location
+        ? { location: yAttConfig.location }
+        : {}),
     };
 
     setIsLoading(true);
@@ -229,6 +265,9 @@ export default function OptimizationPage() {
                   </CardContent>
                 </Card>
 
+                {/* Soil Analysis */}
+                <SoilInputs soil={soil} onChange={setSoil} />
+
                 {/* Fertilizers */}
                 <AvailableFertilizers
                   fertilizers={fertilizers}
@@ -250,6 +289,9 @@ export default function OptimizationPage() {
                   onRemove={removeCrop}
                   onUpdate={updateCrop}
                 />
+
+                {/* Advanced Settings (Y_att) */}
+                <YAttConfig config={yAttConfig} onChange={setYAttConfig} />
 
                 {/* Run Optimizer */}
                 <Button
@@ -296,7 +338,7 @@ export default function OptimizationPage() {
                         Net Economic Returns
                       </CardDescription>
                       <CardTitle className="text-4xl">
-                        {fmt(results.summary_row.total_net_returns_currency)}
+                        {fmt(results.summary_row.feasible_net_return_total)}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="text-sm text-green-300 px-5 pb-5">
@@ -307,38 +349,53 @@ export default function OptimizationPage() {
                   <Card className="bg-white border-green-200 shadow-md">
                     <CardHeader className="pb-2 px-5 pt-5">
                       <CardDescription className="text-gray-500 uppercase text-xs tracking-wider font-semibold">
-                        Expected Yield Value
+                        Return vs Baseline
                       </CardDescription>
                       <CardTitle className="text-3xl text-gray-800">
-                        {fmt(results.summary_row.total_incremental_value_currency)}
+                        {results.summary_row.net_return_improvement >= 0 ? "+" : ""}
+                        {fmt(results.summary_row.net_return_improvement)}
                       </CardTitle>
                     </CardHeader>
+                    <CardContent className="px-5 pb-5 text-sm text-gray-500">
+                      Net gain over no-fertilizer scenario
+                    </CardContent>
                   </Card>
 
                   <Card className="bg-white border-amber-200 shadow-md">
                     <CardHeader className="pb-2 px-5 pt-5">
                       <CardDescription className="text-gray-500 uppercase text-xs tracking-wider font-semibold">
-                        Total Fertilizer Cost
+                        Fertilizer Cost
                       </CardDescription>
                       <CardTitle className="text-3xl text-gray-800">
-                        {fmt(results.summary_row.total_fertilizer_cost_currency)}
+                        {fmt(results.summary_row.budget_used)}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="px-5 pb-5">
+                    <CardContent className="px-5 pb-5 space-y-2">
                       <div className="flex justify-between items-center text-sm font-medium text-amber-700 bg-amber-50 border border-amber-100 p-2 rounded-md">
                         <span>Budget Used</span>
                         <span>
                           {(
-                            (results.summary_row.total_fertilizer_cost_currency /
+                            (results.summary_row.budget_used /
                               results.summary_row.budget_currency) *
                             100
-                          ).toFixed(1)}
-                          %
+                          ).toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs text-gray-500 px-1">
+                        <span>Remaining</span>
+                        <span className="font-medium text-gray-700">
+                          {fmt(results.summary_row.budget_remaining)}
                         </span>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Per-crop yield breakdown */}
+                <CropYieldTable
+                  baselineRows={results.baseline_rows ?? []}
+                  feasibleRows={results.feasible_rows ?? []}
+                />
 
                 {/* Application Rates + Comparison side by side */}
                 <div className="grid lg:grid-cols-2 gap-6">
@@ -347,12 +404,12 @@ export default function OptimizationPage() {
                   <ApplicationRates applicationRows={results.application_rows} />
 
                   {/* Baseline vs Optimal comparison */}
-                  {results.baseline_rows && results.optimal_rows && (
+                  {results.baseline_rows && results.feasible_rows && (
                     <BaselineVsOptimal
                       baselineRows={results.baseline_rows}
-                      optimalRows={results.optimal_rows}
-                      baselineSummary={results.baseline_summary_row}
-                      optimalSummary={results.optimal_summary_row}
+                      optimalRows={results.feasible_rows}
+                      baselineSummary={results.summary_row}
+                      optimalSummary={results.summary_row}
                       cropNames={crops.map((c) => c.crop)}
                       selectedCrop={selectedCropForComparison}
                       onSelectCrop={setSelectedCropForComparison}

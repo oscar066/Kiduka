@@ -55,9 +55,9 @@ const chartConfig: ChartConfig = {
 type MetricKey = "returns" | "revenue" | "cost";
 
 const METRICS: Record<MetricKey, { label: string; bKey: string; oKey: string; summaryBKey: string; summaryOKey: string }> = {
-  returns: { label: "Net Returns",  bKey: "net_returns_currency",       oKey: "net_returns_currency",       summaryBKey: "total_net_returns_currency",       summaryOKey: "total_net_returns_currency"       },
-  revenue: { label: "Revenue",      bKey: "expected_revenue_currency",  oKey: "expected_revenue_currency",  summaryBKey: "total_expected_revenue_currency",  summaryOKey: "total_expected_revenue_currency"  },
-  cost:    { label: "Fert. Cost",   bKey: "fertilizer_cost_currency",   oKey: "fertilizer_cost_currency",   summaryBKey: "total_fertilizer_cost_currency",   summaryOKey: "total_fertilizer_cost_currency"   },
+  returns: { label: "Net Returns",  bKey: "net_return_total",       oKey: "net_return_total",       summaryBKey: "baseline_net_return_total",  summaryOKey: "feasible_net_return_total"  },
+  revenue: { label: "Revenue",      bKey: "revenue_total",          oKey: "revenue_total",          summaryBKey: "baseline_revenue_total",     summaryOKey: "feasible_revenue_total"     },
+  cost:    { label: "Fert. Cost",   bKey: "fertilizer_cost_total",  oKey: "fertilizer_cost_total",  summaryBKey: "baseline_cost_total",        summaryOKey: "budget_used"                },
 };
 
 export function BaselineVsOptimal({
@@ -69,6 +69,8 @@ export function BaselineVsOptimal({
   selectedCrop,
   onSelectCrop,
 }: ComparisonProps) {
+  const uniqueCropNames = [...new Set(cropNames)];
+
   const baselineMap = Object.fromEntries(
     (baselineRows ?? []).map((r) => [r.crop, r])
   );
@@ -98,7 +100,7 @@ export function BaselineVsOptimal({
                 <SelectValue placeholder="Crop" />
               </SelectTrigger>
               <SelectContent>
-                {cropNames.map((name) => (
+                {uniqueCropNames.map((name) => (
                   <SelectItem key={name} value={name} className="text-xs">
                     {name}
                   </SelectItem>
