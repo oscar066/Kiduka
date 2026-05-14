@@ -23,6 +23,15 @@ router = APIRouter()
 
 # Dependency to get admin user service
 async def get_admin_user_service(db: AsyncSession = Depends(get_db)) -> AdminUserService:
+    """
+    FastAPI dependency that injects an AdminUserService instance.
+    
+    Args:
+        db (AsyncSession): The asynchronous SQLAlchemy database session.
+        
+    Returns:
+        AdminUserService: An initialized administrative user service.
+    """
     return AdminUserService(db)
 
 @router.get("", response_model=UserListResponse)
@@ -38,7 +47,29 @@ async def get_all_users(
     sort_by: str = Query("created_at", description="Sort field"),
     sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order")
 ):
-    """Get all users with filtering and pagination"""
+    """
+    Retrieve a paginated list of all users within the system.
+    
+    Provides rich filtering and sorting capabilities. This action is logged in the audit trail.
+    
+    Args:
+        current_user (User): The authenticated admin user making the request.
+        user_service (AdminUserService): Service handling user-related admin operations.
+        request (Request): The raw incoming HTTP request used for audit logging.
+        page (int): Target pagination page. Defaults to 1.
+        size (int): Number of items per page. Defaults to 20.
+        search (Optional[str]): Keyword to search across usernames and emails.
+        role (Optional[UserRoleEnum]): Filter results by a specific user role.
+        is_active (Optional[bool]): Filter results by account active status.
+        sort_by (str): Field to sort the results by. Defaults to "created_at".
+        sort_order (str): "asc" or "desc". Defaults to "desc".
+        
+    Returns:
+        UserListResponse: A paginated listing of user schemas alongside aggregate counts.
+        
+    Raises:
+        HTTPException: If an unexpected error occurs during data fetching (status 500).
+    """
     try:
         # Log admin action
         await AuthManager.log_admin_action(
@@ -73,7 +104,26 @@ async def create_user_by_admin(
     user_service: AdminUserService = Depends(get_admin_user_service),
     request: Request = None
 ):
-    """Create a new user (admin only)"""
+    """
+    Create a new user account with administrative privileges.
+    
+    Unlike standard registration, this endpoint allows the assignment of
+    specific roles (e.g., 'admin' or 'user') and allows the admin to attach internal notes.
+    This action is logged in the audit trail.
+    
+    Args:
+        user_data (AdminUserCreate): The user details and roles to be created.
+        current_user (User): The authenticated admin user invoking the action.
+        user_service (AdminUserService): Admin user management service.
+        request (Request): The raw incoming HTTP request used for audit logging.
+        
+    Returns:
+        AdminUserResponse: The newly created user's profile information.
+        
+    Raises:
+        HTTPException: If validation fails (e.g., duplicate email) (status 400).
+        HTTPException: If an unexpected error occurs (status 500).
+    """
     try:
         result = await user_service.create_user(user_data, current_user)
         
@@ -108,7 +158,25 @@ async def get_user_by_admin(
     user_service: AdminUserService = Depends(get_admin_user_service),
     request: Request = None
 ):
-    """Get user details by ID (admin only)"""
+    """
+    Fetch comprehensive details for a specific user.
+    
+    Provides visibility into internal metrics like total predictions and admin notes.
+    This action is logged in the audit trail.
+    
+    Args:
+        user_id (str): The unique identifier (UUID) of the target user.
+        current_user (User): The authenticated admin user.
+        user_service (AdminUserService): Admin user management service.
+        request (Request): The raw incoming HTTP request used for audit logging.
+        
+    Returns:
+        AdminUserResponse: Extended details of the requested user.
+        
+    Raises:
+        HTTPException: If the requested user ID is not found (status 404).
+        HTTPException: If an unexpected error occurs (status 500).
+    """
     try:
         result = await user_service.get_user_by_id(user_id)
         if not result:
@@ -141,7 +209,26 @@ async def update_user_by_admin(
     user_service: AdminUserService = Depends(get_admin_user_service),
     request: Request = None
 ):
-    """Update user by admin"""
+    """
+    Update a target user's profile and administrative settings.
+    
+    Allows changing sensitive fields such as roles, active status, verification status,
+    and internal admin notes. This action is logged in the audit trail.
+    
+    Args:
+        user_id (str): The unique identifier of the target user to modify.
+        user_update (AdminUserUpdate): The fields to modify. Unset fields remain unchanged.
+        current_user (User): The authenticated admin user.
+        user_service (AdminUserService): Admin user management service.
+        request (Request): The raw incoming HTTP request used for audit logging.
+        
+    Returns:
+        AdminUserResponse: The modified user details.
+        
+    Raises:
+        HTTPException: If the user cannot be updated due to business logic or constraints (status 400).
+        HTTPException: If an unexpected server error occurs (status 500).
+    """
     try:
         result = await user_service.update_user(user_id, user_update, current_user)
         
@@ -173,7 +260,26 @@ async def reset_user_password_by_admin(
     user_service: AdminUserService = Depends(get_admin_user_service),
     request: Request = None
 ):
-    """Reset user password by admin (no current password required)"""
+    """
+    Forcefully reset a target user's password.
+    
+    Does not require knowledge of the user's current password. This action is
+    logged in the audit trail.
+    
+    Args:
+        user_id (str): The unique identifier of the target user.
+        password_data (AdminPasswordReset): The new plaintext password to assign.
+        current_user (User): The authenticated admin user.
+        user_service (AdminUserService): Admin user management service.
+        request (Request): The raw incoming HTTP request used for audit logging.
+        
+    Returns:
+        dict: A simple success message.
+        
+    Raises:
+        HTTPException: If the password reset fails validation or business logic (status 400).
+        HTTPException: If an unexpected server error occurs (status 500).
+    """
     try:
         await user_service.reset_user_password(user_id, password_data.new_password, current_user)
         
@@ -203,7 +309,24 @@ async def delete_user_by_admin(
     user_service: AdminUserService = Depends(get_admin_user_service),
     request: Request = None
 ):
-    """Delete user by admin"""
+    """
+    Permanently delete a user account and all associated prediction data from the system.
+    
+    This is a destructive operation. This action is logged in the audit trail.
+    
+    Args:
+        user_id (str): The unique identifier of the user to delete.
+        current_user (User): The authenticated admin user executing the deletion.
+        user_service (AdminUserService): Admin user management service.
+        request (Request): The raw incoming HTTP request used for audit logging.
+        
+    Returns:
+        dict: A simple success message.
+        
+    Raises:
+        HTTPException: If the deletion violates constraints (e.g., trying to delete the last super admin) (status 400).
+        HTTPException: If an unexpected server error occurs (status 500).
+    """
     try:
         result = await user_service.delete_user(user_id, current_user)
         

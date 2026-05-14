@@ -12,9 +12,20 @@ from api.db.models.database import User, Agrovet
 logger = logging.getLogger(__name__)
 
 class AdminAgrovetService:
-    """Service for admin agrovet management operations"""
+    """
+    Service responsible for the administrative oversight of agrovets (agricultural stores).
+    
+    Provides capabilities for listing, filtering, and updating agrovet records, 
+    such as verifying their status or adding internal administrative notes.
+    """
     
     def __init__(self, db: AsyncSession):
+        """
+        Initialize the AdminAgrovetService.
+        
+        Args:
+            db (AsyncSession): The asynchronous database session.
+        """
         self.db = db
     
     async def get_agrovets_with_filters(
@@ -24,7 +35,22 @@ class AdminAgrovetService:
         is_active: Optional[bool] = None,
         is_verified: Optional[bool] = None
     ) -> Dict[str, Any]:
-        """Get agrovets with filtering and pagination"""
+        """
+        Retrieve a paginated and filtered list of all registered agrovets.
+        
+        Args:
+            page (int): The target page number. Defaults to 1.
+            size (int): Number of records per page. Defaults to 20.
+            is_active (Optional[bool]): Filter stores by their active status.
+            is_verified (Optional[bool]): Filter stores by their verification status.
+            
+        Returns:
+            Dict[str, Any]: A dictionary containing the list of agrovets and pagination metadata
+                (total, page, size, pages).
+                
+        Raises:
+            Exception: If a database error occurs during the fetch.
+        """
         logger.info(f"Fetching agrovets with filters: is_active={is_active}, is_verified={is_verified}")
         
         try:
@@ -97,7 +123,22 @@ class AdminAgrovetService:
         agrovet_update: Dict[str, Any],
         updated_by: User
     ) -> None:
-        """Update agrovet by admin"""
+        """
+        Update the administrative details of an existing agrovet.
+        
+        Fields that can be updated include verification status, active status, and internal notes.
+        
+        Args:
+            agrovet_id (str): The UUID string of the target agrovet.
+            agrovet_update (Dict[str, Any]): A dictionary containing the fields to update.
+            updated_by (User): The authenticated admin user performing the action.
+            
+        Returns:
+            Dict[str, Any]: A dictionary reflecting the fields that were actually updated.
+            
+        Raises:
+            ValueError: If the specified agrovet cannot be found in the database.
+        """
         logger.info(f"Updating agrovet {agrovet_id} by admin {updated_by.username}")
         
         try:

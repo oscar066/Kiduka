@@ -32,7 +32,24 @@ prediction_agrovets = Table(
 )
 
 class User(Base):
-    """Enhanced User model with role-based authentication"""
+    """
+    Enhanced User model representing a registered account on the platform.
+    
+    Attributes:
+        id (UUID): Primary key.
+        email (str): Unique email address used for login and communication.
+        username (str): Unique display name for the user.
+        hashed_password (str): Bcrypt hashed password.
+        full_name (str): User's real name.
+        role (UserRole): Role-based access level (USER, ADMIN, SUPER_ADMIN).
+        is_active (bool): Whether the account is currently enabled.
+        is_verified (bool): Whether the user's email has been verified.
+        created_at (datetime): Timestamp of account creation.
+        updated_at (datetime): Timestamp of last account update.
+        last_login (datetime): Timestamp of the most recent successful login.
+        created_by (UUID): The ID of the admin who created this account, if applicable.
+        notes (str): Administrative notes regarding this user.
+    """
     __tablename__ = "users"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -86,7 +103,34 @@ class User(Base):
             return self.id == target_user.id
 
 class SoilPrediction(Base):
-    """Soil prediction model to store prediction history"""
+    """
+    Soil prediction model storing historical analysis results for a specific location.
+    
+    Attributes:
+        id (UUID): Primary key.
+        user_id (UUID): Foreign key linking to the User who requested the prediction.
+        session_id (str): Reference to the session during which the prediction occurred.
+        soil_ph (Numeric): The inputted or measured pH level.
+        nitrogen (Numeric): Model-predicted or inputted Nitrogen level.
+        phosphorus (Numeric): Model-predicted or inputted Phosphorus level.
+        potassium (Numeric): Model-predicted or inputted Potassium level.
+        organic_carbon (Numeric): Model-predicted or inputted Organic Carbon level.
+        calcium (Numeric): Model-predicted or inputted Calcium level.
+        magnesium (Numeric): Model-predicted or inputted Magnesium level.
+        location_lat (Numeric): Latitude of the tested soil.
+        location_lng (Numeric): Longitude of the tested soil.
+        location_name (str): Human-readable name for the location.
+        soil_health_index (Numeric): The calculated composite health score.
+        initial_soil_fertility_status (str): Basic classification before advanced processing.
+        soil_fertility_status (str): Final classification label (e.g., 'Healthy', 'Poor').
+        mentions (JSONB): Structured warnings or notable traits identified during analysis.
+        recommendations (JSONB): Actionable advice for improving the soil.
+        prediction_mode (str): Indicates if the prediction was 'FORMULA' or 'ML' based.
+        confidence_data (JSONB): Statistical confidence metrics from the ML models.
+        nutrients (JSONB): Categorical labels and scores for individual nutrients.
+        is_flagged (bool): Indicates if an admin has flagged this prediction for review.
+        admin_notes (Text): Administrative comments regarding this prediction.
+    """
     __tablename__ = "soil_predictions"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -131,7 +175,26 @@ class SoilPrediction(Base):
     agrovets: Mapped[List["Agrovet"]] = relationship("Agrovet", secondary=prediction_agrovets, back_populates="predictions")
 
 class Agrovet(Base):
-    """Agrovet model updated to match actual API response structure"""
+    """
+    Agrovet model representing a physical agricultural supply store.
+    
+    Attributes:
+        id (UUID): Primary key.
+        name (str): Business name of the agrovet.
+        latitude (Numeric): GPS latitude of the physical store.
+        longitude (Numeric): GPS longitude of the physical store.
+        products (ARRAY): List of product categories available.
+        prices (ARRAY): Corresponding typical prices for products.
+        address (Text): Physical street address.
+        phone (str): Contact phone number.
+        email (str): Contact email address.
+        rating (Numeric): Aggregate customer rating.
+        services (ARRAY): List of additional services provided (e.g., 'Soil Testing').
+        is_active (bool): Whether the store is currently operational.
+        is_verified (bool): Indicates if the store details have been verified by admins.
+        admin_notes (Text): Internal notes maintained by administrators.
+        created_by (UUID): Foreign key linking to the admin who added the store.
+    """
     __tablename__ = "agrovets"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -165,7 +228,20 @@ class Agrovet(Base):
     creator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[created_by])
 
 class UserSession(Base):
-    """User session model for session management"""
+    """
+    User session model for tracking active authentications and security.
+    
+    Attributes:
+        id (UUID): Primary key.
+        user_id (UUID): Foreign key linking to the authenticated User.
+        session_token (str): The unique JWT or session identifier.
+        expires_at (datetime): The precise timestamp when this session expires.
+        created_at (datetime): Timestamp when the session was initiated.
+        last_accessed (datetime): Timestamp of the last API request using this session.
+        ip_address (str): The IP address from which the session was initiated.
+        user_agent (Text): The client browser or application identifier.
+        is_active (bool): Flag to manually revoke or invalidate the session.
+    """
     __tablename__ = "user_sessions"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -184,7 +260,21 @@ class UserSession(Base):
     user: Mapped["User"] = relationship("User", back_populates="sessions")
 
 class AdminAuditLog(Base):
-    """Audit log for admin actions"""
+    """
+    Audit log model for tracking sensitive administrative actions.
+    
+    Attributes:
+        id (UUID): Primary key.
+        admin_user_id (UUID): Foreign key linking to the admin who performed the action.
+        target_user_id (UUID): Optional foreign key to the user affected by the action.
+        target_prediction_id (UUID): Optional foreign key to a targeted prediction record.
+        target_agrovet_id (UUID): Optional foreign key to a targeted agrovet record.
+        action (str): A standardized string describing the operation (e.g., 'delete_user').
+        details (JSONB): Additional context or payload diffs related to the action.
+        ip_address (str): The IP address of the admin performing the action.
+        user_agent (Text): The client software used by the admin.
+        created_at (datetime): Timestamp when the action was recorded.
+    """
     __tablename__ = "admin_audit_logs"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

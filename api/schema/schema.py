@@ -5,7 +5,26 @@ from typing import List, Dict, Any, Optional, TypedDict
 
 # Core Data Models
 class SoilData(BaseModel):
-    """Input soil data model"""
+    """
+    Schema for receiving soil test data from the client for prediction generation.
+    
+    This model supports both raw laboratory values and geographical coordinates 
+    used for fetching satellite data or location-based features.
+    
+    Attributes:
+        ph (float): Soil pH level, expected between 0 and 14.
+        n (Optional[float]): Nitrogen content in parts per million (ppm).
+        p (Optional[float]): Phosphorus content in ppm.
+        k (Optional[float]): Potassium content in ppm.
+        organic_carbon (Optional[float]): Organic Carbon content percentage.
+        ca (Optional[float]): Calcium content in ppm.
+        mg (Optional[float]): Magnesium content in ppm.
+        ph_score (Optional[int]): Optional pre-computed pH score (1-4) for ML model inputs.
+        year (Optional[int]): Target year for Earth Engine satellite data fetching. Defaults to 2025.
+        latitude (float): Geographic latitude of the soil sample (-90 to 90).
+        longitude (float): Geographic longitude of the soil sample (-180 to 180).
+        location_name (Optional[str]): A human-readable name or address for the location.
+    """
     ph: float = Field(..., description="Soil pH level", ge=0, le=14)
     n: Optional[float] = Field(None, description="Nitrogen content", ge=0)
     p: Optional[float] = Field(None, description="Phosphorus content", ge=0)
@@ -20,7 +39,25 @@ class SoilData(BaseModel):
     location_name: Optional[str] = Field(None, description="Human-readable location name")
 
 class AgrovetInfo(BaseModel):
-    """Agricultural supply store information"""
+    """
+    Schema representing an agricultural supply store (Agrovet).
+    
+    Used to provide users with nearby locations to purchase recommended fertilizers.
+    
+    Attributes:
+        name (str): The official name of the Agrovet store.
+        latitude (float): Geographic latitude of the store.
+        longitude (float): Geographic longitude of the store.
+        products (List[str]): List of fertilizer products available at this store.
+        prices (List[float]): Prices corresponding to the products available.
+        distance_km (float): The calculated distance from the user's location to the store in kilometers.
+        id (Optional[uuid.UUID]): Database identifier for the store.
+        address (Optional[str]): Physical street address of the store.
+        phone (Optional[str]): Contact phone number.
+        email (Optional[str]): Contact email address.
+        rating (Optional[float]): Average customer rating of the store.
+        services (Optional[List[str]]): Additional agricultural services provided by the store.
+    """
     model_config = ConfigDict(from_attributes=True)
     
     name: str = Field(..., description="Agrovet store name")
@@ -40,7 +77,23 @@ class AgrovetInfo(BaseModel):
 
 # Main Response Models
 class PredictionResponse(BaseModel):
-    """Complete prediction response"""
+    """
+    Schema representing the complete result of a soil fertility prediction.
+    
+    Attributes:
+        soil_health_index (float): An aggregated numerical score representing overall soil health.
+        initial_soil_fertility_status (str): The raw classification predicted by the model (e.g., "Low", "Optimal").
+        soil_fertility_status (str): The final, human-readable fertility status.
+        mentions (List[str]): Keywords or key nutrients highlighted by the LLM explanation.
+        recommendations (List[str]): Actionable agricultural advice generated for the user.
+        nearest_agrovets (List[AgrovetInfo]): List of nearby stores where recommended inputs can be bought.
+        nutrients (Dict[str, Dict[str, Any]]): Detailed breakdown of individual nutrient scores and labels.
+        prediction_mode (Optional[str]): Indicates whether a mathematical 'FORMULA' or 'ML' model was used.
+        confidence (Optional[Dict[str, Any]]): Statistical confidence metrics from the ML model, if applicable.
+        prediction_id (Optional[uuid.UUID]): The database identifier for this prediction record.
+        location_name (Optional[str]): The resolved name of the tested location.
+        timestamp (datetime): The exact time the prediction was generated.
+    """
     model_config = ConfigDict(from_attributes=True)
     
     # Core health assessment
@@ -62,7 +115,34 @@ class PredictionResponse(BaseModel):
     timestamp: datetime
 
 class PredictionHistory(BaseModel):
-    """Historical prediction record"""
+    """
+    Schema representing a historical record of a prediction for database retrieval.
+    
+    Attributes:
+        id (uuid.UUID): The primary key identifier of the prediction.
+        user_id (uuid.UUID): Identifier of the user who made the prediction.
+        soil_ph (Optional[float]): Flattened input soil pH.
+        nitrogen (Optional[float]): Flattened input nitrogen.
+        phosphorus (Optional[float]): Flattened input phosphorus.
+        potassium (Optional[float]): Flattened input potassium.
+        organic_carbon (Optional[float]): Flattened input organic carbon.
+        calcium (Optional[float]): Flattened input calcium.
+        magnesium (Optional[float]): Flattened input magnesium.
+        location_lat (Optional[float]): The latitude of the tested soil.
+        location_lng (Optional[float]): The longitude of the tested soil.
+        location_name (Optional[str]): Resolved name of the location.
+        soil_health_index (float): Overall health score resulting from the prediction.
+        initial_soil_fertility_status (Optional[str]): Initial model classification.
+        soil_fertility_status (Optional[str]): Final classification provided to the user.
+        mentions (List[str]): Highlighted keywords from the AI explanation.
+        recommendations (List[str]): The stored agricultural advice.
+        nutrients (Dict[str, Dict[str, Any]]): Detailed nutrient breakdown.
+        prediction_mode (Optional[str]): Method used ('FORMULA' or 'ML').
+        confidence_data (Optional[Dict[str, Any]]): Machine learning confidence metrics.
+        agrovets (List[AgrovetInfo]): Saved nearby agrovet locations.
+        created_at (datetime): Record creation timestamp.
+        updated_at (datetime): Last modification timestamp.
+    """
     model_config = ConfigDict(from_attributes=True)
     
     id: uuid.UUID
@@ -101,7 +181,16 @@ class PredictionHistory(BaseModel):
     updated_at: datetime
 
 class PredictionListResponse(BaseModel):
-    """Paginated prediction list response"""
+    """
+    Paginated schema for listing user prediction histories.
+    
+    Attributes:
+        predictions (List[PredictionHistory]): A list of past prediction records.
+        total (int): Total number of predictions belonging to the user.
+        page (int): Current page index.
+        size (int): Number of items per page.
+        pages (int): Total number of pages available.
+    """
     predictions: List[PredictionHistory]
     total: int
     page: int

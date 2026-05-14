@@ -12,13 +12,34 @@ from api.schema.auth_schema import UserStatsResponse
 logger = logging.getLogger(__name__)
 
 class AdminStatisticsService:
-    """Service for admin statistics calculations"""
+    """
+    Service responsible for calculating and retrieving administrative statistics.
+    
+    Provides insights into user demographics, verification rates, and overall platform usage.
+    """
     
     def __init__(self, db: AsyncSession):
+        """
+        Initialize the AdminStatisticsService.
+        
+        Args:
+            db (AsyncSession): The asynchronous database session.
+        """
         self.db = db
     
     async def get_user_statistics(self) -> UserStatsResponse:
-        """Get comprehensive user statistics"""
+        """
+        Calculate comprehensive user and platform statistics.
+        
+        Aggregates metrics such as total users, active accounts, verified users,
+        role distribution, recent registrations, and overall prediction volume.
+        
+        Returns:
+            UserStatsResponse: A payload containing all calculated metrics.
+            
+        Raises:
+            Exception: If an error occurs during the database aggregation queries.
+        """
         logger.info("Calculating user statistics")
         
         try:

@@ -20,7 +20,15 @@ router = APIRouter()
 
 # Dependency to get auth service
 async def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:
-    """Dependency to get auth service instance"""
+    """
+    FastAPI dependency that injects an AuthService instance.
+    
+    Args:
+        db (AsyncSession): The asynchronous SQLAlchemy database session.
+        
+    Returns:
+        AuthService: An initialized authentication service ready for use.
+    """
     return AuthService(db)
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -28,7 +36,23 @@ async def register_user(
     user_data: UserCreate,
     auth_service: AuthService = Depends(get_auth_service)
 ):
-    """Register a new user (always creates regular user)"""
+    """
+    Register a new standard user in the system.
+    
+    This endpoint always assigns the 'user' role. To create administrative users,
+    the admin-specific registration endpoint must be used.
+    
+    Args:
+        user_data (UserCreate): The registration payload containing email, username, and password.
+        auth_service (AuthService): The injected authentication service.
+        
+    Returns:
+        UserResponse: The newly created user object (excluding sensitive data like password hashes).
+        
+    Raises:
+        HTTPException: If validation fails (e.g., username or email already exists) with status 400.
+        HTTPException: If an unexpected server error occurs during creation with status 500.
+    """
     try:
         return await auth_service.register_user(user_data)
     except ValueError as e:
@@ -48,7 +72,20 @@ async def login_user(
     user_credentials: UserLogin,
     auth_service: AuthService = Depends(get_auth_service)
 ):
-    """Authenticate user and return access token with role information"""
+    """
+    Authenticate a user and return a JWT access token.
+    
+    Args:
+        user_credentials (UserLogin): The login payload containing username/email and password.
+        auth_service (AuthService): The injected authentication service.
+        
+    Returns:
+        Token: A JSON payload containing the JWT access token, token type, expiry time, and user role.
+        
+    Raises:
+        HTTPException: If authentication fails (incorrect credentials) with status 401.
+        HTTPException: If an unexpected error occurs during login with status 500.
+    """
     try:
         token_data = await auth_service.login_user(user_credentials)
         return Token(**token_data)
@@ -69,7 +106,15 @@ async def login_user(
 async def get_current_user_info(
     current_user: User = Depends(get_current_user)
 ):
-    """Get current user information"""
+    """
+    Retrieve the authenticated user's profile information.
+    
+    Args:
+        current_user (User): The user object injected via the 'get_current_user' dependency.
+        
+    Returns:
+        UserResponse: Serialized profile data for the authenticated user.
+    """
     # Create a temporary service instance for conversion (no DB operations needed)
     auth_service = AuthService(None)
     return auth_service._user_to_response(current_user)
@@ -80,7 +125,23 @@ async def update_current_user(
     current_user: User = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service)
 ):
-    """Update current user information (users can only update basic info)"""
+    """
+    Update the authenticated user's profile information.
+    
+    Standard users are only permitted to update basic fields (e.g., username, email, full_name).
+    
+    Args:
+        user_update (UserUpdate): The subset of user fields to be modified.
+        current_user (User): The authenticated user object.
+        auth_service (AuthService): The injected authentication service.
+        
+    Returns:
+        UserResponse: The newly updated profile data.
+        
+    Raises:
+        HTTPException: If validation fails (e.g., email conflicts) with status 400.
+        HTTPException: If an unexpected error occurs during the update process with status 500.
+    """
     try:
         return await auth_service.update_user(current_user, user_update)
     except ValueError as e:
@@ -101,7 +162,23 @@ async def change_password(
     current_user: User = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service)
 ):
-    """Change user password"""
+    """
+    Change the authenticated user's password.
+    
+    Requires the user to verify their current password before providing a new one.
+    
+    Args:
+        password_data (PasswordChange): Payload containing the current and new passwords.
+        current_user (User): The authenticated user object.
+        auth_service (AuthService): The injected authentication service.
+        
+    Returns:
+        dict: A simple success message.
+        
+    Raises:
+        HTTPException: If the current password validation fails with status 400.
+        HTTPException: If an unexpected error occurs with status 500.
+    """
     try:
         await auth_service.change_password(
             current_user, 
@@ -126,7 +203,19 @@ async def delete_current_user(
     current_user: User = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service)
 ):
-    """Delete current user account (users can delete their own accounts)"""
+    """
+    Permanently delete the authenticated user's account from the system.
+    
+    Args:
+        current_user (User): The authenticated user object requesting deletion.
+        auth_service (AuthService): The injected authentication service.
+        
+    Returns:
+        dict: A simple success message upon successful deletion.
+        
+    Raises:
+        HTTPException: If deletion fails for an unexpected reason with status 500.
+    """
     try:
         await auth_service.delete_user(current_user)
         return {"message": "User account deleted successfully"}
@@ -141,7 +230,15 @@ async def delete_current_user(
 async def get_user_permissions(
     current_user: User = Depends(get_current_user)
 ):
-    """Get current user's permissions and role information"""
+    """
+    Retrieve the current user's role and system permissions.
+    
+    Args:
+        current_user (User): The authenticated user.
+        
+    Returns:
+        dict: Information regarding the user's role and feature-level access capabilities.
+    """
     # Create a temporary service instance (no DB operations needed)
     auth_service = AuthService(None)
     return auth_service.get_user_permissions(current_user)

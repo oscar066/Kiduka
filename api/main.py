@@ -55,7 +55,20 @@ session_manager = SessionManager()
 # Initialize app configuration
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Handle application lifespan events"""
+    """
+    Handle the FastAPI application lifespan events (startup and shutdown).
+    
+    During startup:
+        - Initializes the ML models and preprocessing components.
+        - Wires the dependency manager with loaded components and session manager.
+        - Triggers the creation of all database tables via SQLAlchemy.
+        
+    During shutdown:
+        - Gracefully closes all database connection pools to prevent leaks.
+        
+    Args:
+        app (FastAPI): The running FastAPI instance.
+    """
     # Startup
     logger.info("Initializing application with role-based authentication...")
     
@@ -134,7 +147,18 @@ def get_session_manager():
 async def root(
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
-    """Root endpoint with API information and role-based features"""
+    """
+    Root endpoint serving basic API metadata and feature availability.
+    
+    If accessed with a valid Bearer token, it will also reflect the user's
+    role and dynamically append administrative endpoints if applicable.
+    
+    Args:
+        current_user (Optional[User]): The authenticated user, if a token was provided.
+        
+    Returns:
+        dict: A payload describing the API version, available features, and endpoints.
+    """
     logger.info("Root endpoint accessed")
     
     # Base response
@@ -187,7 +211,15 @@ async def root(
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """
+    System health check endpoint for monitoring and orchestrators (e.g., Kubernetes).
+    
+    Actively checks the database connection pool and verifies that crucial ML 
+    components (like the agrovet locator) are loaded in memory.
+    
+    Returns:
+        dict: A diagnostic payload indicating 'healthy' or 'degraded' status.
+    """
     logger.info("Health check endpoint accessed")
     
     # Check database connectivity
@@ -225,7 +257,18 @@ async def health_check():
 
 @app.get("/session")
 async def get_session_info(request: Request):
-    """Get current session information (for non-authenticated users)"""
+    """
+    Retrieve current guest session information.
+    
+    Designed primarily for non-authenticated users to check their transient
+    session state (e.g., how many predictions they have made anonymously).
+    
+    Args:
+        request (Request): The incoming FastAPI request containing session cookies.
+        
+    Returns:
+        dict: Transient session data including creation time and prediction counts.
+    """
     logger.info("Session info endpoint accessed")
     
     try:
@@ -244,7 +287,18 @@ async def get_session_info(request: Request):
 async def get_api_stats(
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
-    """Get API usage statistics"""
+    """
+    Fetch public-facing platform statistics.
+    
+    Returns high-level metadata such as active session counts and feature flags.
+    Provides additional contextual details if the request is authenticated.
+    
+    Args:
+        current_user (Optional[User]): The authenticated user, if available.
+        
+    Returns:
+        dict: Public and optionally user-specific API statistics.
+    """
     logger.info("API stats endpoint accessed")
     
     try:
@@ -282,7 +336,18 @@ async def get_api_stats(
 async def admin_check(
     current_admin: User = Depends(get_current_admin_user)
 ):
-    """Simple endpoint to check admin access (useful for frontend auth checks)"""
+    """
+    Lightweight validation endpoint to confirm administrative privileges.
+    
+    Useful for frontend applications to verify role-based routing access 
+    without needing to fetch bulk data.
+    
+    Args:
+        current_admin (User): The user, guaranteed to be an admin by the dependency.
+        
+    Returns:
+        dict: Confirmation message and basic user metadata.
+    """
     return {
         "message": "Admin access confirmed",
         "user": {

@@ -11,9 +11,21 @@ from api.db.models.database import Base
 logger = logging.getLogger(__name__)
 
 class DatabaseManager:
-    """Database connection manager"""
+    """
+    Manages the global async PostgreSQL database connection pool and sessions.
+    
+    This class handles the creation of the SQLAlchemy async engine, configures 
+    connection pooling parameters, and provides a session factory for dependency injection.
+    """
     
     def __init__(self):
+        """
+        Initialize the DatabaseManager by reading the DATABASE_URL environment variable
+        and configuring the async engine.
+        
+        Raises:
+            ValueError: If the DATABASE_URL environment variable is not set.
+        """
         self.database_url = os.getenv("DATABASE_URL")
         if not self.database_url:
             raise ValueError("DATABASE_URL environment variable is required")
@@ -44,7 +56,15 @@ class DatabaseManager:
         )
         
     async def create_tables(self):
-        """Create database tables"""
+        """
+        Create all defined database tables asynchronously if they do not exist.
+        
+        This method uses the metadata from the SQLAlchemy Base class to issue
+        DDL commands to the database.
+        
+        Raises:
+            Exception: If table creation fails (e.g., due to connection issues).
+        """
         try:
             async with self.async_engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
@@ -54,7 +74,16 @@ class DatabaseManager:
             raise
     
     async def get_session(self) -> AsyncGenerator[AsyncSession, None]:
-        """Get database session"""
+        """
+        Provide a transactional, asynchronous database session context.
+        
+        Yields:
+            AsyncSession: An active SQLAlchemy async session.
+            
+        Raises:
+            Exception: If an error occurs during the transaction, the session 
+                is automatically rolled back and the exception is re-raised.
+        """
         async with self.async_session_factory() as session:
             try:
                 yield session
@@ -66,7 +95,11 @@ class DatabaseManager:
                 await session.close()
     
     async def close(self):
-        """Close database connections"""
+        """
+        Gracefully dispose of the database engine and close all connection pools.
+        
+        Should be called during application shutdown to prevent connection leaks.
+        """
         await self.async_engine.dispose()
         logger.info("Database connections closed")
 
@@ -75,6 +108,11 @@ db_manager = DatabaseManager()
 
 # Dependency for FastAPI
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """FastAPI dependency to get database session"""
+    """
+    FastAPI dependency that provides an asynchronous database session per request.
+    
+    Yields:
+        AsyncSession: An active SQLAlchemy async session tied to the current request.
+    """
     async for session in db_manager.get_session():
         yield session

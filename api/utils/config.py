@@ -4,7 +4,12 @@ Configuration settings for the agricultural prediction API
 import os
 
 class AppConfig:
-    """Application configuration constants"""
+    """
+    Centralized application configuration constants.
+    
+    Houses environment variable mappings, Earth Engine parameters, machine learning 
+    model paths, and static configuration dictionaries such as ML accuracy metrics.
+    """
     
     # Agrovet Search Configuration
     DEFAULT_AGROVET_COUNT = 5
