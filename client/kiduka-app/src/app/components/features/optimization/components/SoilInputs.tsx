@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react";
-import { FlaskRound } from "lucide-react";
+import { FlaskRound, History } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -20,9 +20,15 @@ export interface SoilData {
   k_exchangeable_ppm: number;
 }
 
+export interface SoilPrefillInfo {
+  date: string;
+  location?: string | null;
+}
+
 interface SoilInputsProps {
   soil: SoilData;
   onChange: (updated: SoilData) => void;
+  prefillInfo?: SoilPrefillInfo | null;
 }
 
 const FIELDS: {
@@ -40,7 +46,7 @@ const FIELDS: {
   { key: "k_exchangeable_ppm", label: "Exch. K",     unit: "ppm",  min: 0,             step: 1,   hint: "Exchangeable K (mg/kg)" },
 ];
 
-export function SoilInputs({ soil, onChange }: SoilInputsProps) {
+export function SoilInputs({ soil, onChange, prefillInfo }: SoilInputsProps) {
   const update = (key: keyof Omit<SoilData, "mode">, value: number) =>
     onChange({ ...soil, [key]: value });
 
@@ -52,7 +58,17 @@ export function SoilInputs({ soil, onChange }: SoilInputsProps) {
           Soil Analysis
         </CardTitle>
         <CardDescription className="text-xs text-gray-500 mt-0.5">
-          Enter values from your soil test report
+          {prefillInfo ? (
+            <span className="flex items-center gap-1 text-green-700">
+              <History className="h-3 w-3 shrink-0" />
+              Pre-filled from your latest analysis
+              {prefillInfo.location && <span>· {prefillInfo.location}</span>}
+              <span className="text-gray-400 ml-1">({prefillInfo.date})</span>
+              <span className="text-gray-400">— values are editable</span>
+            </span>
+          ) : (
+            "Enter values from your soil test report"
+          )}
         </CardDescription>
       </CardHeader>
 

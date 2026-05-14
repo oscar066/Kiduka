@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../../layout/UnifiedSidebar";
@@ -28,7 +28,7 @@ import { BaselineVsOptimal } from "./components/BaselineVsOptimal";
 import { AvailableFertilizers } from "./components/AvailableFertilizers";
 import { TargetCrops } from "./components/TargetCrops";
 import { ApplicationRates } from "./components/ApplicationRates";
-import { SoilInputs, SoilData } from "./components/SoilInputs";
+import { SoilInputs, SoilData, SoilPrefillInfo } from "./components/SoilInputs";
 import { YAttConfig, YAttConfigData, DEFAULT_YATT_CONFIG } from "./components/YAttConfig";
 import { CropYieldTable } from "./components/CropYieldTable";
 import { apiClient } from "@/lib/api-client";
@@ -51,6 +51,7 @@ export default function OptimizationPage() {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [soilPrefillInfo, setSoilPrefillInfo] = useState<SoilPrefillInfo | null>(null);
 
   const [budget, setBudget] = useState<number>(50000);
   const [crops, setCrops] = useState<Crop[]>([
@@ -80,6 +81,48 @@ export default function OptimizationPage() {
   // Selected crop for the comparison panel
   const [selectedCropForComparison, setSelectedCropForComparison] = useState<string>("");
   
+  // Pre-fill soil inputs from the farmer's latest soil analysis
+  useEffect(() => {
+    if (!session?.accessToken) return;
+
+    apiClient.getPredictionHistory(session.accessToken as string, 1, 1)
+      .then((res) => {
+        const latest = res.predictions?.[0];
+        if (!latest) return;
+
+        const ph          = latest.soil_ph        ?? null;
+        const soc_percent = latest.organic_carbon ?? null;
+        const p_olsen_ppm = latest.phosphorus     ?? null;
+
+        // K stored in the prediction may be in cmol/kg or an unrealistically low
+        // raw reading. Values below 20 ppm cause the RQUEFTS model to return zero
+        // yields regardless of fertilizer applied, so we keep the UI default (120)
+        // in that case and let the farmer correct it manually.
+        const K_VIABLE_MIN_PPM = 20;
+        const k_ppm = (latest.potassium != null && latest.potassium >= K_VIABLE_MIN_PPM)
+          ? latest.potassium
+          : null;
+
+        if (ph === null && soc_percent === null && p_olsen_ppm === null) return;
+
+        setSoil((prev) => ({
+          ...prev,
+          ...(ph          !== null && { ph }),
+          ...(soc_percent !== null && { soc_percent }),
+          ...(p_olsen_ppm !== null && { p_olsen_ppm }),
+          ...(k_ppm       !== null && { k_exchangeable_ppm: k_ppm }),
+        }));
+
+        setSoilPrefillInfo({
+          date: new Date(latest.created_at).toLocaleDateString(),
+          location: latest.location_name ?? null,
+        });
+      })
+      .catch(() => {
+        // Silently ignore — pre-fill is best-effort, not blocking
+      });
+  }, [session?.accessToken]);
+
   // Crop handlers
   const addCrop = () =>
     setCrops([
@@ -266,7 +309,7 @@ export default function OptimizationPage() {
                 </Card>
 
                 {/* Soil Analysis */}
-                <SoilInputs soil={soil} onChange={setSoil} />
+                <SoilInputs soil={soil} onChange={setSoil} prefillInfo={soilPrefillInfo} />
 
                 {/* Fertilizers */}
                 <AvailableFertilizers
