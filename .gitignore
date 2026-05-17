@@ -6,6 +6,7 @@
 __pycache__
 
 .DS_Store
+.pytest_cache/
 
 # Ignore fake server certificates
 .server-certificates/
