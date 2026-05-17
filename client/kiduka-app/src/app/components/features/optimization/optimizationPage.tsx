@@ -117,6 +117,14 @@ export default function OptimizationPage() {
           date: new Date(latest.created_at).toLocaleDateString(),
           location: latest.location_name ?? null,
         });
+
+        // Pre-fill WOFOST location with the coordinates from the latest analysis
+        if (latest.location_lat != null && latest.location_lng != null) {
+          setYAttConfig((prev) => ({
+            ...prev,
+            location: { lat: latest.location_lat, lon: latest.location_lng },
+          }));
+        }
       })
       .catch(() => {
         // Silently ignore — pre-fill is best-effort, not blocking
@@ -334,7 +342,11 @@ export default function OptimizationPage() {
                 />
 
                 {/* Advanced Settings (Y_att) */}
-                <YAttConfig config={yAttConfig} onChange={setYAttConfig} />
+                <YAttConfig
+                  config={yAttConfig}
+                  onChange={setYAttConfig}
+                  locationPrefilled={soilPrefillInfo !== null}
+                />
 
                 {/* Run Optimizer */}
                 <Button

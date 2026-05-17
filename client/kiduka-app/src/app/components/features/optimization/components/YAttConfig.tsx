@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react";
-import { ChevronDown, ChevronRight, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, ChevronRight, SlidersHorizontal, MapPin } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -40,9 +40,10 @@ export const DEFAULT_YATT_CONFIG: YAttConfigData = {
 interface YAttConfigProps {
   config: YAttConfigData;
   onChange: (updated: YAttConfigData) => void;
+  locationPrefilled?: boolean;
 }
 
-export function YAttConfig({ config, onChange }: YAttConfigProps) {
+export function YAttConfig({ config, onChange, locationPrefilled }: YAttConfigProps) {
   const [open, setOpen] = useState(false);
 
   const update = (patch: Partial<YAttConfigData>) =>
@@ -165,10 +166,18 @@ export function YAttConfig({ config, onChange }: YAttConfigProps) {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-gray-700">
-                  Site Location
-                  <span className="text-xs text-red-400 font-normal ml-1">(required for WOFOST)</span>
-                </Label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Site Location
+                    <span className="text-xs text-red-400 font-normal ml-1">(required for WOFOST)</span>
+                  </Label>
+                  {locationPrefilled && config.location && (
+                    <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">
+                      <MapPin className="h-3 w-3" />
+                      From your latest analysis
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs text-gray-400">Latitude</Label>
