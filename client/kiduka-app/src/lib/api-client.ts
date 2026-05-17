@@ -100,7 +100,11 @@ export class ApiClient {
 
       return response.json();
     } catch (error) {
-      console.error(`API request failed for ${endpoint}:`, error);
+      if (error instanceof Error) {
+        console.error(`API request failed for ${endpoint}: ${error.message}`);
+      } else {
+        console.error(`API request failed for ${endpoint}:`, error);
+      }
       throw error;
     }
   }
