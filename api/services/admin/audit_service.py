@@ -14,9 +14,20 @@ from api.schema.auth_schema import AuditLogResponse, AuditLogEntry
 logger = logging.getLogger(__name__)
 
 class AdminAuditService:
-    """Service for admin audit log operations"""
+    """
+    Service responsible for querying the administrative audit trail.
+    
+    Provides capabilities for administrators to review historical actions taken
+    by themselves or other admins, supporting security and accountability.
+    """
     
     def __init__(self, db: AsyncSession):
+        """
+        Initialize the AdminAuditService.
+        
+        Args:
+            db (AsyncSession): The asynchronous database session.
+        """
         self.db = db
     
     async def get_audit_logs(
@@ -28,7 +39,23 @@ class AdminAuditService:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None
     ) -> AuditLogResponse:
-        """Get audit logs with filtering and pagination"""
+        """
+        Retrieve a paginated and filtered list of administrative audit logs.
+        
+        Args:
+            page (int): Target page number. Defaults to 1.
+            size (int): Number of records per page. Defaults to 20.
+            admin_user_id (Optional[str]): Filter by the admin who performed the action.
+            action (Optional[str]): Keyword search within the action description.
+            start_date (Optional[datetime]): Filter logs occurring on or after this timestamp.
+            end_date (Optional[datetime]): Filter logs occurring on or before this timestamp.
+            
+        Returns:
+            AuditLogResponse: A paginated payload containing the audit entries.
+            
+        Raises:
+            Exception: If a database error occurs during the fetch.
+        """
         logger.info(f"Fetching audit logs with filters: admin_user_id={admin_user_id}, action={action}")
         
         try:

@@ -129,11 +129,11 @@ export function AvailableFertilizers({
                         )}
                       </div>
                       <div className="flex gap-1 mt-1 flex-wrap">
-                        <NutrientTag label="N" value={fert.n_pct} />
-                        <NutrientTag label="P₂O₅" value={fert.p2o5_pct} />
-                        <NutrientTag label="K₂O" value={fert.k2o_pct} />
+                        <NutrientTag label="N" value={Math.round(fert.n_fraction * 100)} />
+                        <NutrientTag label="P₂O₅" value={Math.round(fert.p2o5_fraction * 100)} />
+                        <NutrientTag label="K₂O" value={Math.round(fert.k2o_fraction * 100)} />
                         <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">
-                          KES {fert.price_currency_per_50kg.toLocaleString()}/bag
+                          KES {fert.price_currency_per_kg.toLocaleString()}/kg
                         </span>
                       </div>
                     </button>
@@ -188,15 +188,16 @@ export function AvailableFertilizers({
                         </div>
                         <div>
                           <Label className="text-xs text-gray-500">
-                            Price / 50 kg Bag (KES)
+                            Price per kg (KES)
                           </Label>
                           <Input
                             type="number"
-                            value={fert.price_currency_per_50kg}
+                            step="0.1"
+                            value={fert.price_currency_per_kg}
                             onChange={(e) =>
                               onUpdate(
                                 idx,
-                                "price_currency_per_50kg",
+                                "price_currency_per_kg",
                                 Number(e.target.value)
                               )
                             }
@@ -207,9 +208,10 @@ export function AvailableFertilizers({
                           <Label className="text-xs text-gray-500">N (%)</Label>
                           <Input
                             type="number"
-                            value={fert.n_pct}
+                            step="0.1"
+                            value={Math.round(fert.n_fraction * 100 * 10) / 10}
                             onChange={(e) =>
-                              onUpdate(idx, "n_pct", Number(e.target.value))
+                              onUpdate(idx, "n_fraction", Number(e.target.value) / 100)
                             }
                             className="h-8 text-sm mt-1 border-amber-200 focus-visible:ring-green-400"
                           />
@@ -218,12 +220,13 @@ export function AvailableFertilizers({
                           <Label className="text-xs text-gray-500">P₂O₅ (%)</Label>
                           <Input
                             type="number"
-                            value={fert.p2o5_pct}
+                            step="0.1"
+                            value={Math.round(fert.p2o5_fraction * 100 * 10) / 10}
                             onChange={(e) =>
                               onUpdate(
                                 idx,
-                                "p2o5_pct",
-                                Number(e.target.value)
+                                "p2o5_fraction",
+                                Number(e.target.value) / 100
                               )
                             }
                             className="h-8 text-sm mt-1 border-amber-200 focus-visible:ring-green-400"
@@ -233,9 +236,10 @@ export function AvailableFertilizers({
                           <Label className="text-xs text-gray-500">K₂O (%)</Label>
                           <Input
                             type="number"
-                            value={fert.k2o_pct}
+                            step="0.1"
+                            value={Math.round(fert.k2o_fraction * 100 * 10) / 10}
                             onChange={(e) =>
-                              onUpdate(idx, "k2o_pct", Number(e.target.value))
+                              onUpdate(idx, "k2o_fraction", Number(e.target.value) / 100)
                             }
                             className="h-8 text-sm mt-1 border-amber-200 focus-visible:ring-green-400"
                           />

@@ -16,17 +16,37 @@ logger = logging.getLogger(__name__)
 
 class MLPredictor:
     """
-    Handles Google Earth Engine data fetching and ML model predictions for soil health.
+    Handles Google Earth Engine (GEE) data fetching and ML model predictions for soil health.
+    
+    This class is responsible for establishing a connection to GEE, downloading remote
+    sensing and terrain features for a specific GPS coordinate, engineering those features,
+    and passing them through pre-trained machine learning models to infer soil nutrient levels.
     """
     
     def __init__(self, use_service_account: bool = False, credentials_path: Optional[str] = None):
+        """
+        Initialize the ML Predictor instance.
+        
+        Args:
+            use_service_account (bool): Flag indicating whether to use a service account for GEE.
+            credentials_path (Optional[str]): Path to the service account JSON key file.
+        """
         self.models = {}
         self.is_initialized = False
         self.use_service_account = use_service_account
         self.credentials_path = credentials_path
 
     def initialize(self):
-        """Initialize GEE and load models"""
+        """
+        Initialize GEE connection and load scikit-learn models from disk.
+        
+        This method must be called before attempting any predictions. It handles
+        authentication with Google Earth Engine and loads the imputer, scaler,
+        and random forest models into memory.
+        
+        Raises:
+            FileNotFoundError: If the pre-trained model files are missing from the configured path.
+        """
         if self.is_initialized:
             return
             
@@ -264,7 +284,17 @@ class MLPredictor:
         return result
 
     def _fetch_satellite_features(self, latitude: float, longitude: float, year: int = 2025) -> Dict[str, Any]:
-        """Fetch all satellite features for a GPS point."""
+        """
+        Fetch all required satellite and terrain features for a specific GPS point.
+        
+        Args:
+            latitude (float): The target latitude in decimal degrees.
+            longitude (float): The target longitude in decimal degrees.
+            year (int): The target year for temporal data (e.g., climate, Sentinel-2). Defaults to 2025.
+            
+        Returns:
+            Dict[str, Any]: A dictionary containing all fetched raw features (e.g., elevation, NDVI, precipitation).
+        """
         point = ee.Geometry.Point([longitude, latitude])
         sat = {}
         sat.update(self._fetch_terrain(point))
@@ -338,6 +368,20 @@ class MLPredictor:
     def predict_soil_health(
         self, latitude: float, longitude: float, ph: float, ph_score: Optional[int] = None, year: int = 2025
     ) -> Dict[str, Any]:
+        """
+        Execute the full machine learning inference pipeline for a given location.
+        
+        Args:
+            latitude (float): Target latitude.
+            longitude (float): Target longitude.
+            ph (float): Known soil pH value (required input feature).
+            ph_score (Optional[int]): Pre-calculated categorical pH score (1-4).
+            year (int): The target year for satellite data fetching.
+            
+        Returns:
+            Dict[str, Any]: A comprehensive payload containing the model's nutrient predictions,
+                the overall Soil Health Index (SHI), and statistical confidence metrics.
+        """
         if not self.is_initialized:
             self.initialize()
             

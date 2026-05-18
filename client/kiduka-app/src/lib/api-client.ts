@@ -100,7 +100,11 @@ export class ApiClient {
 
       return response.json();
     } catch (error) {
-      console.error(`API request failed for ${endpoint}:`, error);
+      if (error instanceof Error) {
+        console.error(`API request failed for ${endpoint}: ${error.message}`);
+      } else {
+        console.error(`API request failed for ${endpoint}:`, error);
+      }
       throw error;
     }
   }
@@ -512,9 +516,38 @@ export class ApiClient {
    * Run fertilizer optimization algorithm
    */
   async optimize(payload: {
-    crops: any[];
-    fertilizers: any[];
-    scenario: { budget_currency: number };
+    soil: {
+      mode: "direct" | "history";
+      soil_analysis_id?: string;
+      ph?: number;
+      soc_percent?: number;
+      p_olsen_ppm?: number;
+      k_exchangeable_ppm?: number;
+    };
+    crops: Array<{
+      crop: string;
+      area_ac?: number;
+      area_ha?: number;
+      grain_price_currency_per_kg: number;
+    }>;
+    fertilizers: Array<{
+      product: string;
+      n_fraction: number;
+      p2o5_fraction: number;
+      k2o_fraction: number;
+      price_currency_per_kg: number;
+    }>;
+    scenario: {
+      budget_currency: number;
+      y_att?: {
+        source?: "kephis" | "wofost";
+        kephis_quantile?: number;
+        wofost_sowing_date?: string;
+        wofost_elevation_m?: number;
+        fallback_to_kephis?: boolean;
+      };
+    };
+    location?: { lat: number; lon: number };
   }, token: string): Promise<any> {
     return this.request('/optimization/optimize', {
       method: 'POST',

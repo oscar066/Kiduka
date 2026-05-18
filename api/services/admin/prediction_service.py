@@ -15,9 +15,20 @@ from api.schema.auth_schema import (
 logger = logging.getLogger(__name__)
 
 class AdminPredictionService:
-    """Service for admin prediction management operations"""
+    """
+    Service responsible for administrative oversight of user soil predictions.
+    
+    Provides capabilities for filtering global prediction history, flagging specific
+    predictions for review, adding administrative notes, and permanently deleting records.
+    """
     
     def __init__(self, db: AsyncSession):
+        """
+        Initialize the AdminPredictionService.
+        
+        Args:
+            db (AsyncSession): The asynchronous database session.
+        """
         self.db = db
     
     async def get_predictions_with_filters(
@@ -30,7 +41,24 @@ class AdminPredictionService:
         sort_by: str = "created_at",
         sort_order: str = "desc"
     ) -> AdminPredictionListResponse:
-        """Get predictions with filtering, pagination and sorting"""
+        """
+        Retrieve a paginated and filtered list of soil predictions across all users.
+        
+        Args:
+            page (int): Target page number. Defaults to 1.
+            size (int): Number of records per page. Defaults to 20.
+            user_id (Optional[str]): Filter predictions belonging to a specific user.
+            is_flagged (Optional[bool]): Filter predictions flagged by an administrator.
+            fertility_status (Optional[str]): Filter by the final classification label.
+            sort_by (str): The column name to sort by. Defaults to 'created_at'.
+            sort_order (str): Sort direction ('asc' or 'desc'). Defaults to 'desc'.
+            
+        Returns:
+            AdminPredictionListResponse: A payload containing the paginated predictions.
+            
+        Raises:
+            Exception: If an unexpected database query error occurs.
+        """
         logger.info(f"Fetching predictions with filters: user_id={user_id}, is_flagged={is_flagged}")
         
         try:
@@ -97,7 +125,20 @@ class AdminPredictionService:
         prediction_update: AdminPredictionUpdate,
         updated_by: User
     ) -> AdminPredictionResponse:
-        """Update prediction by admin (flag/unflag, add notes)"""
+        """
+        Update a specific prediction's administrative metadata (e.g., flags and notes).
+        
+        Args:
+            prediction_id (str): The UUID string of the prediction to update.
+            prediction_update (AdminPredictionUpdate): The payload containing flag status and notes.
+            updated_by (User): The authenticated admin performing the update.
+            
+        Returns:
+            AdminPredictionResponse: The updated prediction record.
+            
+        Raises:
+            ValueError: If the requested prediction does not exist.
+        """
         logger.info(f"Updating prediction {prediction_id} by admin {updated_by.username}")
         
         try:
@@ -133,7 +174,19 @@ class AdminPredictionService:
             raise
     
     async def delete_prediction(self, prediction_id: str, deleted_by: User) -> Dict[str, Any]:
-        """Delete prediction by admin"""
+        """
+        Permanently delete a user's soil prediction from the database.
+        
+        Args:
+            prediction_id (str): The UUID string of the prediction to delete.
+            deleted_by (User): The authenticated admin performing the deletion.
+            
+        Returns:
+            Dict[str, Any]: A summary of the deleted prediction for audit logging.
+            
+        Raises:
+            ValueError: If the requested prediction does not exist.
+        """
         logger.info(f"Deleting prediction {prediction_id} by admin {deleted_by.username}")
         
         try:
@@ -168,7 +221,9 @@ class AdminPredictionService:
             raise
     
     def _prediction_to_admin_response(self, prediction: SoilPrediction) -> AdminPredictionResponse:
-        """Convert SoilPrediction model to AdminPredictionResponse"""
+        """
+        Convert a SQLAlchemy SoilPrediction model into an AdminPredictionResponse Pydantic schema.
+        """
         return AdminPredictionResponse(
             id=prediction.id,
             user_id=prediction.user_id,

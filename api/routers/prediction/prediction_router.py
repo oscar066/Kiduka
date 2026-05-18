@@ -19,6 +19,15 @@ router = APIRouter(tags=["prediction-main"])
 
 # Dependency to get prediction service
 async def get_prediction_service(db: AsyncSession = Depends(get_db)) -> PredictionService:
+    """
+    FastAPI dependency that injects a PredictionService instance.
+    
+    Args:
+        db (AsyncSession): The asynchronous SQLAlchemy database session.
+        
+    Returns:
+        PredictionService: An initialized service for handling prediction logic.
+    """
     return PredictionService(db)
 
 @router.post("/predict", response_model=PredictionResponse)
@@ -28,6 +37,27 @@ async def predict_soil_fertility(
     current_user: User = Depends(get_current_user),
     prediction_service: PredictionService = Depends(get_prediction_service)
 ):
+    """
+    Generate a soil fertility prediction based on provided laboratory data or location.
+    
+    This endpoint processes soil data, calculates health indices, assigns fertility status,
+    fetches nearby agrovets, and utilizes an LLM to generate actionable recommendations.
+    If the user is authenticated, the prediction is saved to their history. If unauthenticated,
+    the prediction is saved to their browser session.
+    
+    Args:
+        soil_data (SoilData): The input data representing the soil sample.
+        request (Request): The incoming FastAPI request, used for session management.
+        current_user (User): The authenticated user making the request (injected).
+        prediction_service (PredictionService): Service managing the prediction pipeline.
+        
+    Returns:
+        PredictionResponse: A comprehensive payload detailing soil health, recommendations,
+        and nearby agricultural supply stores.
+        
+    Raises:
+        HTTPException: If an unexpected error or validation failure occurs during processing (status 500).
+    """
     # Predict soil fertility status
     logger.info("Prediction endpoint accessed")
     logger.debug(f"Received soil data for user: {current_user.username if current_user else 'anonymous'}")

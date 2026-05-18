@@ -1,10 +1,18 @@
-// hooks/useAuth.ts
-import { useState, useEffect, useCallback } from "react";
+// hooks/useAuth.tsx
+"use client";
+
+import {
+  useState,
+  useEffect,
+  useCallback,
+  createContext,
+  useContext,
+  ReactNode,
+} from "react";
 import { useSession, signOut } from "next-auth/react";
 import { apiClient } from "@/lib/api-client";
 import { UserRole } from "@/types/auth";
 import type { UserResponse } from "@/types/auth";
-
 import { useRouter } from "next/navigation";
 
 interface AuthPermissions {
@@ -26,6 +34,9 @@ interface AuthState {
   isAdmin: boolean;
   isSuperAdmin: boolean;
   token: string | null;
+  logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+  checkAdminAccess: () => Promise<boolean>;
 }
 
 const defaultPermissions: AuthPermissions = {
@@ -39,11 +50,9 @@ const defaultPermissions: AuthPermissions = {
   can_delete_admin_users: false,
 };
 
-export function useAuth(): AuthState & {
-  logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
-  checkAdminAccess: () => Promise<boolean>;
-} {
+const AuthContext = createContext<AuthState | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -57,7 +66,6 @@ export function useAuth(): AuthState & {
     user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
 
-  // Load user data when session is available
   const loadUserData = useCallback(async () => {
     if (!token) {
       setUser(null);
@@ -71,7 +79,6 @@ export function useAuth(): AuthState & {
       const userData = await apiClient.getCurrentUser(token);
       setUser(userData);
 
-      // Set permissions based on role
       const userPermissions: AuthPermissions = {
         can_access_admin:
           userData.role === UserRole.ADMIN ||
@@ -100,13 +107,11 @@ export function useAuth(): AuthState & {
       console.error("Failed to load user data:", error);
       setUser(null);
       setPermissions(defaultPermissions);
-      // Don't sign out automatically - the session might still be valid
     } finally {
       setIsLoading(false);
     }
   }, [token]);
 
-  // Effect to load user data when session changes
   useEffect(() => {
     if (status === "loading") return;
 
@@ -119,7 +124,6 @@ export function useAuth(): AuthState & {
     }
   }, [status, token, loadUserData]);
 
-  // Logout function
   const logout = useCallback(async () => {
     try {
       await signOut({ redirect: false });
@@ -131,15 +135,12 @@ export function useAuth(): AuthState & {
     }
   }, [router]);
 
-  // Refresh user data
   const refreshUser = useCallback(async () => {
     await loadUserData();
   }, [loadUserData]);
 
-  // Check admin access specifically
   const checkAdminAccess = useCallback(async (): Promise<boolean> => {
     if (!token || !isAdmin) return false;
-
     try {
       await apiClient.checkAdminAccess(token);
       return true;
@@ -149,18 +150,30 @@ export function useAuth(): AuthState & {
     }
   }, [token, isAdmin]);
 
-  return {
-    user,
-    permissions: permissions || defaultPermissions,
-    isLoading: status === "loading" || isLoading,
-    isAuthenticated,
-    isAdmin,
-    isSuperAdmin,
-    token,
-    logout,
-    refreshUser,
-    checkAdminAccess,
-  };
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        permissions: permissions || defaultPermissions,
+        isLoading: status === "loading" || isLoading,
+        isAuthenticated,
+        isAdmin,
+        isSuperAdmin,
+        token,
+        logout,
+        refreshUser,
+        checkAdminAccess,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth(): AuthState {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 }
 
 // Role-based route protection hook
@@ -177,7 +190,6 @@ export function useRoleGuard(requiredRole?: UserRole, redirectTo?: string) {
     }
 
     if (requiredRole && user?.role !== requiredRole) {
-      // Check if user has sufficient role
       const roleHierarchy = {
         [UserRole.USER]: 0,
         [UserRole.ADMIN]: 1,
@@ -192,14 +204,7 @@ export function useRoleGuard(requiredRole?: UserRole, redirectTo?: string) {
         return;
       }
     }
-  }, [
-    isLoading,
-    isAuthenticated,
-    user?.role,
-    requiredRole,
-    router,
-    redirectTo,
-  ]);
+  }, [isLoading, isAuthenticated, user?.role, requiredRole, router, redirectTo]);
 
   return {
     isLoading,

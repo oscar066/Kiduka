@@ -17,9 +17,20 @@ from api.utils.config import AppConfig
 logger = logging.getLogger(__name__)
 
 class PredictionService:
-    """Service for handling soil predictions and analysis"""
+    """
+    Service layer orchestrating the full soil analysis and prediction workflow.
+    
+    This service integrates various components such as ML models, agrovet locators,
+    and traditional soil classification formulas to produce a unified prediction.
+    """
     
     def __init__(self, db: AsyncSession):
+        """
+        Initialize the PredictionService.
+        
+        Args:
+            db (AsyncSession): The asynchronous database session.
+        """
         self.db = db
     
     async def create_prediction(
@@ -27,7 +38,25 @@ class PredictionService:
         soil_data: SoilData, 
         user: Optional[User] = None
     ) -> PredictionResponse:
-        """Create a new soil prediction with full workflow"""
+        """
+        Execute the soil prediction workflow from input data.
+        
+        This method delegates to the SoilHealthClassifier for explicit data,
+        falls back to an ML predictor for missing values (gap-filling),
+        fetches nearby agrovets, and logs the unified result to the database
+        if the user is authenticated.
+        
+        Args:
+            soil_data (SoilData): The soil nutrient parameters and location.
+            user (Optional[User]): The authenticated user requesting the prediction, if any.
+            
+        Returns:
+            PredictionResponse: The fully compiled prediction, including health indices
+                and recommendations.
+                
+        Raises:
+            ValueError: If required service dependencies are not initialized.
+        """
         logger.info(f"Creating prediction for user: {user.username if user else 'anonymous'}")
         
         try:
@@ -205,7 +234,20 @@ class PredictionService:
         soil_data: dict,
         result: dict
     ) -> SoilPrediction:
-        """Save prediction results to database"""
+        """
+        Persist a generated prediction and its associated agrovets to the database.
+        
+        Args:
+            user_id (str): The UUID string of the user who owns this prediction.
+            soil_data (dict): The dictionary representation of the unified soil inputs.
+            result (dict): The dictionary containing the generated analysis results.
+            
+        Returns:
+            SoilPrediction: The newly saved database model instance.
+            
+        Raises:
+            Exception: If a database transaction error occurs.
+        """
         try:
             # Process agrovets - only if they exist
             agrovet_objects = []
@@ -264,7 +306,18 @@ class PredictionService:
             raise
     
     async def _get_or_create_agrovet(self, agrovet_data: dict) -> Optional[Agrovet]:
-        """Get existing agrovet or create new one"""
+        """
+        Fetch an existing agrovet by name or create a new database entry.
+        
+        This prevents duplicate agrovet entries from accumulating in the database
+        when multiple predictions reference the same physical store.
+        
+        Args:
+            agrovet_data (dict): The data describing the agrovet.
+            
+        Returns:
+            Optional[Agrovet]: The found or newly created Agrovet model, or None if creation fails.
+        """
         try:
             name = agrovet_data.get('name')
             if not name:
@@ -305,7 +358,16 @@ class PredictionService:
             return None
 
     def _generate_ml_recommendations(self, nutrient_scores: Dict[str, Any]) -> str:
-        """Helper to generate recommendations based on predicted nutrient scores"""
+        """
+        Generate hardcoded agricultural advice based on predicted nutrient deficiency scores.
+        
+        Args:
+            nutrient_scores (Dict[str, Any]): Dictionary mapping nutrients (e.g., "N", "P") 
+                to their calculated scores.
+                
+        Returns:
+            str: A semicolon-separated string of actionable recommendations.
+        """
         actions = []
         # Mapping from classifier recommendations logic
         # 1=Very Poor, 2=Poor
@@ -324,7 +386,16 @@ class PredictionService:
         return "; ".join(actions)
 
     def _format_nutrient_scores(self, scores: Dict[str, int]) -> Dict[str, Dict[str, Any]]:
-        """Helper to format raw scores into uniform response structure"""
+        """
+        Transform raw numerical nutrient scores into structured labeled objects.
+        
+        Args:
+            scores (Dict[str, int]): Dictionary of raw scores (e.g., {"N": 2}).
+            
+        Returns:
+            Dict[str, Dict[str, Any]]: Structured representation including labels 
+                (e.g., {"N": {"score": 2, "label": "Low"}}).
+        """
         formatted = {}
         for key, score in scores.items():
             formatted[key] = {

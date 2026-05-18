@@ -13,9 +13,19 @@ from api.schema.schema import PredictionHistory, PredictionListResponse, Agrovet
 logger = logging.getLogger(__name__)
 
 class PredictionHistoryService:
-    """Service for managing user prediction history"""
+    """
+    Service responsible for managing and retrieving a user's historical predictions.
+    
+    Handles paginated queries, detailed retrieval, and deletion of past soil analyses.
+    """
     
     def __init__(self, db: AsyncSession):
+        """
+        Initialize the PredictionHistoryService.
+        
+        Args:
+            db (AsyncSession): The asynchronous database session.
+        """
         self.db = db
     
     async def get_user_predictions(
@@ -26,7 +36,22 @@ class PredictionHistoryService:
         sort_by: str = "created_at",
         sort_order: str = "desc"
     ) -> PredictionListResponse:
-        """Get user's prediction history with pagination"""
+        """
+        Retrieve a paginated list of a specific user's soil predictions.
+        
+        Args:
+            user (User): The authenticated user whose history is being requested.
+            page (int): The target page number. Defaults to 1.
+            size (int): Number of records per page. Defaults to 10.
+            sort_by (str): The column name to sort by. Defaults to "created_at".
+            sort_order (str): "asc" or "desc". Defaults to "desc".
+            
+        Returns:
+            PredictionListResponse: A paginated payload containing the history records.
+            
+        Raises:
+            Exception: If an unexpected database error occurs during the fetch.
+        """
         logger.info(f"Fetching predictions for user: {user.username}")
         
         try:
@@ -84,7 +109,20 @@ class PredictionHistoryService:
         user: User, 
         prediction_id: str
     ) -> Optional[PredictionHistory]:
-        """Get detailed information about a specific prediction"""
+        """
+        Fetch the complete details of a specific historical prediction.
+        
+        Args:
+            user (User): The authenticated user requesting the details.
+            prediction_id (str): The UUID string of the prediction.
+            
+        Returns:
+            Optional[PredictionHistory]: The detailed history object, or None if not found
+                or if it does not belong to the user.
+                
+        Raises:
+            Exception: If an unexpected database error occurs.
+        """
         logger.info(f"Fetching prediction detail: {prediction_id}")
         
         try:
@@ -106,7 +144,19 @@ class PredictionHistoryService:
             raise
     
     async def delete_prediction(self, user: User, prediction_id: str) -> bool:
-        """Delete a user's prediction"""
+        """
+        Permanently delete a specific prediction from a user's history.
+        
+        Args:
+            user (User): The authenticated user requesting the deletion.
+            prediction_id (str): The UUID string of the prediction to delete.
+            
+        Returns:
+            bool: True if successfully deleted, False if the prediction was not found.
+            
+        Raises:
+            Exception: If a database transaction error occurs during deletion.
+        """
         logger.info(f"Deleting prediction: {prediction_id}")
         
         try:
@@ -131,7 +181,15 @@ class PredictionHistoryService:
             raise
     
     def _prediction_to_history(self, prediction: SoilPrediction) -> Optional[PredictionHistory]:
-        """Convert SoilPrediction model to PredictionHistory response"""
+        """
+        Convert a SQLAlchemy SoilPrediction model into a Pydantic PredictionHistory schema.
+        
+        Args:
+            prediction (SoilPrediction): The database model instance.
+            
+        Returns:
+            Optional[PredictionHistory]: The serialized schema, or None if conversion fails.
+        """
         try:
             # Convert agrovets to AgrovetInfo objects
             agrovet_list = []

@@ -21,9 +21,20 @@ from api.services.auth.core import AuthSecurityManager
 logger = logging.getLogger(__name__)
 
 class AdminUserService:
-    """Service for admin user management operations"""
+    """
+    Service responsible for administrative management of users.
+    
+    Provides capabilities for filtering users, creating accounts with specific roles,
+    resetting passwords, and enforcing role-based access control (RBAC) hierarchies.
+    """
     
     def __init__(self, db: AsyncSession):
+        """
+        Initialize the AdminUserService.
+        
+        Args:
+            db (AsyncSession): The asynchronous database session.
+        """
         self.db = db
     
     async def get_users_with_filters(
@@ -36,7 +47,24 @@ class AdminUserService:
         sort_by: str = "created_at",
         sort_order: str = "desc"
     ) -> UserListResponse:
-        """Get users with filtering, pagination and sorting"""
+        """
+        Retrieve a paginated, filtered, and sorted list of users for the admin dashboard.
+        
+        Args:
+            page (int): Target page number. Defaults to 1.
+            size (int): Number of records per page. Defaults to 20.
+            search (Optional[str]): A keyword to filter usernames, emails, or full names.
+            role (Optional[UserRoleEnum]): Filter by a specific user role.
+            is_active (Optional[bool]): Filter by account activation status.
+            sort_by (str): The column name to sort by. Defaults to 'created_at'.
+            sort_order (str): Sort direction ('asc' or 'desc'). Defaults to 'desc'.
+            
+        Returns:
+            UserListResponse: A payload containing the paginated users and total counts.
+            
+        Raises:
+            Exception: If an unexpected database query error occurs.
+        """
         logger.info(f"Fetching users with filters: search={search}, role={role}, is_active={is_active}")
         
         try:
@@ -124,7 +152,22 @@ class AdminUserService:
         user_data: AdminUserCreate, 
         created_by: User
     ) -> AdminUserResponse:
-        """Create a new user by admin"""
+        """
+        Create a new user account on behalf of an administrator.
+        
+        Enforces RBAC limits, ensuring that only Super Admins can create other Admin
+        or Super Admin accounts. Accounts created here are automatically set as verified.
+        
+        Args:
+            user_data (AdminUserCreate): The registration payload.
+            created_by (User): The authenticated admin user creating the account.
+            
+        Returns:
+            AdminUserResponse: The newly created user's profile.
+            
+        Raises:
+            ValueError: If the current admin lacks permissions, or if the email/username is taken.
+        """
         logger.info(f"Creating user {user_data.username} by admin {created_by.username}")
         
         # Validate permissions for role assignment
@@ -164,7 +207,16 @@ class AdminUserService:
             raise
     
     async def get_user_by_id(self, user_id: str) -> Optional[AdminUserResponse]:
-        """Get user details by ID"""
+        """
+        Fetch detailed information about a single user by their UUID.
+        
+        Args:
+            user_id (str): The UUID string of the target user.
+            
+        Returns:
+            Optional[AdminUserResponse]: The detailed profile including prediction counts, 
+                or None if the user is not found.
+        """
         try:
             user = await AuthManager.get_user_by_id(self.db, user_id)
             if not user:
@@ -190,7 +242,25 @@ class AdminUserService:
         user_update: AdminUserUpdate, 
         updated_by: User
     ) -> AdminUserResponse:
-        """Update user by admin"""
+        """
+        Update a user's profile and settings from the admin panel.
+        
+        Enforces hierarchical permissions:
+        - Regular Admins can only edit standard Users.
+        - Only Super Admins can promote/demote roles to/from Admin levels.
+        
+        Args:
+            user_id (str): The UUID string of the user to update.
+            user_update (AdminUserUpdate): The requested changes.
+            updated_by (User): The authenticated admin performing the update.
+            
+        Returns:
+            AdminUserResponse: The successfully updated user profile.
+            
+        Raises:
+            ValueError: If the user is not found, permissions are insufficient, 
+                or a unique constraint (like email) is violated.
+        """
         logger.info(f"Updating user {user_id} by admin {updated_by.username}")
         
         try:
@@ -260,7 +330,17 @@ class AdminUserService:
         new_password: str, 
         reset_by: User
     ) -> None:
-        """Reset user password by admin"""
+        """
+        Forcefully reset a user's password without needing their current password.
+        
+        Args:
+            user_id (str): The UUID string of the user account.
+            new_password (str): The new plaintext password to enforce.
+            reset_by (User): The admin user triggering the reset.
+            
+        Raises:
+            ValueError: If the user is not found or the admin lacks hierarchical permission.
+        """
         logger.info(f"Password reset for user {user_id} by admin {reset_by.username}")
         
         try:
@@ -284,7 +364,19 @@ class AdminUserService:
             raise
     
     async def delete_user(self, user_id: str, deleted_by: User) -> Dict[str, Any]:
-        """Delete user by admin"""
+        """
+        Permanently delete a user account from the system.
+        
+        Args:
+            user_id (str): The UUID string of the user to delete.
+            deleted_by (User): The admin user issuing the deletion command.
+            
+        Returns:
+            Dict[str, Any]: A summary of the deleted user's details for logging purposes.
+            
+        Raises:
+            ValueError: If the user is not found or the admin lacks hierarchical permission.
+        """
         logger.info(f"Deleting user {user_id} by admin {deleted_by.username}")
         
         try:
@@ -317,14 +409,14 @@ class AdminUserService:
     
     # Helper methods
     async def _user_exists(self, email: str, username: str) -> bool:
-        """Check if user exists by email or username"""
+        """Check if user exists by email or username."""
         result = await self.db.execute(
             select(User).where(or_(User.email == email, User.username == username))
         )
         return result.scalar_one_or_none() is not None
     
     async def _email_exists(self, email: str, exclude_user_id: str = None) -> bool:
-        """Check if email exists (excluding specific user)"""
+        """Check if an email is already taken by a different user."""
         query = select(User).where(User.email == email)
         if exclude_user_id:
             query = query.where(User.id != exclude_user_id)
@@ -333,7 +425,7 @@ class AdminUserService:
         return result.scalar_one_or_none() is not None
     
     async def _username_exists(self, username: str, exclude_user_id: str = None) -> bool:
-        """Check if username exists (excluding specific user)"""
+        """Check if a username is already taken by a different user."""
         query = select(User).where(User.username == username)
         if exclude_user_id:
             query = query.where(User.id != exclude_user_id)
@@ -342,7 +434,15 @@ class AdminUserService:
         return result.scalar_one_or_none() is not None
     
     async def _get_prediction_counts(self, user_ids: List[str]) -> Dict[str, int]:
-        """Get prediction counts for multiple users"""
+        """
+        Aggregate total prediction counts for a batch of users.
+        
+        Args:
+            user_ids (List[str]): List of user UUID strings.
+            
+        Returns:
+            Dict[str, int]: Mapping of user_id to their prediction count.
+        """
         if not user_ids:
             return {}
         
@@ -354,7 +454,9 @@ class AdminUserService:
         return dict(prediction_counts_result.all())
     
     def _can_edit_user(self, current_user: User, target_user: User) -> bool:
-        """Check if current user can edit target user"""
+        """
+        Enforce RBAC rules to determine if a user can be edited by the current session user.
+        """
         if current_user.is_super_admin():
             return True
         elif current_user.is_admin():
@@ -365,7 +467,9 @@ class AdminUserService:
             return current_user.id == target_user.id
     
     def _can_delete_user(self, current_user: User, target_user: User) -> bool:
-        """Check if current user can delete target user"""
+        """
+        Enforce RBAC rules to determine if a user can be deleted by the current session user.
+        """
         if current_user.is_super_admin():
             # Super admins can delete anyone except themselves
             return current_user.id != target_user.id
@@ -377,7 +481,7 @@ class AdminUserService:
             return current_user.id == target_user.id
     
     def _user_to_admin_response(self, user: User) -> AdminUserResponse:
-        """Convert User model to AdminUserResponse"""
+        """Convert a User database model to the AdminUserResponse schema."""
         return AdminUserResponse(
             id=user.id,
             email=user.email,

@@ -79,7 +79,11 @@ export const authOptions: NextAuthOptions = {
             isVerified: user.is_verified,
           };
         } catch (error) {
-          console.error("Auth error:", error);
+          if (error instanceof Error) {
+            console.error(`Auth error: ${error.message}`);
+          } else {
+            console.error("Auth error:", error);
+          }
           return null;
         }
       },

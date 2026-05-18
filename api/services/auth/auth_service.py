@@ -12,13 +12,39 @@ from api.services.auth.auth_manager import AuthManager
 logger = logging.getLogger(__name__)
 
 class AuthService:
-    """Service class for authentication operations"""
+    """
+    Service class handling business logic for authentication and user management.
+    
+    This class isolates the core authentication logic (registration, login, profile updates)
+    from the FastAPI routing layer, interacting directly with the database.
+    """
     
     def __init__(self, db: AsyncSession):
+        """
+        Initialize the AuthService.
+        
+        Args:
+            db (AsyncSession): The asynchronous SQLAlchemy database session.
+        """
         self.db = db  
           
     async def register_user(self, user_data: UserCreate) -> UserResponse:
-        """Register a new user with validation"""
+        """
+        Register a new user in the system.
+        
+        Performs checks to ensure uniqueness of the username and email, hashes
+        the user's password, and persists the new user to the database with
+        a default 'USER' role.
+        
+        Args:
+            user_data (UserCreate): The user's registration details.
+            
+        Returns:
+            UserResponse: The newly created user's profile information.
+            
+        Raises:
+            ValueError: If a user with the provided email or username already exists.
+        """
         logger.info(f"Registration attempt for user: {user_data.username}")
         
         # Check if user already exists
@@ -51,7 +77,21 @@ class AuthService:
             raise
     
     async def login_user(self, credentials: UserLogin) -> dict:
-        """Authenticate user and return token data"""
+        """
+        Authenticate a user and generate a JWT access token.
+        
+        Validates the provided credentials against the database. If successful,
+        generates a JWT containing the user's ID, username, and role.
+        
+        Args:
+            credentials (UserLogin): The login payload containing username/email and password.
+            
+        Returns:
+            dict: A dictionary containing the access token, token type, expiry time, and role.
+            
+        Raises:
+            ValueError: If the credentials are incorrect or the account is deactivated.
+        """
         logger.info(f"Login attempt for: {credentials.username_or_email}")
         
         user = await AuthManager.authenticate_user(
@@ -84,7 +124,21 @@ class AuthService:
         }
     
     async def update_user(self, user: User, user_update: UserUpdate) -> UserResponse:
-        """Update user information with validation"""
+        """
+        Update basic information for an existing user.
+        
+        Validates that any new email or username is not already taken by another user.
+        
+        Args:
+            user (User): The authenticated user object to update.
+            user_update (UserUpdate): The fields containing the updated values.
+            
+        Returns:
+            UserResponse: The updated user profile information.
+            
+        Raises:
+            ValueError: If the new email or username is already in use by another account.
+        """
         logger.info(f"User update request for: {user.username}")
         
         try:
@@ -116,7 +170,17 @@ class AuthService:
             raise
     
     async def change_password(self, user: User, current_password: str, new_password: str) -> None:
-        """Change user password with validation"""
+        """
+        Change a user's password after verifying their current password.
+        
+        Args:
+            user (User): The authenticated user requesting the password change.
+            current_password (str): The user's existing plaintext password.
+            new_password (str): The new plaintext password to set.
+            
+        Raises:
+            ValueError: If the current password provided is incorrect.
+        """
         logger.info(f"Password change request for: {user.username}")
         
         # Verify current password
@@ -136,7 +200,12 @@ class AuthService:
             raise
     
     async def delete_user(self, user: User) -> None:
-        """Delete user account"""
+        """
+        Delete a user account from the database.
+        
+        Args:
+            user (User): The user object to be deleted.
+        """
         logger.info(f"User deletion request for: {user.username}")
         
         try:
@@ -159,7 +228,15 @@ class AuthService:
         pass
     
     def get_user_permissions(self, user: User) -> dict:
-        """Get user's permissions and role information"""
+        """
+        Generate a detailed map of feature permissions based on the user's role.
+        
+        Args:
+            user (User): The user to evaluate permissions for.
+            
+        Returns:
+            dict: A dictionary mapping feature names to boolean access flags.
+        """
         permissions = {
             "role": user.role.value,
             "is_admin": user.is_admin(),
@@ -181,14 +258,32 @@ class AuthService:
     
     # Helper methods
     async def _user_exists(self, email: str, username: str) -> bool:
-        """Check if user exists by email or username"""
+        """
+        Check if a user exists by email or username.
+        
+        Args:
+            email (str): The email address to check.
+            username (str): The username to check.
+            
+        Returns:
+            bool: True if a user exists with either the email or username, False otherwise.
+        """
         result = await self.db.execute(
             select(User).where(or_(User.email == email, User.username == username))
         )
         return result.scalar_one_or_none() is not None
     
     async def _email_exists(self, email: str, exclude_user_id: str = None) -> bool:
-        """Check if email exists (excluding specific user)"""
+        """
+        Check if an email is already registered, optionally excluding a specific user.
+        
+        Args:
+            email (str): The email address to verify.
+            exclude_user_id (str, optional): A user ID to exclude from the check (e.g., during self-update).
+            
+        Returns:
+            bool: True if the email is in use, False otherwise.
+        """
         query = select(User).where(User.email == email)
         if exclude_user_id:
             query = query.where(User.id != exclude_user_id)
@@ -197,7 +292,16 @@ class AuthService:
         return result.scalar_one_or_none() is not None
     
     async def _username_exists(self, username: str, exclude_user_id: str = None) -> bool:
-        """Check if username exists (excluding specific user)"""
+        """
+        Check if a username is already taken, optionally excluding a specific user.
+        
+        Args:
+            username (str): The username to verify.
+            exclude_user_id (str, optional): A user ID to exclude from the check.
+            
+        Returns:
+            bool: True if the username is taken, False otherwise.
+        """
         query = select(User).where(User.username == username)
         if exclude_user_id:
             query = query.where(User.id != exclude_user_id)
@@ -206,7 +310,15 @@ class AuthService:
         return result.scalar_one_or_none() is not None
     
     def _user_to_response(self, user: User) -> UserResponse:
-        """Convert User model to UserResponse"""
+        """
+        Convert a SQLAlchemy User model instance to a Pydantic UserResponse.
+        
+        Args:
+            user (User): The database user model.
+            
+        Returns:
+            UserResponse: The serialized user data safe for API responses.
+        """
         return UserResponse(
             id=user.id,
             email=user.email,

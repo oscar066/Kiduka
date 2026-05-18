@@ -22,7 +22,19 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)
 ) -> User:
-    """FastAPI dependency to get current authenticated user"""
+    """
+    FastAPI dependency that validates the JWT and returns the current authenticated user.
+    
+    Args:
+        credentials (HTTPAuthorizationCredentials): The Bearer token extracted from the request headers.
+        db (AsyncSession): The database session.
+        
+    Returns:
+        User: The authenticated SQLAlchemy User instance.
+        
+    Raises:
+        HTTPException: If the token is invalid, missing, or the user is inactive.
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -48,7 +60,18 @@ async def get_current_user(
 async def get_current_admin_user(
     current_user: User = Depends(get_current_user)
 ) -> User:
-    """FastAPI dependency to get current admin user"""
+    """
+    FastAPI dependency that enforces admin-level access control.
+    
+    Args:
+        current_user (User): The user resolved by `get_current_user`.
+        
+    Returns:
+        User: The authenticated User, guaranteed to be at least an ADMIN.
+        
+    Raises:
+        HTTPException: 403 Forbidden if the user is not an admin.
+    """
     if not current_user.is_admin():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -59,7 +82,18 @@ async def get_current_admin_user(
 async def get_current_super_admin_user(
     current_user: User = Depends(get_current_user)
 ) -> User:
-    """FastAPI dependency to get current super admin user"""
+    """
+    FastAPI dependency that enforces strict super-admin access control.
+    
+    Args:
+        current_user (User): The user resolved by `get_current_user`.
+        
+    Returns:
+        User: The authenticated User, guaranteed to be a SUPER_ADMIN.
+        
+    Raises:
+        HTTPException: 403 Forbidden if the user is not a super admin.
+    """
     if not current_user.is_super_admin():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -72,7 +106,17 @@ async def get_current_user_optional(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
     db: AsyncSession = Depends(get_db)
 ) -> Optional[User]:
-    """FastAPI dependency to get current user (optional)"""
+    """
+    FastAPI dependency that returns a user if a valid token is provided, but does not error if missing.
+    Useful for endpoints with mixed public/private behavior.
+    
+    Args:
+        credentials (Optional[HTTPAuthorizationCredentials]): The Bearer token, if present.
+        db (AsyncSession): The database session.
+        
+    Returns:
+        Optional[User]: The authenticated User, or None if unauthenticated.
+    """
     if not credentials:
         return None
     
@@ -92,7 +136,9 @@ async def get_current_user_optional(
 
 # Permission checking utilities
 class PermissionChecker:
-    """Utility class for checking permissions"""
+    """
+    Utility class grouping static methods for evaluating role-based permissions.
+    """
     
     @staticmethod
     def can_view_user_data(current_user: User, target_user: User) -> bool:
@@ -142,7 +188,15 @@ class PermissionChecker:
 
 # Decorator for admin actions with automatic logging
 def log_admin_action(action_name: str):
-    """Decorator to automatically log admin actions"""
+    """
+    Decorator that automatically intercepts a router function call to log an administrative action.
+    
+    Extracts the `current_user` and `db` from the decorated function's arguments to 
+    record the action in the `AdminAuditLog` table.
+    
+    Args:
+        action_name (str): The descriptive identifier of the action (e.g., 'update_agrovet').
+    """
     def decorator(func):
         async def wrapper(*args, **kwargs):
             # Extract parameters from kwargs

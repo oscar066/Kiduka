@@ -1,9 +1,10 @@
 import ReportDetailPage from "../../components/features/reports/reportDetailPage";
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default function ReportDetailRoute({ params }: Props) {
-  return <ReportDetailPage reportId={params.id} />;
+export default async function ReportDetailRoute({ params }: Props) {
+  const resolvedParams = await params;
+  return <ReportDetailPage reportId={resolvedParams.id} />;
 }

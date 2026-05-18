@@ -17,13 +17,33 @@ from api.schema.auth_schema import (
 logger = logging.getLogger(__name__)
 
 class AdminDashboardService:
-    """Service for admin dashboard data aggregation"""
+    """
+    Service responsible for aggregating statistics and recent data for the admin dashboard.
+    
+    Coordinates multiple database queries to assemble a high-level overview of system health,
+    user activity, and recent platform events.
+    """
     
     def __init__(self, db: AsyncSession):
+        """
+        Initialize the AdminDashboardService.
+        
+        Args:
+            db (AsyncSession): The asynchronous database session.
+        """
         self.db = db
     
     async def get_dashboard_data(self) -> AdminDashboardResponse:
-        """Get comprehensive dashboard data"""
+        """
+        Compile all necessary data for the main administrative dashboard view.
+        
+        Returns:
+            AdminDashboardResponse: A comprehensive payload containing overall statistics,
+                recent user signups, recent soil predictions, and recent audit logs.
+                
+        Raises:
+            Exception: If any of the underlying aggregation queries fail.
+        """
         logger.info("Fetching admin dashboard data")
         
         try:
@@ -47,7 +67,12 @@ class AdminDashboardService:
             raise
     
     async def _get_dashboard_stats(self) -> AdminDashboardStats:
-        """Get dashboard statistics"""
+        """
+        Calculate system-wide statistics including total users, active predictions, and role distributions.
+        
+        Returns:
+            AdminDashboardStats: Pydantic model containing the aggregated numerical data.
+        """
         # Get user statistics
         total_users_result = await self.db.execute(select(func.count(User.id)))
         total_users = total_users_result.scalar()
@@ -107,7 +132,15 @@ class AdminDashboardService:
         )
     
     async def _get_recent_users(self, limit: int = 10) -> List[AdminUserResponse]:
-        """Get recent users"""
+        """
+        Fetch the most recently registered users.
+        
+        Args:
+            limit (int): The maximum number of users to retrieve. Defaults to 10.
+            
+        Returns:
+            List[AdminUserResponse]: A list of recent user profiles.
+        """
         recent_users_stmt = (
             select(User)
             .order_by(desc(User.created_at))
@@ -135,7 +168,15 @@ class AdminDashboardService:
         ]
     
     async def _get_recent_predictions(self, limit: int = 10) -> List[AdminPredictionResponse]:
-        """Get recent predictions"""
+        """
+        Fetch the most recently generated soil predictions globally.
+        
+        Args:
+            limit (int): The maximum number of predictions to retrieve. Defaults to 10.
+            
+        Returns:
+            List[AdminPredictionResponse]: A list of recent prediction details.
+        """
         recent_predictions_stmt = (
             select(SoilPrediction)
             .options(selectinload(SoilPrediction.user))
@@ -174,7 +215,15 @@ class AdminDashboardService:
         ]
     
     async def _get_recent_audit_logs(self, limit: int = 10) -> List[AuditLogEntry]:
-        """Get recent audit logs"""
+        """
+        Fetch the most recent administrative actions logged in the system.
+        
+        Args:
+            limit (int): The maximum number of logs to retrieve. Defaults to 10.
+            
+        Returns:
+            List[AuditLogEntry]: A list of recent audit log entries.
+        """
         recent_logs_stmt = (
             select(AdminAuditLog)
             .options(selectinload(AdminAuditLog.admin_user))

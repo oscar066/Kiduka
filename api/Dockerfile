@@ -4,6 +4,12 @@ FROM python:3.11-slim
 # Set working directory to /app
 WORKDIR /app
 
+# Install R runtime for the RQUEFTS yield model.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates r-base r-base-dev build-essential && \
+    Rscript -e 'install.packages("Rquefts", repos = "https://cloud.r-project.org")' && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copy the requirements file from the api folder
 COPY api/requirements.txt /tmp/requirements.txt
 

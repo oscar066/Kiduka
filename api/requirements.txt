@@ -50,4 +50,4 @@ langdetect==1.0.9
 pypdf==4.0.0
 # Optimization dependencies
 scipy==1.11.4
-pulp==2.8.0
+pcse==6.0.12

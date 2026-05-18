@@ -14,6 +14,25 @@ async def optimize_fertilizer(
     """
     Compute optimal fertilizer application rates by crop and product,
     along with expected value gains.
+    
+    This endpoint utilizes the optimization engine to evaluate soil data,
+    crop area, grain prices, and available fertilizers against a defined budget.
+    It returns both the recommended fertilizer application rates and a comparison
+    of the expected financial return against a baseline scenario (no fertilizer).
+    
+    Args:
+        request (OptimizationRequest): Payload containing location, soil data, 
+            crops, available fertilizers, and scenario configurations (e.g., budget).
+        current_user (User): The authenticated user making the request (injected).
+        
+    Returns:
+        OptimizationResponse: The result of the optimization, containing 
+        application rows, baseline/feasible scenarios, and summary metrics.
+        
+    Raises:
+        HTTPException: If the payload validation fails or optimization constraints 
+            are invalid (status 400).
+        HTTPException: If the mathematical solver encounters an error or timeout (status 500).
     """
     try:
         response = OptimizationService.optimize(request)
