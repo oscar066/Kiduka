@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React from "react";
 import { ProtectedPage } from "../components/auth/roleBasedGaurd";
 import { RoleBasedLayout } from "../components/layout/roleBasedLayout";
