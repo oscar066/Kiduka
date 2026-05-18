@@ -16,9 +16,25 @@ def mock_db():
     db = AsyncMock(spec=AsyncSession)
     db.add = MagicMock()
     db.commit = AsyncMock()
-    db.refresh = AsyncMock()
     db.delete = AsyncMock()
     db.rollback = AsyncMock()
+    # execute() is async, but its resolved return value must be a plain
+    # MagicMock so that chained synchronous calls like
+    # result.scalars().all() and result.scalar_one_or_none() work
+    # without returning coroutines.
+    db.execute.return_value = MagicMock()
+
+    # refresh() must populate DB-generated fields (id, created_at, updated_at)
+    # so that services converting real ORM objects to Pydantic schemas succeed.
+    async def _fake_refresh(obj):
+        if not getattr(obj, "id", None):
+            obj.id = uuid.uuid4()
+        if not getattr(obj, "created_at", None):
+            obj.created_at = datetime(2024, 1, 1)
+        if not getattr(obj, "updated_at", None):
+            obj.updated_at = datetime(2024, 1, 1)
+
+    db.refresh = AsyncMock(side_effect=_fake_refresh)
     return db
 
 
@@ -132,4 +148,8 @@ def sample_prediction(user_id):
     pred.created_at = datetime(2024, 6, 1)
     pred.updated_at = datetime(2024, 6, 1)
     pred.agrovets = []
+    # Relationship used by admin conversion (_prediction_to_admin_response)
+    pred.user = MagicMock()
+    pred.user.username = "regularuser"
+    pred.user.email = "user@example.com"
     return pred
