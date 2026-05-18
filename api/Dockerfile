@@ -1,33 +1,46 @@
-# Use an official Python runtime as a parent image
-FROM python:3.11-slim
+# syntax=docker/dockerfile:1
 
-# Set working directory to /app
-WORKDIR /app
+# ── Stage 1: compile R packages
+FROM python:3.11-slim AS r-builder
 
-# Install R runtime for the RQUEFTS yield model.
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates r-base r-base-dev build-essential && \
-    Rscript -e 'install.packages("Rquefts", repos = "https://cloud.r-project.org")' && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        r-base r-base-dev build-essential gfortran && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy the requirements file from the api folder
-COPY api/requirements.txt /tmp/requirements.txt
+RUN Rscript -e 'install.packages("Rquefts", repos = "https://cloud.r-project.org")'
 
-# Install dependencies
-RUN pip install --no-cache-dir -r /tmp/requirements.txt && \
+# ── Stage 2: final runtime image
+FROM python:3.11-slim
+
+# Install only the R runtime (no compilers / dev headers)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        r-base ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy compiled Rquefts (and its dependencies meteor, Rcpp) from builder
+COPY --from=r-builder /usr/local/lib/R/site-library /usr/local/lib/R/site-library
+
+WORKDIR /app
+
+# Install Python dependencies (cached between builds when requirements.txt unchanged)
+COPY api/requirements.txt /tmp/requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r /tmp/requirements.txt && \
     pip uninstall -y pinecone-plugin-inference && \
     rm /tmp/requirements.txt
 
-# Copy both api and chatbot directories
+# Copy application code last (most frequently changed layer)
 COPY api /app/api
 COPY chatbot /app/chatbot
 
-# Expose port 8000
 EXPOSE 8000
+ENV PORT=8000 \
+    PYTHONPATH=/app
 
-# Define environment variable
-ENV PORT=8000
-ENV PYTHONPATH=/app
-
-# Run the application using the module path
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
