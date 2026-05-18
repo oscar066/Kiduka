@@ -9,8 +9,7 @@ from sqlalchemy import (
     ForeignKey, Table, ARRAY, JSON, Enum
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, Mapped
+from sqlalchemy.orm import declarative_base, relationship, Mapped
 from sqlalchemy.sql import func
 import enum
 
