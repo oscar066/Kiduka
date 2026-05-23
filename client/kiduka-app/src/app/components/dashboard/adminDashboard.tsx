@@ -15,6 +15,8 @@ import {
   Settings,
   UserCheck,
   FileText,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { SuperAdminOnly } from "../auth/roleBasedGaurd";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
@@ -26,6 +28,13 @@ import { AdminActionCard } from "./components/AdminActionCard";
 
 import useSWR from "swr";
 import { swrFetcher } from "@/lib/swr-config";
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 export function AdminDashboard() {
   const { user, token, isSuperAdmin } = useAuth();
@@ -41,17 +50,26 @@ export function AdminDashboard() {
     swrFetcher
   );
 
-  const error = fetchError ? "Failed to load dashboard data" : null;
   const loading = isLoading;
 
-  if (error) {
+  if (fetchError) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md space-y-4">
           <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Failed to load dashboard</AlertTitle>
+            <AlertDescription>
+              {fetchError?.message || "An unexpected error occurred."}
+            </AlertDescription>
           </Alert>
+          <button
+            onClick={() => mutate()}
+            className="w-full h-10 rounded-lg border border-amber-200 bg-white hover:bg-amber-50 text-sm font-medium text-green-700 flex items-center justify-center gap-2 transition-colors"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Try again
+          </button>
         </div>
       </div>
     );
@@ -62,27 +80,37 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="space-y-2">
-        {loading && !user ? (
-          <>
-            <Skeleton className="h-9 w-64" />
-            <Skeleton className="h-6 w-48" />
-          </>
-        ) : (
-          <>
-            <h1 className="text-3xl font-serif font-bold text-green-800">
-              Admin Dashboard
-            </h1>
-            <p className="text-green-600 font-serif">
-              Welcome back, {user?.full_name || user?.username}
-              {isSuperAdmin && (
-                <span className="ml-2 font-semibold text-blue-700">
-                  (Super Admin)
-                </span>
-              )}
-            </p>
-          </>
-        )}
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          {loading && !user ? (
+            <>
+              <Skeleton className="h-9 w-64" />
+              <Skeleton className="h-6 w-48" />
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
+                Admin Dashboard
+              </h1>
+              <p className="text-green-600 font-serif">
+                {getGreeting()}, {user?.full_name || user?.username}
+                {isSuperAdmin && (
+                  <Badge className="ml-2 bg-blue-100 text-blue-800 border border-blue-200 font-semibold text-xs">
+                    Super Admin
+                  </Badge>
+                )}
+              </p>
+            </>
+          )}
+        </div>
+        <button
+          onClick={() => mutate()}
+          disabled={loading}
+          className="p-2 rounded-lg border border-amber-200 bg-white hover:bg-amber-50 transition-colors disabled:opacity-50"
+          aria-label="Refresh dashboard"
+        >
+          <RefreshCw className={`h-4 w-4 text-green-600 ${loading ? "animate-spin" : ""}`} />
+        </button>
       </div>
 
       {/* Key Metrics */}
@@ -129,10 +157,10 @@ export function AdminDashboard() {
 
       {/* Role Distribution & Prediction Status */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="border border-amber-200">
-          <CardHeader className="mb-4 flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            <CardTitle className="text-lg font-serif font-medium text-green-800">
+        <Card className="border border-amber-200 shadow-lg">
+          <CardHeader className="flex items-center gap-2 bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200">
+            <Users className="h-5 w-5 text-green-600" />
+            <CardTitle className="text-base font-serif font-semibold text-green-800">
               Users by Role
             </CardTitle>
           </CardHeader>
@@ -160,10 +188,10 @@ export function AdminDashboard() {
             )}
           </CardContent>
         </Card>
-        <Card className="border border-amber-200">
-          <CardHeader className="mb-4 flex items-center gap-2 border-amber-200">
-            <BarChart3 className="h-5 w-5" />
-            <CardTitle className="text-lg font-serif font-medium text-green-800">
+        <Card className="border border-amber-200 shadow-lg">
+          <CardHeader className="flex items-center gap-2 bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200">
+            <BarChart3 className="h-5 w-5 text-green-600" />
+            <CardTitle className="text-base font-serif font-semibold text-green-800">
               Prediction Status
             </CardTitle>
           </CardHeader>
