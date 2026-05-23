@@ -2,12 +2,9 @@
 Unit tests for AuthSecurityManager (JWT tokens and password hashing)
 """
 import time
-from datetime import timedelta
-
 import pytest
-
+from datetime import timedelta
 from api.services.auth.core.security import AuthSecurityManager
-
 
 class TestPasswordHashing:
 
