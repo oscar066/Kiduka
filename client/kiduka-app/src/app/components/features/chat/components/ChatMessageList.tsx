@@ -3,7 +3,7 @@
 import React, { useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, Loader2 } from "lucide-react";
+import { Bot } from "lucide-react";
 import { ChatMessageItem } from "./ChatMessageItem";
 import { ChatEmptyState } from "./ChatEmptyState";
 
@@ -78,9 +78,10 @@ export function ChatMessageList({
                 <div className="h-8 w-8 rounded-full bg-green-50 border border-green-200 text-green-700 flex items-center justify-center flex-shrink-0">
                   <Bot className="h-4 w-4" />
                 </div>
-                <div className="bg-white/90 border border-green-100/80 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2 shadow-sm">
-                  <Loader2 className="h-3.5 w-3.5 text-green-600 animate-spin" />
-                  <span className="text-sm italic text-gray-400">Thinking…</span>
+                <div className="bg-white/90 border border-green-100/80 rounded-2xl rounded-tl-sm px-4 py-4 flex items-center gap-1.5 shadow-sm">
+                  <span className="h-2 w-2 rounded-full bg-green-400 animate-bounce [animation-delay:-0.3s]" />
+                  <span className="h-2 w-2 rounded-full bg-green-400 animate-bounce [animation-delay:-0.15s]" />
+                  <span className="h-2 w-2 rounded-full bg-green-400 animate-bounce" />
                 </div>
               </motion.div>
             )}

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 interface SuggestedPrompt {
   label: string;
   prompt: string;
+  icon?: React.ReactNode;
 }
 
 interface ChatEmptyStateProps {
@@ -25,7 +26,7 @@ export function ChatEmptyState({ suggestedPrompts, onSendMessage }: ChatEmptySta
       className="flex flex-col items-center text-center space-y-6 pt-10 pb-4"
     >
       <div className="p-4 bg-green-100 rounded-2xl border border-green-200">
-        <Sparkles className="h-9 w-9 text-green-600 animate-pulse" />
+        <Sparkles className="h-9 w-9 text-green-600" />
       </div>
 
       <div className="space-y-2">
@@ -38,17 +39,19 @@ export function ChatEmptyState({ suggestedPrompts, onSendMessage }: ChatEmptySta
         </p>
       </div>
 
-      {/* Suggestion chips */}
-      <div className="flex flex-col gap-2.5 w-full max-w-lg mx-auto">
-        {suggestedPrompts.map(({ label, prompt }) => (
+      {/* Suggestion chips — 2×2 grid */}
+      <div className="grid grid-cols-2 gap-3 w-full max-w-sm mx-auto">
+        {suggestedPrompts.map(({ label, prompt, icon }) => (
           <Button
             key={label}
             variant="outline"
-            className="justify-start text-left gap-3 h-auto py-3 px-4 border-green-100 hover:border-green-300 hover:bg-green-50/80 text-green-800 bg-white/80 rounded-xl text-sm font-medium transition-all hover:-translate-y-0.5 hover:shadow-sm whitespace-normal leading-relaxed"
+            className="flex flex-col items-center justify-center text-center gap-2.5 h-28 border-green-100 hover:border-green-300 hover:bg-green-50/80 text-green-800 bg-white/80 rounded-xl font-medium transition-all hover:-translate-y-0.5 hover:shadow-md whitespace-normal"
             onClick={() => onSendMessage(prompt)}
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-green-500 flex-shrink-0 mt-1" />
-            <span className="flex-1">{label}</span>
+            <span className="p-2 bg-green-50 rounded-lg border border-green-100 text-green-600">
+              {icon ?? <span className="h-4 w-4 rounded-full bg-green-500" />}
+            </span>
+            <span className="text-xs leading-snug px-1 text-green-800">{label}</span>
           </Button>
         ))}
       </div>
