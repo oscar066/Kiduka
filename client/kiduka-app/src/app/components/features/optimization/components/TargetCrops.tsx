@@ -11,6 +11,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import {
   Tooltip,
@@ -49,10 +50,17 @@ export function TargetCrops({
     <Card className="border-amber-200 bg-white shadow-lg overflow-hidden">
       <CardHeader className="bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200 py-4 px-5">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-green-800 text-base font-semibold">
-            <Sprout className="h-4 w-4 text-green-600" />
-            Target Crops
-          </CardTitle>
+          <div>
+            <CardTitle className="flex items-center gap-2 text-green-800 text-base font-semibold">
+              <Sprout className="h-4 w-4 text-green-600" />
+              Target Crops
+            </CardTitle>
+            <CardDescription className="mt-0.5 text-xs text-gray-500">
+              {crops.length === 0
+                ? "Add at least one crop to run the optimizer"
+                : `${crops.length} crop${crops.length !== 1 ? "s" : ""} · acreage and farm-gate price drive revenue projections`}
+            </CardDescription>
+          </div>
           <Button
             variant="outline"
             size="sm"
