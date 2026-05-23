@@ -99,6 +99,9 @@ export function SoilInputForm({
                     handleInputChange("ph", val === "" ? undefined : (Number.parseFloat(val) || 0));
                   }}
                 />
+              <p className="text-xs text-gray-400">
+                Scale: 0–14 · Ideal for most crops: 6.0–7.0
+              </p>
             </div>
           </TabsContent>
 
@@ -168,7 +171,7 @@ export function SoilInputForm({
 
         <Button
           onClick={onSubmit}
-          className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white"
+          className="w-full h-12 mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
           disabled={disabled || isLoading || !isFormValid()}
         >
           {isLoading ? (

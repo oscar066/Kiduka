@@ -138,7 +138,7 @@ export default function SoilFertilityDashboard() {
 
           <main className="flex-1 space-y-6 p-6 bg-gradient-to-br from-green-25 via-amber-25 to-green-25 min-h-screen">
             <div className="space-y-2">
-              <h1 className="text-3xl font-serif font-bold text-green-800">
+              <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
                 Soil Fertility Analysis
               </h1>
               <p className="text-green-600 font-serif">
@@ -193,18 +193,61 @@ export default function SoilFertilityDashboard() {
                     )}
                   </>
                 ) : (
-                  <Card className="border-amber-200 bg-white shadow-lg">
-                    <CardContent className="flex items-center justify-center h-64">
-                      <div className="text-center space-y-4">
-                        <Leaf className="h-12 w-12 text-green-400 mx-auto" />
+                  <Card className="border-amber-200 bg-white shadow-lg h-full">
+                    <CardContent className="p-6 h-full flex flex-col justify-between">
+                      <div className="text-center space-y-3 mb-6">
+                        <div className="p-2 bg-green-100 rounded-full w-fit mx-auto">
+                          <Leaf className="h-6 w-6 text-green-600" />
+                        </div>
                         <div>
-                          <h3 className="text-lg font-medium text-gray-900">
+                          <h3 className="text-xl font-serif font-bold text-gray-900">
                             Ready for Analysis
                           </h3>
-                          <p className="text-gray-500">
-                            Enter your soil parameters to get started
+                          <p className="text-gray-500 mt-1">
+                            Fill in your soil details on the left to get started
                           </p>
                         </div>
+                      </div>
+
+                      {/* 3-step guide */}
+                      <div className="grid md:grid-cols-3 gap-4">
+                        {[
+                          {
+                            step: "01",
+                            icon: <AlertCircle className="h-5 w-5 text-blue-600" />,
+                            iconBg: "bg-blue-100",
+                            title: "Enter pH & Location",
+                            desc: "Provide your soil pH and enable location. Have lab results? Add your nutrient values in the optional tab for a more precise analysis.",
+                          },
+                          {
+                            step: "02",
+                            icon: <Leaf className="h-5 w-5 text-green-600" />,
+                            iconBg: "bg-green-100",
+                            title: "Run Analysis",
+                            desc: "Our AI model calculates your Soil Health Index and nutrient breakdown.",
+                          },
+                          {
+                            step: "03",
+                            icon: <AlertCircle className="h-5 w-5 text-amber-600" />,
+                            iconBg: "bg-amber-100",
+                            title: "Get Recommendations",
+                            desc: "Receive fertilizer recommendations and find nearby agrovets.",
+                          },
+                        ].map(({ step, icon, iconBg, title, desc }) => (
+                          <div
+                            key={step}
+                            className="flex flex-col items-center text-center p-4 rounded-xl border border-amber-100 bg-gradient-to-b from-green-50/50 to-white space-y-3"
+                          >
+                            <div className="relative">
+                              <div className={`p-3 ${iconBg} rounded-xl`}>{icon}</div>
+                              <span className="absolute -top-2 -right-2 text-[10px] font-bold text-white bg-green-600 rounded-full w-5 h-5 flex items-center justify-center">
+                                {step}
+                              </span>
+                            </div>
+                            <h4 className="font-semibold font-serif text-green-900 text-sm">{title}</h4>
+                            <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
+                          </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>

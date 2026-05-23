@@ -95,7 +95,12 @@ export function AgrovetsDisplay({
                     <Label className="text-xs font-medium text-green-700">
                       Phone:
                     </Label>
-                    <p className="text-sm text-gray-700">{agrovet.phone}</p>
+                    <a
+                      href={`tel:${agrovet.phone}`}
+                      className="text-sm text-green-700 hover:text-green-900 hover:underline font-medium transition-colors"
+                    >
+                      {agrovet.phone}
+                    </a>
                   </div>
                 )}
               </div>
