@@ -45,35 +45,24 @@ export function AgrovetsDisplay({
                   <Label className="text-xs font-medium text-green-700">
                     Available Products:
                   </Label>
-                  <div className="flex flex-wrap gap-1 mt-1">
+                  <div className="flex flex-col gap-1.5 mt-1">
                     {agrovet.products.map((product, idx) => (
-                      <span
+                      <div
                         key={idx}
-                        className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full"
+                        className="flex items-center justify-between px-2.5 py-1.5 bg-green-50 rounded-lg border border-green-100"
                       >
-                        {product}
-                      </span>
+                        <span className="text-xs font-medium text-green-800">
+                          {product}
+                        </span>
+                        {agrovet.prices && agrovet.prices[idx] !== undefined && (
+                          <span className="text-xs font-semibold text-amber-700">
+                            KES {agrovet.prices[idx].toFixed(0)}
+                          </span>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
-
-                {agrovet.prices && agrovet.prices.length > 0 && (
-                  <div>
-                    <Label className="text-xs font-medium text-green-700">
-                      Prices (KES):
-                    </Label>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {agrovet.prices.map((price, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full"
-                        >
-                          {price.toFixed(0)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {agrovet.rating && (
                   <div className="flex items-center gap-1">

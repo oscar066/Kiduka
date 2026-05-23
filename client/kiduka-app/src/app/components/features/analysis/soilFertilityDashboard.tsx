@@ -193,8 +193,8 @@ export default function SoilFertilityDashboard() {
                     )}
                   </>
                 ) : (
-                  <Card className="border-amber-200 bg-white shadow-lg h-full">
-                    <CardContent className="p-6 h-full flex flex-col justify-between">
+                  <Card className="border-amber-200 bg-white shadow-lg">
+                    <CardContent className="p-6">
                       <div className="text-center space-y-3 mb-6">
                         <div className="p-2 bg-green-100 rounded-full w-fit mx-auto">
                           <Leaf className="h-6 w-6 text-green-600" />
