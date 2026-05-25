@@ -109,6 +109,31 @@ class FdOaSolver:
         for crop_idx, center in enumerate(baseline.z_npk_kg_ha):
             cuts.extend(self._finite_difference_cuts(problem, crop_idx, center))
 
+        warm_start = self._warm_start_solution_if_needed(
+            problem=problem,
+            baseline=baseline,
+            nutrient_matrix=nutrient_matrix,
+            cost_vector=cost_vector,
+            area_vector=area_vector,
+            price_vector=price_vector,
+        )
+        if warm_start is not None:
+            for crop_idx, center in enumerate(warm_start.z_npk_kg_ha):
+                cuts.extend(self._finite_difference_cuts(problem, crop_idx, center))
+            if warm_start.total_net_return > incumbent.total_net_return + IMPROVEMENT_TOL:
+                incumbent = warm_start
+            solver_log.append(
+                {
+                    "iteration": 0,
+                    "warm_start": True,
+                    "warm_start_yield_total": float(area_vector @ warm_start.yields_kg_ha),
+                    "warm_start_net_return": warm_start.total_net_return,
+                    "best_net_return": incumbent.total_net_return,
+                    "added_cuts": len(crops) * len(FD_STEPS),
+                    "elapsed_seconds": time.perf_counter() - start_time,
+                }
+            )
+
         iteration = 0
         while (
             iteration < problem.scenario.max_iterations
@@ -213,6 +238,94 @@ class FdOaSolver:
                 raise ValueError(f"{fertilizer.product} price_currency_per_kg must be positive.")
             if min(fertilizer.nutrient_fractions) < 0:
                 raise ValueError(f"{fertilizer.product} nutrient fractions must be non-negative.")
+
+    def _warm_start_solution_if_needed(
+        self,
+        problem: OptimizationProblem,
+        baseline: EvaluatedSolution,
+        nutrient_matrix: np.ndarray,
+        cost_vector: np.ndarray,
+        area_vector: np.ndarray,
+        price_vector: np.ndarray,
+    ) -> EvaluatedSolution | None:
+        if not np.any(baseline.yields_kg_ha <= ZERO_TOLERANCE):
+            return None
+        candidates = self._warm_start_candidates(
+            problem=problem,
+            nutrient_matrix=nutrient_matrix,
+            cost_vector=cost_vector,
+            area_vector=area_vector,
+        )
+        if not candidates:
+            return None
+        evaluated = [
+            self._evaluate_solution(
+                problem,
+                candidate,
+                nutrient_matrix,
+                cost_vector,
+                area_vector,
+                price_vector,
+            )
+            for candidate in candidates
+        ]
+        return max(evaluated, key=lambda solution: float(area_vector @ solution.yields_kg_ha))
+
+    def _warm_start_candidates(
+        self,
+        problem: OptimizationProblem,
+        nutrient_matrix: np.ndarray,
+        cost_vector: np.ndarray,
+        area_vector: np.ndarray,
+    ) -> list[np.ndarray]:
+        crop_count = len(problem.crops)
+        fertilizer_count = len(problem.fertilizers)
+        if crop_count == 0 or fertilizer_count == 0 or problem.scenario.budget_currency <= 0:
+            return []
+
+        candidates: list[np.ndarray] = []
+
+        average_candidate = np.zeros((crop_count, fertilizer_count), dtype=float)
+        average_budget = problem.scenario.budget_currency / (crop_count * fertilizer_count)
+        for crop_idx in range(crop_count):
+            for fert_idx in range(fertilizer_count):
+                average_candidate[crop_idx, fert_idx] = (
+                    average_budget / (area_vector[crop_idx] * cost_vector[fert_idx])
+                )
+        candidates.append(self._scale_candidate_to_npk_box(average_candidate, nutrient_matrix))
+
+        extreme_budget = problem.scenario.budget_currency / crop_count
+        for fert_idx in range(fertilizer_count):
+            candidate = np.zeros((crop_count, fertilizer_count), dtype=float)
+            for crop_idx in range(crop_count):
+                candidate[crop_idx, fert_idx] = (
+                    extreme_budget / (area_vector[crop_idx] * cost_vector[fert_idx])
+                )
+            candidates.append(self._scale_candidate_to_npk_box(candidate, nutrient_matrix))
+
+        unique_candidates: dict[tuple[float, ...], np.ndarray] = {}
+        for candidate in candidates:
+            if not np.any(candidate > ZERO_TOLERANCE):
+                continue
+            key = tuple(float(value) for value in np.round(candidate.ravel(), NPK_CACHE_DECIMALS))
+            unique_candidates[key] = candidate
+        return list(unique_candidates.values())
+
+    def _scale_candidate_to_npk_box(
+        self,
+        candidate: np.ndarray,
+        nutrient_matrix: np.ndarray,
+    ) -> np.ndarray:
+        scaled = np.maximum(np.asarray(candidate, dtype=float), 0.0).copy()
+        for crop_idx in range(scaled.shape[0]):
+            npk = scaled[crop_idx] @ nutrient_matrix
+            scale = 1.0
+            for nutrient_idx, upper in enumerate(NPK_BOX_UPPER):
+                if npk[nutrient_idx] > upper + ZERO_TOLERANCE:
+                    scale = min(scale, float(upper / npk[nutrient_idx]))
+            if scale < 1.0:
+                scaled[crop_idx] *= scale
+        return scaled
 
     def _nutrient_matrix(self, fertilizers: tuple[FertilizerInput, ...]) -> np.ndarray:
         return np.array([fert.nutrient_fractions for fert in fertilizers], dtype=float)
