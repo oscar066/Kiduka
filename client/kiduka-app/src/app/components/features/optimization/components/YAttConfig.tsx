@@ -21,7 +21,6 @@ import {
 
 export interface YAttConfigData {
   source: "kephis" | "wofost";
-  kephis_quantile: number;
   wofost_sowing_date: string;
   wofost_elevation_m: number | null;
   fallback_to_kephis: boolean;
@@ -30,7 +29,6 @@ export interface YAttConfigData {
 
 export const DEFAULT_YATT_CONFIG: YAttConfigData = {
   source: "kephis",
-  kephis_quantile: 0.01,
   wofost_sowing_date: "2024-03-15",
   wofost_elevation_m: null,
   fallback_to_kephis: true,
@@ -69,7 +67,7 @@ export function YAttConfig({ config, onChange, locationPrefilled }: YAttConfigPr
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400">
               {config.source === "kephis"
-                ? `KEPHIS · Q${(config.kephis_quantile * 100).toFixed(0)}%`
+                ? "KEPHIS"
                 : `WOFOST · ${config.wofost_sowing_date}`}
             </span>
             {open ? (
@@ -105,32 +103,6 @@ export function YAttConfig({ config, onChange, locationPrefilled }: YAttConfigPr
               </SelectContent>
             </Select>
           </div>
-
-          {/* KEPHIS-only: quantile */}
-          {config.source === "kephis" && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700">
-                KEPHIS Quantile
-                <span className="text-xs text-gray-400 font-normal ml-1">
-                  (1 = max recorded yield, 0.01 = conservative)
-                </span>
-              </Label>
-              <div className="flex items-center gap-3">
-                <Input
-                  type="number"
-                  step={0.01}
-                  min={0}
-                  max={1}
-                  value={config.kephis_quantile}
-                  onChange={(e) => update({ kephis_quantile: Number(e.target.value) })}
-                  className="h-9 w-28 border-amber-200 focus-visible:ring-green-400"
-                />
-                <span className="text-sm text-gray-500">
-                  = {(config.kephis_quantile * 100).toFixed(0)}th percentile
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* WOFOST-only: sowing date, elevation, location */}
           {config.source === "wofost" && (

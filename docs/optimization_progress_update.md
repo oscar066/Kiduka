@@ -34,7 +34,7 @@ Farmers can toggle any product on or off, adjust prices if local prices differ, 
 A collapsible **Advanced Settings** panel has been added to the optimization page. This exposes configuration options that were previously hardcoded or not accessible from the UI:
 
 - **Attainable Yield Source** — choose between KEPHIS (uses Busia district yield trial data, default) or WOFOST (process-based crop simulation model)
-- **KEPHIS Quantile** — controls how conservative the attainable yield estimate is. A value of 0.01 (1st percentile) gives the most conservative estimate; higher values use the average/median yield
+- **KEPHIS default** — uses the conservative lower-average attainable yield from the KEPHIS table
 - **WOFOST options** — when WOFOST is selected, the farmer can set the sowing date, site elevation, and GPS coordinates. A fallback to KEPHIS is also available for crops that do not yet have WOFOST parameters
 
 The panel is collapsed by default so it does not overwhelm the main workflow but is easy to open for users who need it.
@@ -68,13 +68,11 @@ If the farmer has no previous predictions on their account, the fields default t
 
 ## Backend Changes
 
-### 5. API Schema Fixed — 422 Error on Optimization Endpoint
+### 5. API Schema Aligned with KEPHIS Contract
 
-After the Advanced Settings panel was introduced on the frontend, every optimization request was failing with a **422 Unprocessable Entity** error before the optimizer even ran.
+The Advanced Settings panel now sends only the attainable-yield source plus WOFOST-specific options. For KEPHIS, the optimizer uses the lower-average attainable yield by default.
 
-**What was happening:** The frontend was correctly sending the `kephis_quantile` value as part of the request. However, the backend schema for that section of the request had never declared that field. Because the schema is set to reject any field it does not recognise (`extra = "forbid"`), every request was being rejected immediately.
-
-**Fix:** `kephis_quantile` was added to the backend schema with a valid range of 0–1. The service layer was also updated to translate the quantile into the appropriate yield column in the KEPHIS data (values at or below 0.5 use the conservative lower-bound column; values above 0.5 use the average/median column).
+**Contract:** The backend schema remains strict (`extra = "forbid"`). KEPHIS requests should not include retired yield-tuning fields; source selection alone is sufficient.
 
 ---
 
@@ -158,5 +156,4 @@ This correctly separates "what the farmer actually measured" from "what the mode
 | Fix score-vs-value ambiguity in prediction service | 🔲 Planned |
 | Update pre-fill to use `nutrients[K].method` | 🔲 Planned |
 | Integration tests against live database | 🔲 Planned |
-| KEPHIS quantile UI — change to binary toggle matching actual two-option data | 🔲 Planned |
 | Expand optimization to support additional crops and WOFOST parameters | 🔲 Ongoing |

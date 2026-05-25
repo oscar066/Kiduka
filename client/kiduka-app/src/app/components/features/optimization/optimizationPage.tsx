@@ -232,7 +232,6 @@ export default function OptimizationPage() {
         budget_currency: budget,
         y_att: {
           source: yAttConfig.source,
-          kephis_quantile: yAttConfig.kephis_quantile,
           wofost_sowing_date: yAttConfig.wofost_sowing_date,
           wofost_elevation_m: yAttConfig.wofost_elevation_m ?? undefined,
           fallback_to_kephis: yAttConfig.fallback_to_kephis,

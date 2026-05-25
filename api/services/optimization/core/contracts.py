@@ -105,7 +105,6 @@ class GeoLocation:
 @dataclass(frozen=True)
 class YAttConfig:
     source: YAttSource = YAttSource.KEPHIS
-    kephis_yield_basis: str = "average_lower"
     location: GeoLocation | None = None
     wofost_sowing_date: str = "2024-03-15"
     wofost_elevation_m: float | None = None
