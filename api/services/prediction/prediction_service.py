@@ -13,6 +13,7 @@ from api.db.models.database import User, SoilPrediction, Agrovet
 from api.utils.dependencies import dependency_manager
 from api.utils.soil_classifier import SoilHealthClassifier
 from api.utils.config import AppConfig
+from api.services.prediction.nutrient_score_payload import build_unified_nutrients
 
 logger = logging.getLogger(__name__)
 
@@ -174,15 +175,13 @@ class PredictionService:
             }
             
             # Extract unified nutrient scores for uniform display
-            unified_nutrients = {}
             param_scores = classification_result.get("Parameter_Scores", {})
-            for key, score in param_scores.items():
-                if key == "pH": continue
-                unified_nutrients[key] = {
-                    "score": int(score),
-                    "label": AppConfig.CLASS_NAMES.get(int(score), "Unknown"),
-                    "method": nutrient_method.get(key, "estimated")
-                }
+            ml_nutrients = ml_results.get("prediction", {}).get("nutrients", {}) if ml_results else {}
+            unified_nutrients = build_unified_nutrients(
+                param_scores=param_scores,
+                nutrient_method=nutrient_method,
+                ml_nutrients=ml_nutrients,
+            )
 
             result["nutrients"] = unified_nutrients
             
@@ -204,16 +203,7 @@ class PredictionService:
             
             # Save to database if user is authenticated
             if user:
-                # For ML, use predicted nutrients for DB storage
                 db_soil_data = soil_data.model_dump()
-                if prediction_mode == "ML":
-                    # Use the combined scores (Parameter_Scores) for DB storage
-                    scores = classification_result.get("Parameter_Scores", {})
-                    # Map back to DB field names
-                    nutrient_map = {"N": "n", "P": "p", "K": "k", "OC": "organic_carbon", "Ca": "ca", "Mg": "mg"}
-                    for key, db_key in nutrient_map.items():
-                        if db_soil_data.get(db_key) is None:
-                            db_soil_data[db_key] = scores.get(key)
 
                 await self._save_prediction_to_database(
                     user_id=str(user.id),

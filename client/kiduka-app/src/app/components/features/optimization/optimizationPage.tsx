@@ -32,6 +32,7 @@ import { SoilInputs, SoilData, SoilPrefillInfo } from "./components/SoilInputs";
 import { YAttConfig, YAttConfigData, DEFAULT_YATT_CONFIG } from "./components/YAttConfig";
 import { CropYieldTable } from "./components/CropYieldTable";
 import { apiClient } from "@/lib/api-client";
+import { resolveOptimizationSoilPrefill } from "@/lib/soil-score-mapping";
 
 // Defaults — fractions (0–1), prices per kg (KES/50kg bag ÷ 50)
 const DEFAULT_FERTILIZERS: FertilizerEntry[] = [
@@ -90,27 +91,26 @@ export default function OptimizationPage() {
         const latest = res.predictions?.[0];
         if (!latest) return;
 
-        const ph          = latest.soil_ph        ?? null;
-        const soc_percent = latest.organic_carbon ?? null;
-        const p_olsen_ppm = latest.phosphorus     ?? null;
+        const {
+          ph,
+          soc_percent,
+          p_olsen_ppm,
+          k_exchangeable_ppm,
+        } = resolveOptimizationSoilPrefill(latest);
 
-        // K stored in the prediction may be in cmol/kg or an unrealistically low
-        // raw reading. Values below 20 ppm cause the RQUEFTS model to return zero
-        // yields regardless of fertilizer applied, so we keep the UI default (120)
-        // in that case and let the farmer correct it manually.
-        const K_VIABLE_MIN_PPM = 20;
-        const k_ppm = (latest.potassium != null && latest.potassium >= K_VIABLE_MIN_PPM)
-          ? latest.potassium
-          : null;
-
-        if (ph === null && soc_percent === null && p_olsen_ppm === null) return;
+        if (
+          ph === null &&
+          soc_percent === null &&
+          p_olsen_ppm === null &&
+          k_exchangeable_ppm === null
+        ) return;
 
         setSoil((prev) => ({
           ...prev,
           ...(ph          !== null && { ph }),
           ...(soc_percent !== null && { soc_percent }),
           ...(p_olsen_ppm !== null && { p_olsen_ppm }),
-          ...(k_ppm       !== null && { k_exchangeable_ppm: k_ppm }),
+          ...(k_exchangeable_ppm !== null && { k_exchangeable_ppm }),
         }));
 
         setSoilPrefillInfo({

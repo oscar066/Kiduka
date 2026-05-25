@@ -2,6 +2,8 @@
 
 **Date:** 2026-05-14
 
+**Update 2026-05-25:** The score-vs-value issue described below has been implemented. ML-estimated nutrients now carry `continuous_score` in the `nutrients` JSON, raw concentration fields stay measured-only, and optimization prefill maps continuous scores to editable OC/P/K concentrations. See `docs/ml_output_to_yield_model_input.md`.
+
 ---
 
 ## Overview
