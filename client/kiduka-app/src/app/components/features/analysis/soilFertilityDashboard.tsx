@@ -22,7 +22,7 @@ import { AgrovetsDisplay } from "./components/agrovetDisplay";
 import { StatusSummaryCards } from "./components/statusSummaryCard";
 import { SoilInputForm } from "./components/soil-inputForm";
 
-import { Leaf, AlertCircle } from "lucide-react";
+import { Leaf, AlertCircle, FlaskConical, BarChart3, Sprout } from "lucide-react";
 
 // import types
 import { SoilInput, PredictionResponse } from "@/types/soil-analysis";
@@ -189,7 +189,11 @@ export default function SoilFertilityDashboard() {
                     />
                     {/* Agrovets */}
                     {results.nearest_agrovets && results.nearest_agrovets.length > 0 && (
-                      <AgrovetsDisplay agrovets={results.nearest_agrovets} />
+                      <AgrovetsDisplay
+                        agrovets={results.nearest_agrovets}
+                        userLat={soilData.latitude}
+                        userLng={soilData.longitude}
+                      />
                     )}
                   </>
                 ) : (
@@ -214,21 +218,21 @@ export default function SoilFertilityDashboard() {
                         {[
                           {
                             step: "01",
-                            icon: <AlertCircle className="h-5 w-5 text-blue-600" />,
+                            icon: <FlaskConical className="h-5 w-5 text-blue-600" />,
                             iconBg: "bg-blue-100",
                             title: "Enter pH & Location",
                             desc: "Provide your soil pH and enable location. Have lab results? Add your nutrient values in the optional tab for a more precise analysis.",
                           },
                           {
                             step: "02",
-                            icon: <Leaf className="h-5 w-5 text-green-600" />,
+                            icon: <BarChart3 className="h-5 w-5 text-green-600" />,
                             iconBg: "bg-green-100",
                             title: "Run Analysis",
                             desc: "Our AI model calculates your Soil Health Index and nutrient breakdown.",
                           },
                           {
                             step: "03",
-                            icon: <AlertCircle className="h-5 w-5 text-amber-600" />,
+                            icon: <Sprout className="h-5 w-5 text-amber-600" />,
                             iconBg: "bg-amber-100",
                             title: "Get Recommendations",
                             desc: "Receive fertilizer recommendations and find nearby agrovets.",

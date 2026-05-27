@@ -17,7 +17,7 @@ BASE_URL = os.getenv("KIDUKA_API_URL", "http://localhost:8000")
 PREDICT_URL = f"{BASE_URL}/predictions/predict"
 LOGIN_URL = f"{BASE_URL}/auth/login"
 
-TEST_USERNAME = os.getenv("KIDUKA_TEST_USERNAME", os.getenv("RECOVERY_ADMIN_USERNAME", ""))
+TEST_USERNAME = os.getenv("KIDUKA_TEST_USERNAME", os.getenv("RECOVERY_ADMIN_EMAIL", os.getenv("RECOVERY_ADMIN_USERNAME", "")))
 TEST_PASSWORD = os.getenv("KIDUKA_TEST_PASSWORD", os.getenv("RECOVERY_ADMIN_PASSWORD", ""))
 
 
@@ -116,7 +116,8 @@ def test_hybrid_returns_200(auth_headers, partial_payload):
 
 def test_hybrid_mode(auth_headers, partial_payload):
     result = requests.post(PREDICT_URL, json=partial_payload, headers=auth_headers).json()
-    assert result.get("prediction_mode") == "HYBRID"
+    assert result.get("prediction_mode") == "ML"
+    assert any("hybrid" in m.lower() for m in result.get("mentions", []))
 
 
 def test_hybrid_low_nitrogen_reflected_in_status(auth_headers, partial_payload):

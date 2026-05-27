@@ -26,9 +26,9 @@ export function AdminMetricCard({
   }[changeType];
 
   return (
-    <Card>
-      <CardHeader className="flex items-center">
-        <div className="p-2 bg-green-50 rounded-lg">{icon}</div>
+    <Card className="border-amber-200 bg-white shadow-lg hover:shadow-xl transition-shadow">
+      <CardHeader className="flex items-center pb-2">
+        <div className="p-2 bg-green-50 rounded-lg shrink-0">{icon}</div>
         <div className="ml-4 flex-1">
           <CardTitle className="text-sm font-medium text-green-700">
             {title}
@@ -36,13 +36,13 @@ export function AdminMetricCard({
           {loading ? (
             <Skeleton className="h-8 w-24 mt-1" />
           ) : (
-            <div className="text-2xl font-semibold text-green-900">
+            <div className="text-2xl font-bold text-green-900 mt-0.5">
               {value.toLocaleString()}
             </div>
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         {loading ? (
           <Skeleton className="h-4 w-3/4" />
         ) : (
