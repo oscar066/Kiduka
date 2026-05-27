@@ -8,6 +8,7 @@ import UnifiedSidebar from "../../layout/UnifiedSidebar";
 import { Navbar } from "../../layout/navbar";
 import { SessionGuard } from "../../shared/SessionGuard";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Leaf, FlaskConical, FileText, Sprout } from "lucide-react";
 
 // Modular Components
 import { ChatHeader } from "./components/ChatHeader";
@@ -35,10 +36,10 @@ const formatRelativeTime = (date: Date) => {
 };
 
 const SUGGESTED_PROMPTS = [
-  { label: "How do I improve my soil health?", prompt: "How do I improve my soil health?" },
-  { label: "What fertilizers do you recommend for my crops?", prompt: "What fertilizers do you recommend for my crops?" },
-  { label: "Tell me about my latest soil analysis report", prompt: "Tell me about my latest soil analysis report" },
-  { label: "What should I plant this season?", prompt: "What should I plant this season?" },
+  { label: "How do I improve my soil health?", prompt: "How do I improve my soil health?", icon: <Leaf className="h-4 w-4" /> },
+  { label: "What fertilizers do you recommend for my crops?", prompt: "What fertilizers do you recommend for my crops?", icon: <FlaskConical className="h-4 w-4" /> },
+  { label: "Tell me about my latest soil analysis report", prompt: "Tell me about my latest soil analysis report", icon: <FileText className="h-4 w-4" /> },
+  { label: "What should I plant this season?", prompt: "What should I plant this season?", icon: <Sprout className="h-4 w-4" /> },
 ];
 
 export default function ChatPage() {

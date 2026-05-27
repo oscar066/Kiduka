@@ -191,7 +191,11 @@ export default function ReportDetailPage({ reportId }: Props) {
                 />
 
                 {report.agrovets && report.agrovets.length > 0 && (
-                  <AgrovetsDisplay agrovets={report.agrovets} />
+                  <AgrovetsDisplay
+                    agrovets={report.agrovets}
+                    userLat={report.location_lat}
+                    userLng={report.location_lng}
+                  />
                 )}
               </div>
             )}

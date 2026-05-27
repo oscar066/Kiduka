@@ -8,13 +8,38 @@ import { AgrovetInfo } from "@/types/soil-analysis";
 interface AgrovetsDisplayProps {
   agrovets: AgrovetInfo[];
   title?: string;
+  userLat?: number;
+  userLng?: number;
+}
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 export function AgrovetsDisplay({
   agrovets,
   title = "Nearby Agrovets",
+  userLat,
+  userLng,
 }: AgrovetsDisplayProps) {
   if (!agrovets || agrovets.length === 0) return null;
+
+  const getDistance = (agrovet: AgrovetInfo): number | null => {
+    if (agrovet.distance_km && agrovet.distance_km > 0) return agrovet.distance_km;
+    if (userLat && userLng && agrovet.latitude && agrovet.longitude) {
+      return haversineKm(userLat, userLng, agrovet.latitude, agrovet.longitude);
+    }
+    return null;
+  };
 
   return (
     <Card className="border-amber-200 bg-white shadow-lg">
@@ -35,9 +60,12 @@ export function AgrovetsDisplay({
                 <h5 className="font-semibold text-green-800 mb-1">
                   {agrovet.name.trim()}
                 </h5>
-                <p className="text-sm text-gray-600">
-                  {agrovet.distance_km.toFixed(1)} km away
-                </p>
+                {(() => {
+                  const dist = getDistance(agrovet);
+                  return dist !== null ? (
+                    <p className="text-sm text-gray-600">{dist.toFixed(1)} km away</p>
+                  ) : null;
+                })()}
               </div>
 
               <div className="space-y-2">
@@ -45,35 +73,24 @@ export function AgrovetsDisplay({
                   <Label className="text-xs font-medium text-green-700">
                     Available Products:
                   </Label>
-                  <div className="flex flex-wrap gap-1 mt-1">
+                  <div className="flex flex-col gap-1.5 mt-1">
                     {agrovet.products.map((product, idx) => (
-                      <span
+                      <div
                         key={idx}
-                        className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full"
+                        className="flex items-center justify-between px-2.5 py-1.5 bg-green-50 rounded-lg border border-green-100"
                       >
-                        {product}
-                      </span>
+                        <span className="text-xs font-medium text-green-800">
+                          {product}
+                        </span>
+                        {agrovet.prices && agrovet.prices[idx] !== undefined && (
+                          <span className="text-xs font-semibold text-amber-700">
+                            KES {agrovet.prices[idx].toFixed(0)}
+                          </span>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
-
-                {agrovet.prices && agrovet.prices.length > 0 && (
-                  <div>
-                    <Label className="text-xs font-medium text-green-700">
-                      Prices (KES):
-                    </Label>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {agrovet.prices.map((price, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full"
-                        >
-                          {price.toFixed(0)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {agrovet.rating && (
                   <div className="flex items-center gap-1">
@@ -95,7 +112,12 @@ export function AgrovetsDisplay({
                     <Label className="text-xs font-medium text-green-700">
                       Phone:
                     </Label>
-                    <p className="text-sm text-gray-700">{agrovet.phone}</p>
+                    <a
+                      href={`tel:${agrovet.phone}`}
+                      className="text-sm text-green-700 hover:text-green-900 hover:underline font-medium transition-colors"
+                    >
+                      {agrovet.phone}
+                    </a>
                   </div>
                 )}
               </div>

@@ -22,8 +22,8 @@ export const ChatInput = React.forwardRef<HTMLTextAreaElement, ChatInputProps>(
         {/* Fade-up gradient */}
         <div className="pointer-events-none absolute bottom-[72px] left-0 right-0 h-10 bg-gradient-to-t from-white/30 to-transparent" />
 
-        <div className="max-w-3xl mx-auto w-full">
-          <div className="relative flex items-end gap-2 bg-white/90 border border-amber-200 rounded-2xl px-4 pt-3 pb-3 shadow-sm focus-within:border-amber-400 focus-within:shadow-amber-100/60 transition-all">
+        <div className="max-w-3xl mx-auto w-full space-y-1.5">
+          <div className="relative flex items-end gap-2 bg-white/90 border border-amber-200 rounded-2xl px-4 pt-3 pb-3 shadow-sm focus-within:border-green-300 focus-within:shadow-green-100/60 transition-all">
             <Textarea
               ref={ref}
               value={inputValue}
@@ -43,7 +43,7 @@ export const ChatInput = React.forwardRef<HTMLTextAreaElement, ChatInputProps>(
                   size="icon"
                   onClick={onSendMessage}
                   disabled={!inputValue.trim() || isSending}
-                  className="h-8 w-8 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-40 shadow-none flex-shrink-0 transition-all active:scale-95"
+                  className="h-8 w-8 rounded-xl bg-green-600 hover:bg-green-700 disabled:opacity-40 shadow-none flex-shrink-0 transition-all active:scale-95"
                 >
                   {isSending ? (
                     <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -57,6 +57,9 @@ export const ChatInput = React.forwardRef<HTMLTextAreaElement, ChatInputProps>(
               </TooltipContent>
             </Tooltip>
           </div>
+          <p className="text-[10px] text-gray-400/70 text-right pr-1">
+            Enter to send · Shift + Enter for new line
+          </p>
         </div>
       </div>
     );

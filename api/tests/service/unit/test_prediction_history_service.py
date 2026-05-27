@@ -2,11 +2,9 @@
 Unit tests for PredictionHistoryService
 """
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
-
+from unittest.mock import AsyncMock, MagicMock, patch
 from api.services.prediction.prediction_history_service import PredictionHistoryService
-
 
 class TestGetUserPredictions:
 

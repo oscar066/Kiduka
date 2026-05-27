@@ -31,6 +31,14 @@ import {
   type PredictionsData,
 } from "./components/userDashboardUtils";
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+
 export function UserDashboard() {
   const { user, token } = useAuth();
 
@@ -90,7 +98,7 @@ export function UserDashboard() {
           ) : (
             <>
               <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
-                Welcome back, {user?.full_name ?? user?.username}!
+                {getGreeting()}, {user?.full_name ?? user?.username}!
               </h1>
               <p className="text-lg text-gray-600 font-serif">
                 Ready to analyze your soil and get personalized recommendations?
@@ -105,7 +113,7 @@ export function UserDashboard() {
           title="Refresh dashboard"
           onClick={handleRefresh}
         >
-          <RefreshCw className="h-5 w-5" />
+          <RefreshCw className={`h-5 w-5 ${isValidating ? "animate-spin" : ""}`} />
         </Button>
       </div>
 

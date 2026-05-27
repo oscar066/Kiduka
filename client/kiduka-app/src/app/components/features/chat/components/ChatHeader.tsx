@@ -11,7 +11,7 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ onClear, messagesLength = 0 }: ChatHeaderProps) {
   return (
-    <div className="flex-none px-6 pt-5 pb-3">
+    <div className="flex-none px-6 pt-5 pb-3 border-b border-amber-100/70">
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -23,7 +23,7 @@ export function ChatHeader({ onClear, messagesLength = 0 }: ChatHeaderProps) {
             <MessageCircle className="h-5 w-5 text-green-700" />
           </div>
           <div>
-            <h1 className="text-2xl font-serif font-bold text-green-800 leading-tight">
+            <h1 className="text-2xl font-serif font-bold bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent leading-tight">
               Kiduka AI Assistant
             </h1>
             <p className="text-sm text-green-600 font-serif">
@@ -63,7 +63,7 @@ export function ChatHeader({ onClear, messagesLength = 0 }: ChatHeaderProps) {
             variant="outline"
             className="text-green-700 border-green-200 bg-green-50 text-xs font-medium gap-1.5 h-7"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-green-500 inline-block" />
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500 inline-block animate-pulse" />
             Online
           </Badge>
         </div>

@@ -271,9 +271,11 @@ export default function OptimizationPage() {
           <main className="flex-1 space-y-6 p-6 bg-gradient-to-br from-green-25 via-amber-25 to-green-25 min-h-screen">
             {/* Page Header */}
             <div className="space-y-1">
-              <h1 className="text-3xl font-serif font-bold text-green-800 flex items-center gap-2">
+              <h1 className="text-3xl font-serif font-bold flex items-center gap-2">
                 <Calculator className="h-8 w-8 text-green-600" />
-                Fertilizer Optimization
+                <span className="bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
+                  Fertilizer Optimization
+                </span>
               </h1>
               <p className="text-green-600 font-serif">
                 Maximize crop yields dynamically based on budget and nutrient baselines
@@ -282,10 +284,14 @@ export default function OptimizationPage() {
 
             {/* Error */}
             {error && (
-              <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span className="text-sm font-medium">{error}</span>
-              </div>
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-red-800">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm font-medium">Error: {error}</span>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Two-column layout */}
@@ -299,6 +305,9 @@ export default function OptimizationPage() {
                       <Banknote className="h-4 w-4 text-green-600" />
                       Budget Scenario
                     </CardTitle>
+                    <CardDescription className="mt-0.5 text-xs text-gray-500">
+                      Maximum total fertilizer spend across all crops and products
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="p-5">
                     <div className="space-y-1.5">
@@ -374,7 +383,7 @@ export default function OptimizationPage() {
               <div className="mt-10 space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-500">
 
                 <div className="flex items-center gap-2 border-b border-green-200 pb-2">
-                  <h2 className="text-2xl font-serif font-bold text-green-800">
+                  <h2 className="text-2xl font-serif font-bold bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
                     Optimization Results
                   </h2>
                   <Badge
@@ -406,7 +415,7 @@ export default function OptimizationPage() {
                       <CardDescription className="text-gray-500 uppercase text-xs tracking-wider font-semibold">
                         Return vs Baseline
                       </CardDescription>
-                      <CardTitle className="text-3xl text-gray-800">
+                      <CardTitle className={`text-3xl ${results.summary_row.net_return_improvement >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                         {results.summary_row.net_return_improvement >= 0 ? "+" : ""}
                         {fmt(results.summary_row.net_return_improvement)}
                       </CardTitle>
