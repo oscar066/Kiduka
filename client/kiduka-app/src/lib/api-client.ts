@@ -541,7 +541,6 @@ export class ApiClient {
       budget_currency: number;
       y_att?: {
         source?: "kephis" | "wofost";
-        kephis_quantile?: number;
         wofost_sowing_date?: string;
         wofost_elevation_m?: number;
         fallback_to_kephis?: boolean;

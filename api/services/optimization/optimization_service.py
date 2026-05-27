@@ -194,12 +194,8 @@ class OptimizationService:
             location = GeoLocation(lat=request.location.lat, lon=request.location.lon)
         if yatt.source == YAttSource.WOFOST.value and location is None:
             raise ValueError("location is required when scenario.y_att.source='wofost'.")
-        # Map quantile (0–1) to the two available KEPHIS CSV columns:
-        # ≤ 0.5 → conservative lower bound; > 0.5 → average/median
-        kephis_yield_basis = "average_lower" if yatt.kephis_quantile <= 0.5 else "average_median"
         return YAttConfig(
             source=YAttSource(yatt.source),
-            kephis_yield_basis=kephis_yield_basis,
             location=location,
             wofost_sowing_date=yatt.wofost_sowing_date,
             wofost_elevation_m=yatt.wofost_elevation_m,

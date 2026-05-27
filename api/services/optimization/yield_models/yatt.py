@@ -12,7 +12,7 @@ def build_yatt_provider(config: YAttConfig | None = None) -> YAttProvider:
     resolved = config or YAttConfig()
     source = YAttSource(resolved.source)
     if source == YAttSource.KEPHIS:
-        return KephisYAttProvider(yield_basis=resolved.kephis_yield_basis)
+        return KephisYAttProvider()
     if source == YAttSource.WOFOST:
         if resolved.location is None:
             raise ValueError("WOFOST Y_att source requires a GeoLocation.")

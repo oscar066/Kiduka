@@ -170,22 +170,11 @@ class YAttConfigModel(StrictModel):
     
     Attributes:
         source (Literal["kephis", "wofost"]): The primary data source for attainable yield.
-        kephis_quantile (float): The percentile to use from KEPHIS data (e.g., 0.01 for conservative).
         wofost_sowing_date (str): Expected sowing date in ISO format (YYYY-MM-DD).
         wofost_elevation_m (Optional[float]): Elevation of the site in meters, required if using WOFOST.
         fallback_to_kephis (bool): If true, falls back to KEPHIS if WOFOST parameters are unavailable for a crop.
     """
     source: Literal["kephis", "wofost"] = Field("kephis", description="Attainable-yield source.")
-    kephis_quantile: float = Field(
-        0.01,
-        ge=0.0,
-        le=1.0,
-        description=(
-            "KEPHIS attainable-yield percentile. "
-            "Values ≤ 0.5 use the conservative lower-bound column; "
-            "values > 0.5 use the average/median column."
-        ),
-    )
     wofost_sowing_date: str = Field("2024-03-15", description="WOFOST sowing date, ISO YYYY-MM-DD.")
     wofost_elevation_m: float | None = Field(None, description="WOFOST site elevation in meters.")
     fallback_to_kephis: bool = Field(True, description="Fallback to KEPHIS for crops without WOFOST parameters.")
