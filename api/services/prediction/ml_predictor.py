@@ -9,6 +9,7 @@ import logging
 import numpy as np
 import pandas as pd
 from typing import Dict, Any, Tuple, Optional
+from api.services.prediction.nutrient_score_payload import NUTRIENT_NAMES, build_ml_nutrients
 from api.utils.config import AppConfig
 
 
@@ -400,7 +401,8 @@ class MLPredictor:
 
         # Predictions
         nutrient_cont = self.models["nutrient_model"].predict(X)
-        nutrient_scores = self._round_to_score(nutrient_cont)[0]
+        ml_nutrients = build_ml_nutrients(nutrient_cont)
+        nutrient_scores = np.array([ml_nutrients[name]["score"] for name in NUTRIENT_NAMES])
         shi = self.calculate_shi(ph_score, nutrient_scores)
         final_class_num = self.models["class_model"].predict(X)[0]
         final_class = AppConfig.CLASS_NAMES[final_class_num]
@@ -421,14 +423,7 @@ class MLPredictor:
             "prediction": {
                 "final_classification": final_class,
                 "SHI": round(float(shi), 3),
-                "nutrients": {
-                    "N": {"score": int(nutrient_scores[0]), "label": AppConfig.CLASS_NAMES[int(nutrient_scores[0])]},
-                    "OC": {"score": int(nutrient_scores[1]), "label": AppConfig.CLASS_NAMES[int(nutrient_scores[1])]},
-                    "P": {"score": int(nutrient_scores[2]), "label": AppConfig.CLASS_NAMES[int(nutrient_scores[2])]},
-                    "K": {"score": int(nutrient_scores[3]), "label": AppConfig.CLASS_NAMES[int(nutrient_scores[3])]},
-                    "Ca": {"score": int(nutrient_scores[4]), "label": AppConfig.CLASS_NAMES[int(nutrient_scores[4])]},
-                    "Mg": {"score": int(nutrient_scores[5]), "label": AppConfig.CLASS_NAMES[int(nutrient_scores[5])]},
-                }
+                "nutrients": ml_nutrients,
             },
             "confidence": confidence
         }

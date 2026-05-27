@@ -16,6 +16,11 @@ from api.services.optimization.core.contracts import (
 )
 from api.services.optimization.core.crop_mappings import resolve_busia_crop
 from api.services.optimization.core.unit_conversions import (
+    QUEFTS_K_EXCHANGEABLE_MAX_PPM,
+    QUEFTS_P_OLSEN_MAX_MG_KG,
+    QUEFTS_PH_MAX,
+    QUEFTS_PH_MIN,
+    QUEFTS_SOC_MAX_PERCENT,
     acres_to_hectares,
     k2o_fraction_to_k,
     p2o5_fraction_to_p,
@@ -167,10 +172,10 @@ class OptimizationService:
                 "Resolve the history record upstream and call optimization with soil.mode='direct'."
             )
         return SoilInput(
-            pH=float(soil.ph),
-            soc_percent=float(soil.soc_percent),
-            p_olsen_ppm=float(soil.p_olsen_ppm),
-            k_ppm=float(soil.k_exchangeable_ppm),
+            pH=min(max(float(soil.ph), QUEFTS_PH_MIN), QUEFTS_PH_MAX),
+            soc_percent=min(float(soil.soc_percent), QUEFTS_SOC_MAX_PERCENT),
+            p_olsen_ppm=min(float(soil.p_olsen_ppm), QUEFTS_P_OLSEN_MAX_MG_KG),
+            k_ppm=min(float(soil.k_exchangeable_ppm), QUEFTS_K_EXCHANGEABLE_MAX_PPM),
         )
 
     @staticmethod

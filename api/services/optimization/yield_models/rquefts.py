@@ -8,6 +8,11 @@ import tempfile
 from pathlib import Path
 
 from api.services.optimization.core.contracts import CropInput, NPKRate, SoilInput, YieldResult
+from api.services.optimization.core.unit_conversions import QUEFTS_PH_MAX, QUEFTS_PH_MIN
+
+
+def clamp_quefts_ph(ph: float) -> float:
+    return min(max(float(ph), QUEFTS_PH_MIN), QUEFTS_PH_MAX)
 
 
 class RqueftsYieldModel:
@@ -95,13 +100,14 @@ class RqueftsYieldModel:
         lib_paths = ""
         if self.r_libs_path is not None:
             lib_paths = f'.libPaths(c("{self.r_libs_path.as_posix()}", .libPaths()))'
+        quefts_ph = clamp_quefts_ph(soil.pH)
         return f'''
 {lib_paths}
 library(Rquefts)
 
 fert_df <- read.csv("{fert_path.as_posix()}")
 supply <- nutSupply1(
-  pH = {float(soil.pH)},
+  pH = {quefts_ph},
   SOC = {float(soil.soc_g_kg)},
   Kex = {float(soil.kex_mmol_kg)},
   Polsen = {float(soil.p_olsen_mg_kg)}

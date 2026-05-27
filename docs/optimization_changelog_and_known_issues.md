@@ -3,6 +3,8 @@
 **Last updated:** 2026-05-14  
 **Scope:** `api/services/optimization/`, `api/schema/optimization_schema.py`, `client/kiduka-app/.../optimizationPage.tsx`
 
+**Update 2026-05-25:** The score-vs-raw-value ambiguity described below has been resolved by keeping ML estimates in `nutrients.*.continuous_score` and leaving raw concentration fields for measured values only. See `docs/ml_output_to_yield_model_input.md`.
+
 ---
 
 ## 1. Changes Made
