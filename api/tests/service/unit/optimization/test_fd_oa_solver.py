@@ -47,22 +47,39 @@ class FakeConcaveYieldModel:
         return tuple(results)
 
 
+class FlatYieldModel:
+    def evaluate_batch(self, crop: CropInput, soil: SoilInput, npk_rates: tuple[NPKRate, ...]):
+        _ = soil
+        return tuple(
+            YieldResult(
+                crop=crop.crop,
+                n_kg_ha=rate.n_kg_ha,
+                p_kg_ha=rate.p_kg_ha,
+                k_kg_ha=rate.k_kg_ha,
+                yield_kg_ha=1000.0,
+            )
+            for rate in npk_rates
+        )
+
+
+def maize_crop() -> CropInput:
+    return CropInput(
+        crop="Maize",
+        area_ha=1.0,
+        price_currency_per_kg=45.0,
+        kephis_crop="maize",
+        rquefts_crop="Maize",
+        rquefts_leaf_ratio=0.46,
+        rquefts_stem_ratio=0.56,
+        y_attainable_kg_ha=9000.0,
+        moisture_content=0.0,
+    )
+
+
 def test_fd_oa_returns_budget_feasible_incumbent():
     problem = OptimizationProblem(
         soil=SoilInput(pH=5.5, soc_percent=0.7, p_olsen_ppm=5.0, k_ppm=55.0),
-        crops=(
-            CropInput(
-                crop="Maize",
-                area_ha=1.0,
-                price_currency_per_kg=45.0,
-                kephis_crop="maize",
-                rquefts_crop="Maize",
-                rquefts_leaf_ratio=0.46,
-                rquefts_stem_ratio=0.56,
-                y_attainable_kg_ha=9000.0,
-                moisture_content=0.0,
-            ),
-        ),
+        crops=(maize_crop(),),
         fertilizers=(
             FertilizerInput("Urea", n_fraction=0.46, p_fraction=0.0, k_fraction=0.0, price_currency_per_kg=90.0),
             FertilizerInput("TSP", n_fraction=0.0, p_fraction=0.20, k_fraction=0.0, price_currency_per_kg=100.0),
@@ -88,3 +105,30 @@ def test_fd_oa_returns_budget_feasible_incumbent():
         assert row["kg_product_per_ha"] >= 0.0
         assert row["kg_product_total"] >= 0.0
         assert row["cost_total"] >= 0.0
+
+
+def test_fd_oa_runs_minimum_iterations_before_time_limit(monkeypatch):
+    calls = {"count": 0}
+
+    def expired_clock():
+        calls["count"] += 1
+        return 0.0 if calls["count"] == 1 else 100.0
+
+    monkeypatch.setattr("api.services.optimization.solvers.fd_oa.time.perf_counter", expired_clock)
+    problem = OptimizationProblem(
+        soil=SoilInput(pH=5.5, soc_percent=0.7, p_olsen_ppm=5.0, k_ppm=55.0),
+        crops=(maize_crop(),),
+        fertilizers=(
+            FertilizerInput("Urea", n_fraction=0.46, p_fraction=0.0, k_fraction=0.0, price_currency_per_kg=90.0),
+        ),
+        scenario=OptimizationScenario(
+            budget_currency=5000.0,
+            time_limit_seconds=0.001,
+            max_iterations=10,
+            no_improvement_limit=5,
+        ),
+    )
+
+    result = FdOaSolver(FlatYieldModel()).solve(problem)
+
+    assert result.summary_row["oa_iterations"] == 3
