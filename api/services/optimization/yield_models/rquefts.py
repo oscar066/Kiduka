@@ -101,6 +101,8 @@ class RqueftsYieldModel:
         if self.r_libs_path is not None:
             lib_paths = f'.libPaths(c("{self.r_libs_path.as_posix()}", .libPaths()))'
         quefts_ph = clamp_quefts_ph(soil.pH)
+        leaf_ratio = float(crop.rquefts_leaf_ratio)
+        stem_ratio = float(crop.rquefts_stem_ratio)
         return f'''
 {lib_paths}
 library(Rquefts)
@@ -121,8 +123,14 @@ supply_df <- data.frame(
 
 yatt <- rep({float(crop.y_attainable_kg_ha)}, nrow(fert_df))
 q <- quefts(crop = quefts_crop("{crop.rquefts_crop}"))
-yield <- batch(q, supply_df, fert_df[, c("N", "P", "K")], yatt, leaf_ratio = 0.46, stem_ratio = 0.56, var = "yield")
-gap <- batch(q, supply_df, fert_df[, c("N", "P", "K")], yatt, leaf_ratio = 0.46, stem_ratio = 0.56, var = "gap")
+yield <- batch(
+  q, supply_df, fert_df[, c("N", "P", "K")], yatt,
+  leaf_ratio = {leaf_ratio}, stem_ratio = {stem_ratio}, var = "yield"
+)
+gap <- batch(
+  q, supply_df, fert_df[, c("N", "P", "K")], yatt,
+  leaf_ratio = {leaf_ratio}, stem_ratio = {stem_ratio}, var = "gap"
+)
 
 out <- data.frame(
   N = fert_df$N,

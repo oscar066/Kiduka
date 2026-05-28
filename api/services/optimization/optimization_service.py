@@ -112,6 +112,8 @@ class OptimizationService:
                     price_currency_per_kg=float(crop_model.grain_price_currency_per_kg),
                     kephis_crop=mapping.kephis_crop,
                     rquefts_crop=mapping.rquefts_crop,
+                    rquefts_leaf_ratio=mapping.rquefts_leaf_ratio,
+                    rquefts_stem_ratio=mapping.rquefts_stem_ratio,
                     y_attainable_kg_ha=yatt_provider.get_y_attainable_kg_ha(mapping.display_name),
                     moisture_content=moisture_provider.get_moisture_content(mapping.display_name),
                 )

@@ -50,6 +50,8 @@ class CropInput:
     price_currency_per_kg: float
     kephis_crop: str
     rquefts_crop: str
+    rquefts_leaf_ratio: float
+    rquefts_stem_ratio: float
     y_attainable_kg_ha: float
     moisture_content: float
 

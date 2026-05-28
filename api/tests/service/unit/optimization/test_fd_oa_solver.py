@@ -57,6 +57,8 @@ def test_fd_oa_returns_budget_feasible_incumbent():
                 price_currency_per_kg=45.0,
                 kephis_crop="maize",
                 rquefts_crop="Maize",
+                rquefts_leaf_ratio=0.46,
+                rquefts_stem_ratio=0.56,
                 y_attainable_kg_ha=9000.0,
                 moisture_content=0.0,
             ),
