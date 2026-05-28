@@ -162,9 +162,9 @@ export default function SoilFertilityDashboard() {
               </Card>
             )}
 
-            <div className="grid lg:grid-cols-3 gap-6">
+            <div className="grid lg:grid-cols-3 gap-6 items-start">
               {/* Input Section - Using modular form component */}
-              <div className="lg:col-span-1">
+              <div className="lg:col-span-1 lg:sticky lg:top-6">
                 <SoilInputForm
                   soilData={soilData}
                   onInputChange={handleInputChange}
@@ -175,7 +175,7 @@ export default function SoilFertilityDashboard() {
               </div>
 
               {/* Results Section - Using shared components */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="lg:col-span-2 space-y-6 flex flex-col">
                 {results ? (
                   <>
                     {/* Status Cards */}
@@ -197,8 +197,8 @@ export default function SoilFertilityDashboard() {
                     )}
                   </>
                 ) : (
-                  <Card className="border-amber-200 bg-white shadow-lg">
-                    <CardContent className="p-6">
+                  <Card className="border-amber-200 bg-white shadow-lg h-full">
+                    <CardContent className="p-6 h-full flex flex-col justify-center">
                       <div className="text-center space-y-3 mb-6">
                         <div className="p-2 bg-green-100 rounded-full w-fit mx-auto">
                           <Leaf className="h-6 w-6 text-green-600" />
