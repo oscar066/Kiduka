@@ -109,7 +109,7 @@ export function SoilInputs({ soil, onChange, prefillInfo }: SoilInputsProps) {
                   step={step}
                   min={min}
                   max={max}
-                  value={soil[key]}
+                  value={parseFloat(soil[key].toFixed(2))}
                   onChange={(e) => update(key, Number(e.target.value))}
                   className={`h-9 focus-visible:ring-green-400 ${warning ? "border-amber-400" : "border-amber-200"}`}
                   title={hint}
