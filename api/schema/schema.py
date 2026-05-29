@@ -105,7 +105,10 @@ class PredictionResponse(BaseModel):
     
     # Enhanced information
     nearest_agrovets: List[AgrovetInfo] = []
-    nutrients: Dict[str, Dict[str, Any]] = Field(default_factory=dict, description="Detailed nutrient scores (score and label)")
+    nutrients: Dict[str, Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Detailed nutrient score payloads; ML estimates may include continuous_score",
+    )
     
     # Metadata
     prediction_mode: Optional[str] = Field(None, description="Prediction method: 'FORMULA' or 'ML'")
@@ -166,7 +169,10 @@ class PredictionHistory(BaseModel):
     soil_fertility_status: Optional[str] = None
     mentions: List[str] = Field(default_factory=list)
     recommendations: List[str] = Field(default_factory=list)
-    nutrients: Dict[str, Dict[str, Any]] = Field(default_factory=dict, description="Detailed nutrient scores")
+    nutrients: Dict[str, Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Detailed nutrient score payloads; ML estimates may include continuous_score",
+    )
     
     
     # ML Metadata

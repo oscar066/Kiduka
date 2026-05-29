@@ -3,60 +3,52 @@
 **Last updated:** 2026-05-14  
 **Scope:** `api/services/optimization/`, `api/schema/optimization_schema.py`, `client/kiduka-app/.../optimizationPage.tsx`
 
+**Update 2026-05-25:** The score-vs-raw-value ambiguity described below has been resolved by keeping ML estimates in `nutrients.*.continuous_score` and leaving raw concentration fields for measured values only. See `docs/ml_output_to_yield_model_input.md`.
+
 ---
 
 ## 1. Changes Made
 
-### 1.1 `kephis_quantile` Added to API Schema
+### 1.1 KEPHIS Lower-Average API Contract
 
 **File:** `api/schema/optimization_schema.py`  
-**Problem:** The frontend `YAttConfig` component exposes a `kephis_quantile` slider (0–1) that controls how conservative the KEPHIS attainable yield estimate is. This field was being sent in the request payload but was not declared in the backend `YAttConfigModel`. Because `YAttConfigModel` extends `StrictModel` (which sets `extra="forbid"`), every request was rejected with a **422 Unprocessable Entity** before any business logic ran.
+**Contract:** KEPHIS attainable yield is selected by setting `scenario.y_att.source = "kephis"`. The API does not expose a continuous KEPHIS tuning parameter. The backend uses the conservative `average_lower_dry_yield_t_ha` column from `kephis_attainable_dry_yield.csv` by default.
 
-**Fix applied:**
+**Current schema:**
 
 ```python
 # api/schema/optimization_schema.py
 class YAttConfigModel(StrictModel):
     source: Literal["kephis", "wofost"] = Field("kephis", ...)
-    kephis_quantile: float = Field(
-        0.01,
-        ge=0.0,
-        le=1.0,
-        description=(
-            "KEPHIS attainable-yield percentile. "
-            "Values ≤ 0.5 use the conservative lower-bound column; "
-            "values > 0.5 use the average/median column."
-        ),
-    )
+    wofost_sowing_date: str = Field("2024-03-15", ...)
+    wofost_elevation_m: float | None = Field(None, ...)
+    fallback_to_kephis: bool = Field(True, ...)
     ...
 ```
 
 **How it propagates through the stack:**
 
 ```
-API payload → YAttConfigModel.kephis_quantile
+API payload → YAttConfigModel.source
     ↓
 OptimizationService._build_yatt_config()
-    maps quantile → yield_basis:
-        ≤ 0.5  →  "average_lower"   (conservative)
-        > 0.5  →  "average_median"  (optimistic)
     ↓
-YAttConfig(kephis_yield_basis=yield_basis)   ← new field in contracts.py
+YAttConfig(source="kephis")
     ↓
 build_yatt_provider(config)
     ↓
-KephisYAttProvider(yield_basis=config.kephis_yield_basis)
+KephisYAttProvider()
     ↓
-Reads the correct column from kephis_attainable_dry_yield.csv
+Reads average_lower_dry_yield_t_ha from kephis_attainable_dry_yield.csv
 ```
 
 **Files changed:**
 | File | What changed |
 |---|---|
-| `api/schema/optimization_schema.py` | Added `kephis_quantile` field to `YAttConfigModel` |
-| `api/services/optimization/core/contracts.py` | Added `kephis_yield_basis: str = "average_lower"` to `YAttConfig` dataclass |
-| `api/services/optimization/optimization_service.py` | Maps quantile → yield_basis in `_build_yatt_config()` |
-| `api/services/optimization/yield_models/yatt.py` | Passes `kephis_yield_basis` to `KephisYAttProvider` |
+| `api/schema/optimization_schema.py` | Keeps KEPHIS source selection but exposes no continuous KEPHIS tuning field |
+| `api/services/optimization/core/contracts.py` | Keeps `YAttConfig` focused on source and WOFOST options |
+| `api/services/optimization/optimization_service.py` | Builds KEPHIS config without extra yield-selection state |
+| `api/services/optimization/yield_models/yatt.py` | Uses default `KephisYAttProvider()` for KEPHIS |
 
 ---
 
@@ -214,18 +206,6 @@ K is the only nutrient where a score of 4 (meaning Healthy) maps to a value (4 p
 
 ---
 
-### 2.3 KEPHIS Quantile Maps to Only Two Columns
-
-The `kephis_quantile` field accepts a continuous value 0–1 but the underlying KEPHIS CSV only has two yield columns:
-- `average_lower_dry_yield_t_ha` — used when `quantile ≤ 0.5`
-- `average_median_dry_yield_t_ha` — used when `quantile > 0.5`
-
-The quantile does not interpolate between the two values. A farmer setting `kephis_quantile = 0.3` and `kephis_quantile = 0.01` will get identical results. This should be made visible in the UI tooltip.
-
-**Recommended fix:** Either expand the KEPHIS CSV to include more quantile columns, or change the UI control to a binary toggle ("Conservative / Typical") that matches the actual two-option reality.
-
----
-
 ## 3. Testing
 
 Run the optimization unit tests with:
@@ -235,7 +215,7 @@ Run the optimization unit tests with:
 python -m pytest api/tests/service/unit/optimization/ -v
 ```
 
-All 21 tests pass after the `kephis_quantile` changes.
+Run focused tests after changing the optimization contract.
 
 To manually test the endpoint with a known-good payload:
 
@@ -261,7 +241,7 @@ curl -X POST http://localhost:8000/optimization/optimize \
     ],
     "scenario": {
       "budget_currency": 5000,
-      "y_att": { "source": "kephis", "kephis_quantile": 0.01, "fallback_to_kephis": true }
+      "y_att": { "source": "kephis", "fallback_to_kephis": true }
     }
   }'
 ```
@@ -274,9 +254,8 @@ Expected: `yield_kg_ha ≈ 5146`, `budget_used ≈ 5000`, `status = "Feasible"`.
 
 | # | Change | Status | Files |
 |---|---|---|---|
-| 1 | `kephis_quantile` accepted in API schema | ✅ Done | `optimization_schema.py`, `contracts.py`, `optimization_service.py`, `yatt.py` |
+| 1 | KEPHIS lower-average API contract restored | ✅ Done | `optimization_schema.py`, `contracts.py`, `optimization_service.py`, `yatt.py` |
 | 2 | Soil pre-fill from latest farmer prediction | ✅ Done | `optimizationPage.tsx`, `SoilInputs.tsx` |
 | 3 | K pre-fill guard (< 20 ppm skipped) | ✅ Done (workaround) | `optimizationPage.tsx` |
 | 4 | Fix score-vs-raw ambiguity at source (Option C) | 🔲 Backlog | `prediction_service.py` |
-| 5 | KEPHIS quantile binary toggle in UI | 🔲 Backlog | `YAttConfig.tsx` |
-| 6 | Expand pre-fill to use `nutrients[K].method` | 🔲 Backlog | `optimizationPage.tsx` |
+| 5 | Expand pre-fill to use `nutrients[K].method` | 🔲 Backlog | `optimizationPage.tsx` |

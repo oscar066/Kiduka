@@ -16,6 +16,11 @@ from api.services.optimization.core.contracts import (
 )
 from api.services.optimization.core.crop_mappings import resolve_busia_crop
 from api.services.optimization.core.unit_conversions import (
+    QUEFTS_K_EXCHANGEABLE_MAX_PPM,
+    QUEFTS_P_OLSEN_MAX_MG_KG,
+    QUEFTS_PH_MAX,
+    QUEFTS_PH_MIN,
+    QUEFTS_SOC_MAX_PERCENT,
     acres_to_hectares,
     k2o_fraction_to_k,
     p2o5_fraction_to_p,
@@ -167,10 +172,10 @@ class OptimizationService:
                 "Resolve the history record upstream and call optimization with soil.mode='direct'."
             )
         return SoilInput(
-            pH=float(soil.ph),
-            soc_percent=float(soil.soc_percent),
-            p_olsen_ppm=float(soil.p_olsen_ppm),
-            k_ppm=float(soil.k_exchangeable_ppm),
+            pH=min(max(float(soil.ph), QUEFTS_PH_MIN), QUEFTS_PH_MAX),
+            soc_percent=min(float(soil.soc_percent), QUEFTS_SOC_MAX_PERCENT),
+            p_olsen_ppm=min(float(soil.p_olsen_ppm), QUEFTS_P_OLSEN_MAX_MG_KG),
+            k_ppm=min(float(soil.k_exchangeable_ppm), QUEFTS_K_EXCHANGEABLE_MAX_PPM),
         )
 
     @staticmethod
@@ -194,12 +199,8 @@ class OptimizationService:
             location = GeoLocation(lat=request.location.lat, lon=request.location.lon)
         if yatt.source == YAttSource.WOFOST.value and location is None:
             raise ValueError("location is required when scenario.y_att.source='wofost'.")
-        # Map quantile (0–1) to the two available KEPHIS CSV columns:
-        # ≤ 0.5 → conservative lower bound; > 0.5 → average/median
-        kephis_yield_basis = "average_lower" if yatt.kephis_quantile <= 0.5 else "average_median"
         return YAttConfig(
             source=YAttSource(yatt.source),
-            kephis_yield_basis=kephis_yield_basis,
             location=location,
             wofost_sowing_date=yatt.wofost_sowing_date,
             wofost_elevation_m=yatt.wofost_elevation_m,

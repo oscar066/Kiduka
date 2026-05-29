@@ -13,8 +13,8 @@ interface NavigationBarProps {
 
 const navLinks = [
   { label: "Architecture", section: "architecture" },
-  { label: "Agrovets", section: "agrovets" },
   { label: "How It Works", section: "how-it-works" },
+  { label: "Agrovets", section: "agrovets" },
   { label: "Testimonials", section: "testimonials" },
   { label: "FAQ", section: "faq" },
 ];
