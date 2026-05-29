@@ -191,8 +191,8 @@ class SolverConfigModel(StrictModel):
         no_improvement_limit (int): Early stopping criterion if no improvements occur for this many iterations.
     """
     method: Literal["fd_oa"] = Field("fd_oa", description="Feasible finite-difference OA solver.")
-    time_limit_seconds: float = Field(10.0, gt=0.0)
-    max_iterations: int = Field(20, gt=0)
+    time_limit_seconds: float = Field(30.0, gt=0.0)
+    max_iterations: int = Field(50, gt=0)
     no_improvement_limit: int = Field(5, gt=0)
 
 

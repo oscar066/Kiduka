@@ -50,6 +50,8 @@ class CropInput:
     price_currency_per_kg: float
     kephis_crop: str
     rquefts_crop: str
+    rquefts_leaf_ratio: float
+    rquefts_stem_ratio: float
     y_attainable_kg_ha: float
     moisture_content: float
 
@@ -85,8 +87,8 @@ class FertilizerInput:
 @dataclass(frozen=True)
 class OptimizationScenario:
     budget_currency: float
-    time_limit_seconds: float = 10.0
-    max_iterations: int = 20
+    time_limit_seconds: float = 30.0
+    max_iterations: int = 50
     no_improvement_limit: int = 5
     status_label: str = "Feasible"
 

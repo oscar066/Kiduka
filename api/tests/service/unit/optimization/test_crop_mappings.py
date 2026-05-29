@@ -25,3 +25,13 @@ def test_crop_aliases_map_to_kephis_and_rquefts_names():
     assert resolve_busia_crop("Soybeans").wofost_crop == "soybean"
     assert resolve_busia_crop("Groundnuts").rquefts_crop == "Groundnut"
     assert resolve_busia_crop("Groundnuts").wofost_crop == "groundnut"
+
+
+def test_crop_mappings_include_rquefts_leaf_and_stem_ratios():
+    maize = resolve_busia_crop("Maize")
+    soybeans = resolve_busia_crop("Soybeans")
+
+    assert maize.rquefts_leaf_ratio == 0.46
+    assert maize.rquefts_stem_ratio == 0.56
+    assert soybeans.rquefts_leaf_ratio == 1.0882
+    assert soybeans.rquefts_stem_ratio == 0.54

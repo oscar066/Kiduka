@@ -31,7 +31,8 @@ LINPROG_OPTIONS = {
     "ipm_optimality_tolerance": 1e-9,
 }
 NPK_CACHE_DECIMALS = 8
-IMPROVEMENT_TOL = 1e-8
+IMPROVEMENT_TOL = 1.0
+MIN_OA_ITERATIONS = 3
 ZERO_TOLERANCE = 1e-8
 
 
@@ -135,10 +136,13 @@ class FdOaSolver:
             )
 
         iteration = 0
-        while (
-            iteration < problem.scenario.max_iterations
-            and no_improvement_count < problem.scenario.no_improvement_limit
-            and time.perf_counter() < deadline
+        min_iterations = min(MIN_OA_ITERATIONS, problem.scenario.max_iterations)
+        while iteration < problem.scenario.max_iterations and (
+            iteration < min_iterations
+            or (
+                no_improvement_count < problem.scenario.no_improvement_limit
+                and time.perf_counter() < deadline
+            )
         ):
             iteration += 1
             master_result = self._solve_master(
