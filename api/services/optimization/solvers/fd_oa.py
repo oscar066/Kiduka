@@ -34,6 +34,48 @@ NPK_CACHE_DECIMALS = 8
 IMPROVEMENT_TOL = 1.0
 MIN_OA_ITERATIONS = 3
 ZERO_TOLERANCE = 1e-8
+OUTCOME_BUDGET_TOLERANCE = 1e-6
+SOLVER_LIMIT_TERMINATION_REASONS = {"time_limit", "max_iterations"}
+
+
+def build_optimization_outcome(
+    *,
+    application_rows: list[dict],
+    budget_used: float,
+    net_return_improvement: float,
+    termination_reason: str,
+) -> dict:
+    has_cost_effective_application = (
+        bool(application_rows)
+        and budget_used > OUTCOME_BUDGET_TOLERANCE
+        and net_return_improvement > IMPROVEMENT_TOL
+    )
+    if not has_cost_effective_application:
+        return {
+            "code": "no_economic_application",
+            "message": "No fertilizer is recommended at the current stage.",
+            "detail": (
+                "Based on these soil values, crop price, and fertilizer prices, adding fertilizer is "
+                "not expected to increase profit."
+            ),
+            "termination_reason": termination_reason,
+        }
+    if termination_reason in SOLVER_LIMIT_TERMINATION_REASONS:
+        return {
+            "code": "best_application_with_solver_limit",
+            "message": "Best fertilizer rates found within the calculation limit.",
+            "detail": (
+                "The calculation stopped before it could search further, so these are the best rates "
+                "found so far."
+            ),
+            "termination_reason": termination_reason,
+        }
+    return {
+        "code": "cost_effective_application_found",
+        "message": "Recommended fertilizer rates found.",
+        "detail": "The rates shown are expected to increase profit for these inputs.",
+        "termination_reason": termination_reason,
+    }
 
 
 @dataclass(frozen=True)
@@ -73,6 +115,7 @@ class FdOaSolveResult:
     baseline_rows: list[dict]
     feasible_rows: list[dict]
     summary_row: dict
+    optimization_outcome: dict
     solver_log: list[dict]
 
 
@@ -106,6 +149,7 @@ class FdOaSolver:
         solver_log: list[dict] = []
         seen_candidates: set[tuple[float, ...]] = set()
         no_improvement_count = 0
+        termination_reason = "unknown"
 
         for crop_idx, center in enumerate(baseline.z_npk_kg_ha):
             cuts.extend(self._finite_difference_cuts(problem, crop_idx, center))
@@ -159,6 +203,7 @@ class FdOaSolver:
             )
 
             if not master_result.success or master_result.x is None:
+                termination_reason = "master_failed"
                 solver_log.append(
                     {
                         "iteration": iteration,
@@ -210,6 +255,16 @@ class FdOaSolver:
                 }
             )
 
+        if termination_reason == "unknown":
+            if iteration >= problem.scenario.max_iterations:
+                termination_reason = "max_iterations"
+            elif no_improvement_count >= problem.scenario.no_improvement_limit:
+                termination_reason = "no_improvement"
+            elif time.perf_counter() >= deadline:
+                termination_reason = "time_limit"
+            else:
+                termination_reason = "completed"
+
         elapsed_seconds = time.perf_counter() - start_time
         return self._build_result(
             status=problem.scenario.status_label,
@@ -218,6 +273,7 @@ class FdOaSolver:
             feasible=incumbent,
             elapsed_seconds=elapsed_seconds,
             iterations=iteration,
+            termination_reason=termination_reason,
             solver_log=solver_log,
         )
 
@@ -543,6 +599,7 @@ class FdOaSolver:
         feasible: EvaluatedSolution,
         elapsed_seconds: float,
         iterations: int,
+        termination_reason: str,
         solver_log: list[dict],
     ) -> FdOaSolveResult:
         application_rows = self._application_rows(problem, feasible)
@@ -555,6 +612,13 @@ class FdOaSolver:
             for idx, crop in enumerate(problem.crops)
         ]
         budget_used = feasible.total_fertilizer_cost
+        net_return_improvement = feasible.total_net_return - baseline.total_net_return
+        optimization_outcome = build_optimization_outcome(
+            application_rows=application_rows,
+            budget_used=budget_used,
+            net_return_improvement=net_return_improvement,
+            termination_reason=termination_reason,
+        )
         summary_row = {
             "status": status,
             "budget_currency": problem.scenario.budget_currency,
@@ -564,7 +628,7 @@ class FdOaSolver:
             "feasible_revenue_total": feasible.total_revenue,
             "baseline_net_return_total": baseline.total_net_return,
             "feasible_net_return_total": feasible.total_net_return,
-            "net_return_improvement": feasible.total_net_return - baseline.total_net_return,
+            "net_return_improvement": net_return_improvement,
             "solver_time_seconds": elapsed_seconds,
             "oa_iterations": iterations,
             "yield_evaluations": len(self._yield_cache),
@@ -576,6 +640,7 @@ class FdOaSolver:
             baseline_rows=baseline_rows,
             feasible_rows=feasible_rows,
             summary_row=summary_row,
+            optimization_outcome=optimization_outcome,
             solver_log=solver_log,
         )
 
