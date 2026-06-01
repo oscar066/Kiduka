@@ -72,6 +72,7 @@ class OptimizationService:
             baseline_rows=result.baseline_rows,
             feasible_rows=result.feasible_rows,
             summary_row=result.summary_row,
+            optimization_outcome=result.optimization_outcome,
             solver_log=result.solver_log,
         )
 

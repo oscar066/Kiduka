@@ -271,6 +271,26 @@ class CropScenarioRow(BaseModel):
     net_return_total: float
 
 
+class OptimizationOutcome(BaseModel):
+    """
+    User-facing summary of the optimization result.
+
+    Attributes:
+        code (str): Stable machine-readable outcome code for frontend branching.
+        message (str): Short display message suitable for the optimization results UI.
+        detail (Optional[str]): Longer explanation for tooltips or secondary copy.
+        termination_reason (Optional[str]): Internal solver stopping reason.
+    """
+    code: Literal[
+        "cost_effective_application_found",
+        "best_application_with_solver_limit",
+        "no_economic_application",
+    ]
+    message: str
+    detail: str | None = None
+    termination_reason: str | None = None
+
+
 class OptimizationResponse(BaseModel):
     """
     Root schema for the API response after a successful optimization run.
@@ -281,6 +301,7 @@ class OptimizationResponse(BaseModel):
         baseline_rows (list[CropScenarioRow]): Projected outcomes if zero fertilizer was applied.
         feasible_rows (list[CropScenarioRow]): Projected optimal outcomes under the recommended applications.
         summary_row (dict[str, Any]): High-level aggregated metrics across all crops.
+        optimization_outcome (OptimizationOutcome): User-facing optimization result summary.
         solver_log (list[dict[str, Any]]): Internal execution metrics and steps from the solver algorithm.
     """
     status: str
@@ -288,4 +309,5 @@ class OptimizationResponse(BaseModel):
     baseline_rows: list[CropScenarioRow]
     feasible_rows: list[CropScenarioRow]
     summary_row: dict[str, Any]
+    optimization_outcome: OptimizationOutcome
     solver_log: list[dict[str, Any]]

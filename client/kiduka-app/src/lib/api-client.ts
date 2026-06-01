@@ -21,16 +21,40 @@ import type {
 } from '@/types/api';
 
 export { UserRole };
-export type { 
-  UserResponse, 
-  AdminUserResponse, 
-  LoginResponse, 
+export type {
+  UserResponse,
+  AdminUserResponse,
+  LoginResponse,
   TokenData,
   AdminDashboardResponse,
   AdminDashboardStats,
   PaginatedResponse,
   ApiError
 };
+
+export type OptimizationOutcomeCode =
+  | "cost_effective_application_found"
+  | "best_application_with_solver_limit"
+  | "no_economic_application";
+
+export interface OptimizationOutcome {
+  code: OptimizationOutcomeCode;
+  message: string;
+  detail: string | null;
+  termination_reason: string | null;
+}
+
+export interface OptimizationResult {
+  optimization_outcome: OptimizationOutcome;
+  summary_row: Record<string, number>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  baseline_rows: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  feasible_rows: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  application_rows: any[];
+  status: string;
+}
 
 export class ApiClient {
   /**
@@ -60,7 +84,7 @@ export class ApiClient {
   async request(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     
-    // CRITICAL FIX: Destructure headers from options to avoid override
+    // Destructure headers from options to avoid override
     const { headers: optionsHeaders, ...restOptions } = options;
     
     const config: RequestInit = {
@@ -547,7 +571,7 @@ export class ApiClient {
       };
     };
     location?: { lat: number; lon: number };
-  }, token: string): Promise<any> {
+  }, token: string): Promise<OptimizationResult> {
     return this.request('/optimization/optimize', {
       method: 'POST',
       headers: this.getAuthHeaders(token),
