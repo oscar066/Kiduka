@@ -34,6 +34,7 @@ from api.db.connection import db_manager, get_db
 from api.routers.auth import router as auth_router
 from api.routers.prediction import router as prediction_router
 from api.routers.admin import router as admin_router
+from api.routers.cdc import router as cdc_router 
 from api.routers.optimization import router as optimization_router
 from chatbot.app import router as chat_router
 
@@ -87,7 +88,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         raise
-    
+
     logger.info("Application initialization completed with admin features enabled")
     
     yield  # This is where the application runs
@@ -131,7 +132,8 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_router)
 app.include_router(prediction_router)
-app.include_router(admin_router)  # New admin router
+app.include_router(admin_router)          # Admin management panel
+app.include_router(cdc_router)            # CDC officer dashboard and tools
 app.include_router(chat_router)
 app.include_router(optimization_router)
 
@@ -196,7 +198,7 @@ async def root(
             "is_admin": current_user.is_admin()
         }
         
-        # Add admin endpoints if user is admin
+        # Add admin endpoints if user is an admin
         if current_user.is_admin():
             response["endpoints"]["admin"] = "/admin - Admin management endpoints"
             response["admin_features"] = {
@@ -204,7 +206,19 @@ async def root(
                 "prediction_management": True,
                 "audit_logs": True,
                 "dashboard": True,
-                "agrovet_management": True
+                "agrovet_management": True,
+            }
+
+        # Add CDC endpoints if user is a CDC officer (or super admin)
+        if current_user.is_cdc() or current_user.is_super_admin():
+            response["endpoints"]["cdc"] = "/cdc - CDC officer dashboard and tools"
+            response["cdc_features"] = {
+                "farmer_search": True,
+                "run_analysis_for_farmer": True,
+                "send_results_email": True,
+                "send_results_sms": True,
+                "notification_history": True,
+                "cdc_dashboard": True,
             }
     
     return response

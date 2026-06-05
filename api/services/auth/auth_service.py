@@ -1,5 +1,7 @@
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 import logging
+import os
+import secrets
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
@@ -8,6 +10,9 @@ from api.db.models.database import User, UserRole
 from api.schema.auth_schema import UserCreate, UserLogin, UserUpdate, UserResponse, UserRoleEnum
 from api.services.auth.core import AuthSecurityManager, ACCESS_TOKEN_EXPIRE_MINUTES
 from api.services.auth.auth_manager import AuthManager
+from api.services.notifications.email_service import EmailService
+
+_RESET_TOKEN_EXPIRE_HOURS = 1
 
 logger = logging.getLogger(__name__)
 
@@ -219,12 +224,80 @@ class AuthService:
             logger.error(f"Error deleting user: {e}")
             raise
 
+    async def forgot_password(self, email: str) -> None:
+        """
+        Generate a password-reset token and email it to the user.
+
+        Always returns without error even if the email is not found, to
+        prevent account enumeration.
+
+        Args:
+            email: The email address submitted by the user.
+        """
+        result = await self.db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+
+        if not user or not user.is_active:
+            # Silently return — do not reveal whether the address exists
+            logger.info("[AuthService] forgot_password: no active user for %s", email)
+            return
+
+        token = secrets.token_urlsafe(32)
+        user.password_reset_token = token
+        user.password_reset_expires = datetime.now(timezone.utc) + timedelta(
+            hours=_RESET_TOKEN_EXPIRE_HOURS
+        )
+        await self.db.commit()
+
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        reset_url = f"{frontend_url}/auth/reset-password?token={token}"
+
+        email_service = EmailService()
+        sent = await email_service.send_password_reset_email(
+            recipient_email=user.email,
+            recipient_name=user.full_name or user.username,
+            reset_url=reset_url,
+        )
+        if not sent:
+            logger.error("[AuthService] Failed to send reset email to %s", email)
+
+    async def reset_password(self, token: str, new_password: str) -> None:
+        """
+        Validate the reset token and update the user's password.
+
+        Args:
+            token: The one-time token from the reset email link.
+            new_password: The new plaintext password chosen by the user.
+
+        Raises:
+            ValueError: If the token is invalid or has expired.
+        """
+        result = await self.db.execute(
+            select(User).where(User.password_reset_token == token)
+        )
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise ValueError("Invalid or expired password reset token.")
+
+        if user.password_reset_expires is None or datetime.now(timezone.utc) > user.password_reset_expires:
+            # Clear the stale token
+            user.password_reset_token = None
+            user.password_reset_expires = None
+            await self.db.commit()
+            raise ValueError("Password reset link has expired. Please request a new one.")
+
+        user.hashed_password = AuthSecurityManager.get_password_hash(new_password)
+        user.password_reset_token = None
+        user.password_reset_expires = None
+        await self.db.commit()
+
+        logger.info("[AuthService] Password reset successfully for user %s", user.username)
+
     async def send_verification_email(self, user: User) -> None:
-        # Send email logic here
         pass
 
     async def verify_email(self, token: str) -> User:
-        # Verify email logic here
         pass
     
     def get_user_permissions(self, user: User) -> dict:

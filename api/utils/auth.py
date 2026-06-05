@@ -84,13 +84,13 @@ async def get_current_super_admin_user(
 ) -> User:
     """
     FastAPI dependency that enforces strict super-admin access control.
-    
+
     Args:
         current_user (User): The user resolved by `get_current_user`.
-        
+
     Returns:
         User: The authenticated User, guaranteed to be a SUPER_ADMIN.
-        
+
     Raises:
         HTTPException: 403 Forbidden if the user is not a super admin.
     """
@@ -98,6 +98,33 @@ async def get_current_super_admin_user(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Super admin privileges required"
+        )
+    return current_user
+
+
+async def get_current_cdc_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """
+    FastAPI dependency that enforces CDC-level access control.
+
+    Permits users with the CDC role. Super admins are also granted access
+    so they can inspect and troubleshoot the CDC workflow without needing
+    a separate CDC account.
+
+    Args:
+        current_user (User): The user resolved by `get_current_user`.
+
+    Returns:
+        User: The authenticated User, guaranteed to be CDC or SUPER_ADMIN.
+
+    Raises:
+        HTTPException: 403 Forbidden if the user is neither a CDC nor a super admin.
+    """
+    if not (current_user.is_cdc() or current_user.is_super_admin()):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="CDC privileges required"
         )
     return current_user
 
@@ -149,27 +176,41 @@ class PermissionChecker:
     
     @staticmethod
     def can_edit_user(current_user: User, target_user: User) -> bool:
-        """Check if current user can edit target user"""
+        """
+        Check if current user can edit target user.
+
+        Rules:
+        - SUPER_ADMIN can edit anyone.
+        - ADMIN can edit USER and CDC accounts (not other admins).
+        - All others can only edit themselves.
+        """
         if current_user.is_super_admin():
             return True
         elif current_user.is_admin():
-            # Admins can edit regular users but not other admins
-            return target_user.role == UserRole.USER
+            # Admins can edit regular farmers and CDC officers, not other admins
+            return target_user.role in [UserRole.USER, UserRole.CDC]
         else:
-            # Regular users can only edit themselves
+            # Regular users / CDC users can only edit themselves
             return current_user.id == target_user.id
-    
+
     @staticmethod
     def can_delete_user(current_user: User, target_user: User) -> bool:
-        """Check if current user can delete target user"""
+        """
+        Check if current user can delete target user.
+
+        Rules:
+        - SUPER_ADMIN can delete anyone except themselves.
+        - ADMIN can delete USER and CDC accounts only.
+        - All others can delete themselves.
+        """
         if current_user.is_super_admin():
             # Super admins can delete anyone except themselves
             return current_user.id != target_user.id
         elif current_user.is_admin():
-            # Admins can delete regular users only
-            return target_user.role == UserRole.USER
+            # Admins can delete regular farmers and CDC officers only
+            return target_user.role in [UserRole.USER, UserRole.CDC]
         else:
-            # Regular users can delete themselves
+            # Regular users / CDC users can delete themselves
             return current_user.id == target_user.id
     
     @staticmethod

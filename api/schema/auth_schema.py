@@ -13,13 +13,17 @@ from enum import Enum
 class UserRoleEnum(str, Enum):
     """
     Enumeration of user roles within the system.
-    
+
     Attributes:
-        USER (str): Standard user with basic permissions.
-        ADMIN (str): Administrative user with elevated privileges.
-        SUPER_ADMIN (str): Super administrator with all system permissions.
+        USER (str): Standard farmer account with basic permissions.
+        CDC (str): Community Development Coordinator — can run analyses for farmers
+            and dispatch results via email / SMS.
+        ADMIN (str): Administrative user with elevated management privileges.
+        SUPER_ADMIN (str): Super administrator with full system permissions,
+            including the ability to create Admin and CDC accounts.
     """
     USER = "user"
+    CDC = "cdc"
     ADMIN = "admin"
     SUPER_ADMIN = "super_admin"
 
@@ -49,16 +53,22 @@ class UserCreate(UserBase):
 
 class AdminUserCreate(UserCreate):
     """
-    Schema for creating an administrative user.
-    
-    Only existing administrators can use this schema to set roles.
+    Schema for creating a user account via the admin panel.
+
+    Only existing administrators (ADMIN or SUPER_ADMIN) can use this endpoint.
+    Role assignment rules:
+    - Both ADMIN and SUPER_ADMIN can create USER and CDC accounts.
+    - Only SUPER_ADMIN can create other ADMIN or SUPER_ADMIN accounts.
+
     Inherits attributes from UserCreate.
-    
+
     Attributes:
         role (UserRoleEnum): The role assigned to the new user. Defaults to USER.
+        phone_number (Optional[str]): Contact phone for SMS notifications (required for CDC-served farmers).
         notes (Optional[str]): Optional administrative notes about the user.
     """
     role: UserRoleEnum = Field(default=UserRoleEnum.USER)
+    phone_number: Optional[str] = Field(None, max_length=20)
     notes: Optional[str] = Field(None, max_length=1000)
 
 class UserLogin(BaseModel):
@@ -75,12 +85,13 @@ class UserLogin(BaseModel):
 class UserResponse(UserBase):
     """
     Schema for serializing a user object to return in API responses.
-    
+
     Inherits attributes from UserBase.
-    
+
     Attributes:
         id (uuid.UUID): The unique identifier of the user.
         role (UserRoleEnum): The user's role.
+        phone_number (Optional[str]): Contact phone number, used for SMS notifications.
         is_active (bool): Indicates if the user account is active.
         is_verified (bool): Indicates if the user's email has been verified.
         created_at (datetime): The timestamp when the user was created.
@@ -88,9 +99,10 @@ class UserResponse(UserBase):
         last_login (Optional[datetime]): The timestamp of the user's last login.
     """
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: uuid.UUID
     role: UserRoleEnum
+    phone_number: Optional[str] = None
     is_active: bool
     is_verified: bool
     created_at: datetime

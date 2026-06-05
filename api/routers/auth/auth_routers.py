@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.db.connection import get_db
 from api.db.models.database import User
 from api.schema.auth_schema import (
-    UserCreate, UserLogin, UserResponse, UserUpdate, 
-    Token, PasswordChange
+    UserCreate, UserLogin, UserResponse, UserUpdate,
+    Token, PasswordChange, PasswordReset, PasswordResetConfirm
 )
 from api.services.auth.auth_service import AuthService
 from api.utils.auth import get_current_user
@@ -225,6 +225,64 @@ async def delete_current_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete user account"
         )
+
+@router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
+async def forgot_password(
+    payload: PasswordReset,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """
+    Initiate a self-service password reset.
+
+    Generates a one-time token, stores it against the user record, and sends
+    a reset link to the registered email address. Always returns 202 regardless
+    of whether the email exists, to prevent account enumeration.
+
+    Args:
+        payload (PasswordReset): JSON body containing the user's email address.
+        auth_service (AuthService): Injected auth service.
+
+    Returns:
+        dict: Generic acknowledgement message.
+    """
+    try:
+        await auth_service.forgot_password(payload.email)
+    except Exception as e:
+        logger.error("Unexpected error in forgot_password: %s", e)
+    # Always return the same response
+    return {"message": "If an account with that email exists, a reset link has been sent."}
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(
+    payload: PasswordResetConfirm,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """
+    Complete a password reset using a token from the reset email.
+
+    Args:
+        payload (PasswordResetConfirm): JSON body with the token and new password.
+        auth_service (AuthService): Injected auth service.
+
+    Returns:
+        dict: Success message on valid token.
+
+    Raises:
+        HTTPException 400: If the token is invalid or expired.
+    """
+    try:
+        await auth_service.reset_password(payload.token, payload.new_password)
+        return {"message": "Password reset successfully. You can now log in with your new password."}
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        logger.error("Unexpected error in reset_password: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset password",
+        )
+
 
 @router.get("/permissions")
 async def get_user_permissions(

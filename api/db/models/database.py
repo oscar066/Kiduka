@@ -1,11 +1,17 @@
 """
-Enhanced database models with role-based authentication
+Enhanced database models with role-based authentication and CDC support.
+
+This module defines all SQLAlchemy ORM models for the platform, including:
+- User accounts with role-based access (USER, CDC, ADMIN, SUPER_ADMIN)
+- Soil prediction records with optional CDC attribution
+- Agrovets, sessions, and audit logs
+- CDC notification tracking for email and SMS dispatch
 """
 import uuid
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy import (
-    Column, String, Boolean, DateTime, Numeric, Text, 
+    Column, String, Boolean, DateTime, Numeric, Text,
     ForeignKey, Table, ARRAY, JSON, Enum
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
@@ -15,11 +21,54 @@ import enum
 
 Base = declarative_base()
 
-# User roles enum
+
+# Enumeration types
+
 class UserRole(enum.Enum):
+    """
+    User roles defining the access level of each account.
+
+    Attributes:
+        USER: Standard farmer account. Can view own dashboard and predictions.
+        CDC: Community Development Coordinator. Can run analyses for farmers
+            and send results via email / SMS.
+        ADMIN: Administrator. Can manage users, predictions, and agrovets.
+        SUPER_ADMIN: Full system access, including admin and CDC user creation.
+    """
     USER = "user"
+    CDC = "cdc"
     ADMIN = "admin"
     SUPER_ADMIN = "super_admin"
+
+
+class NotificationMethod(enum.Enum):
+    """
+    Delivery channel(s) used when a CDC sends results to a farmer.
+
+    Attributes:
+        EMAIL: Send only via email.
+        SMS: Send only via SMS (Africa's Talking).
+        BOTH: Send via both email and SMS.
+    """
+    EMAIL = "email"
+    SMS = "sms"
+    BOTH = "both"
+
+
+class NotificationStatus(enum.Enum):
+    """
+    Delivery status of a CDC notification attempt.
+
+    Attributes:
+        PENDING: Dispatch has been queued but not yet attempted.
+        SENT: All selected channels were dispatched successfully.
+        FAILED: One or more channels failed to deliver.
+        PARTIAL: Only one of two requested channels succeeded.
+    """
+    PENDING = "pending"
+    SENT = "sent"
+    FAILED = "failed"
+    PARTIAL = "partial"
 
 # Association table for many-to-many relationship between predictions and agrovets
 prediction_agrovets = Table(
@@ -33,14 +82,18 @@ prediction_agrovets = Table(
 class User(Base):
     """
     Enhanced User model representing a registered account on the platform.
-    
+
+    Supports four access levels: standard farmers (USER), field coordinators
+    (CDC), platform administrators (ADMIN), and super administrators (SUPER_ADMIN).
+
     Attributes:
         id (UUID): Primary key.
         email (str): Unique email address used for login and communication.
         username (str): Unique display name for the user.
         hashed_password (str): Bcrypt hashed password.
         full_name (str): User's real name.
-        role (UserRole): Role-based access level (USER, ADMIN, SUPER_ADMIN).
+        phone_number (str): Contact phone number, used for SMS notifications.
+        role (UserRole): Role-based access level (USER, CDC, ADMIN, SUPER_ADMIN).
         is_active (bool): Whether the account is currently enabled.
         is_verified (bool): Whether the user's email has been verified.
         created_at (datetime): Timestamp of account creation.
@@ -50,55 +103,111 @@ class User(Base):
         notes (str): Administrative notes regarding this user.
     """
     __tablename__ = "users"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=False, index=True)
     username = Column(String(100), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255))
-    
+
+    # Contact information — phone_number is used for SMS notification delivery
+    phone_number = Column(String(20), nullable=True)
+
     # Role-based fields
     role = Column(
         Enum(UserRole, name="user_role", values_callable=lambda obj: [e.value for e in obj]),
-        nullable=False, 
+        nullable=False,
         default=UserRole.USER
     )
-    
+
     # Status fields
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
-    
+
     # Metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     last_login = Column(DateTime(timezone=True), nullable=True)
-    
+
     # Additional admin fields
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     notes = Column(Text, nullable=True)  # Admin notes about the user
-    
+
+    # Self-service password reset
+    password_reset_token = Column(String(255), nullable=True, index=True)
+    password_reset_expires = Column(DateTime(timezone=True), nullable=True)
+
     # Relationships
-    predictions: Mapped[List["SoilPrediction"]] = relationship("SoilPrediction", back_populates="user")
+    predictions: Mapped[List["SoilPrediction"]] = relationship(
+        "SoilPrediction",
+        back_populates="user",
+        foreign_keys="SoilPrediction.user_id"
+    )
+    # Predictions that this CDC user has performed on behalf of farmers
+    cdc_performed_predictions: Mapped[List["SoilPrediction"]] = relationship(
+        "SoilPrediction",
+        back_populates="cdc_user",
+        foreign_keys="SoilPrediction.performed_by_cdc_id"
+    )
     sessions: Mapped[List["UserSession"]] = relationship("UserSession", back_populates="user")
     created_users: Mapped[List["User"]] = relationship("User", remote_side=[id])
-    
+    # Notifications sent by this CDC user
+    sent_notifications: Mapped[List["CDCNotification"]] = relationship(
+        "CDCNotification",
+        back_populates="cdc_user",
+        foreign_keys="CDCNotification.sent_by_cdc_id"
+    )
+    # Notifications received by this farmer
+    received_notifications: Mapped[List["CDCNotification"]] = relationship(
+        "CDCNotification",
+        back_populates="farmer",
+        foreign_keys="CDCNotification.farmer_id"
+    )
+
+    # Role helper methods
+
     def is_admin(self) -> bool:
-        """Check if user has admin privileges"""
+        """Check if user has admin privileges (ADMIN or SUPER_ADMIN only)."""
         return self.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
-    
+
     def is_super_admin(self) -> bool:
-        """Check if user is a super admin"""
+        """Check if user is a super admin."""
         return self.role == UserRole.SUPER_ADMIN
-    
+
+    def is_cdc(self) -> bool:
+        """Check if user is a Community Development Coordinator (CDC)."""
+        return self.role == UserRole.CDC
+
+    def is_privileged(self) -> bool:
+        """
+        Check if user holds any elevated role (CDC, ADMIN, or SUPER_ADMIN).
+
+        Useful for audit logging gates that apply to all non-farmer accounts.
+        """
+        return self.role in [UserRole.CDC, UserRole.ADMIN, UserRole.SUPER_ADMIN]
+
     def can_manage_user(self, target_user: "User") -> bool:
-        """Check if this user can manage another user"""
+        """
+        Check if this user can manage (edit/delete) another user.
+
+        Rules:
+        - SUPER_ADMIN can manage anyone.
+        - ADMIN can manage USER and CDC accounts.
+        - All others can only manage themselves.
+
+        Args:
+            target_user (User): The user whose account would be managed.
+
+        Returns:
+            bool: True if the operation is permitted.
+        """
         if self.role == UserRole.SUPER_ADMIN:
             return True
         elif self.role == UserRole.ADMIN:
-            # Admins can manage regular users but not other admins
-            return target_user.role == UserRole.USER
+            # Admins manage regular farmers and CDC officers, not other admins
+            return target_user.role in [UserRole.USER, UserRole.CDC]
         else:
-            # Regular users can only manage themselves
+            # Regular users / CDC users can only manage themselves
             return self.id == target_user.id
 
 class SoilPrediction(Base):
@@ -129,6 +238,9 @@ class SoilPrediction(Base):
         nutrients (JSONB): Categorical labels and scores for individual nutrients.
         is_flagged (bool): Indicates if an admin has flagged this prediction for review.
         admin_notes (Text): Administrative comments regarding this prediction.
+        performed_by_cdc_id (UUID): FK to the CDC user who ran this analysis on behalf of
+            the farmer. NULL when the farmer ran the analysis themselves.
+        cdc_notes (Text): Field observations entered by the CDC during the site visit.
     """
     __tablename__ = "soil_predictions"
     
@@ -161,17 +273,47 @@ class SoilPrediction(Base):
     confidence_data = Column(JSONB, nullable=True)    # Store confidence metrics
     nutrients = Column(JSONB, nullable=True)          # Store uniform nutrient scores/labels
     
-    # Metadata and Admin
+    # Admin and moderation fields
     is_flagged = Column(Boolean, default=False)
     admin_notes = Column(Text, nullable=True)
-    
+
+    # CDC attribution — set when a CDC officer runs the analysis on behalf of a farmer.
+    # If NULL the farmer ran the analysis themselves.
+    performed_by_cdc_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True
+    )
+    # Optional field notes added by the CDC during the on-site visit
+    cdc_notes = Column(Text, nullable=True)
+
     # Metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    
+
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="predictions")
-    agrovets: Mapped[List["Agrovet"]] = relationship("Agrovet", secondary=prediction_agrovets, back_populates="predictions")
+    user: Mapped["User"] = relationship(
+        "User",
+        back_populates="predictions",
+        foreign_keys=[user_id]
+    )
+    # The CDC user who performed this analysis (None if self-service)
+    cdc_user: Mapped[Optional["User"]] = relationship(
+        "User",
+        back_populates="cdc_performed_predictions",
+        foreign_keys=[performed_by_cdc_id]
+    )
+    agrovets: Mapped[List["Agrovet"]] = relationship(
+        "Agrovet",
+        secondary=prediction_agrovets,
+        back_populates="predictions"
+    )
+    # Notifications dispatched for this prediction
+    notifications: Mapped[List["CDCNotification"]] = relationship(
+        "CDCNotification",
+        back_populates="prediction"
+    )
 
 class Agrovet(Base):
     """
@@ -294,3 +436,91 @@ class AdminAuditLog(Base):
     target_user: Mapped[Optional["User"]] = relationship("User", foreign_keys=[target_user_id])
     target_prediction: Mapped[Optional["SoilPrediction"]] = relationship("SoilPrediction")
     target_agrovet: Mapped[Optional["Agrovet"]] = relationship("Agrovet")
+
+
+class CDCNotification(Base):
+    """
+    Tracks every notification dispatched by a CDC officer to a farmer.
+
+    A CDC user can send analysis results to a farmer via email, SMS, or both.
+    Each dispatch attempt is recorded here so the CDC dashboard can display
+    delivery status and the farmer's dashboard can show when they were notified.
+
+    Attributes:
+        id (UUID): Primary key.
+        prediction_id (UUID): FK to the SoilPrediction whose results were sent.
+        sent_by_cdc_id (UUID): FK to the CDC User who triggered the dispatch.
+        farmer_id (UUID): FK to the farmer User who received (or should receive) the results.
+        method (NotificationMethod): Channel used — EMAIL, SMS, or BOTH.
+        status (NotificationStatus): Current delivery outcome — PENDING, SENT, FAILED, PARTIAL.
+        email_status (str): Granular status of the email channel ('sent', 'failed', 'skipped').
+        sms_status (str): Granular status of the SMS channel ('sent', 'failed', 'skipped').
+        error_message (Text): Error detail when status is FAILED or PARTIAL.
+        sent_at (datetime): Timestamp when the dispatch was attempted.
+        created_at (datetime): Record creation timestamp.
+    """
+    __tablename__ = "cdc_notifications"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    # Foreign keys
+    prediction_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("soil_predictions.id"),
+        nullable=False,
+        index=True
+    )
+    sent_by_cdc_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+    farmer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+
+    # Delivery configuration
+    method = Column(
+        Enum(NotificationMethod, name="notification_method",
+             values_callable=lambda obj: [e.value for e in obj]),
+        nullable=False
+    )
+
+    # Overall delivery status
+    status = Column(
+        Enum(NotificationStatus, name="notification_status",
+             values_callable=lambda obj: [e.value for e in obj]),
+        nullable=False,
+        default=NotificationStatus.PENDING
+    )
+
+    # Per-channel granular status ('sent' | 'failed' | 'skipped' | 'pending')
+    email_status = Column(String(20), nullable=True, default="skipped")
+    sms_status = Column(String(20), nullable=True, default="skipped")
+
+    # Error details when delivery fails
+    error_message = Column(Text, nullable=True)
+
+    # Timestamps
+    sent_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    prediction: Mapped["SoilPrediction"] = relationship(
+        "SoilPrediction",
+        back_populates="notifications"
+    )
+    cdc_user: Mapped["User"] = relationship(
+        "User",
+        back_populates="sent_notifications",
+        foreign_keys=[sent_by_cdc_id]
+    )
+    farmer: Mapped["User"] = relationship(
+        "User",
+        back_populates="received_notifications",
+        foreign_keys=[farmer_id]
+    )
