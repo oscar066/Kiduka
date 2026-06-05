@@ -67,16 +67,20 @@ export function RoleGuard({
 
   // Check role-based access
   if (requiredRole) {
-    const roleHierarchy = {
-      [UserRole.USER]: 0,
-      [UserRole.ADMIN]: 1,
-      [UserRole.SUPER_ADMIN]: 2,
-    };
+    const userRole = user?.role;
+    let allowed = false;
 
-    const userLevel = user?.role ? roleHierarchy[user.role] : -1;
-    const requiredLevel = roleHierarchy[requiredRole];
+    if (requiredRole === UserRole.CDC) {
+      allowed = userRole === UserRole.CDC || userRole === UserRole.SUPER_ADMIN;
+    } else if (requiredRole === UserRole.ADMIN) {
+      allowed = userRole === UserRole.ADMIN || userRole === UserRole.SUPER_ADMIN;
+    } else if (requiredRole === UserRole.SUPER_ADMIN) {
+      allowed = userRole === UserRole.SUPER_ADMIN;
+    } else if (requiredRole === UserRole.USER) {
+      allowed = !!userRole;
+    }
 
-    if (userLevel < requiredLevel) {
+    if (!allowed) {
       if (fallback) return <>{fallback}</>;
 
       if (showError) {
@@ -160,6 +164,23 @@ export function SuperAdminOnly({
   return (
     <RoleGuard
       requiredRole={UserRole.SUPER_ADMIN}
+      fallback={fallback}
+      showError={showError}
+    >
+      {children}
+    </RoleGuard>
+  );
+}
+
+// CDC-only component wrapper
+export function CDCOnly({
+  children,
+  fallback,
+  showError = true,
+}: AdminOnlyProps) {
+  return (
+    <RoleGuard
+      requiredRole={UserRole.CDC}
       fallback={fallback}
       showError={showError}
     >

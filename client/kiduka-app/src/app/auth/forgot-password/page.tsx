@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowRight, CheckCircle, KeyRound } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -24,11 +25,14 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    // TODO: Implement actual password reset functionality
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    setSubmitted(true);
-    setLoading(false);
+    try {
+      await apiClient.forgotPassword(email);
+      setSubmitted(true);
+    } catch {
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

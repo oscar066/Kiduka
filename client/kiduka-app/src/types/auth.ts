@@ -2,6 +2,7 @@
 
 export enum UserRole {
   USER = "user",
+  CDC = "cdc",
   ADMIN = "admin",
   SUPER_ADMIN = "super_admin"
 }
@@ -11,6 +12,7 @@ export interface UserResponse {
   username: string;
   email: string;
   full_name: string | null;
+  phone_number?: string | null;
   role: UserRole;
   is_active: boolean;
   is_verified: boolean;
