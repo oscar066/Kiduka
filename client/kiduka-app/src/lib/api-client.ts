@@ -266,7 +266,7 @@ export class ApiClient {
    * Get admin dashboard data
    */
   async getAdminDashboard(token: string): Promise<AdminDashboardResponse> {
-    return this.request('/admin/dashboard/', {
+    return this.request('/admin/dashboard', {
       headers: this.getAuthHeaders(token),
     });
   }
