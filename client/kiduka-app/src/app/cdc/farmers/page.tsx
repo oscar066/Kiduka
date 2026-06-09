@@ -44,7 +44,7 @@ interface Farmer {
 }
 
 interface PaginatedFarmers {
-  users?: Farmer[];
+  farmers?: Farmer[];
   total: number;
   pages: number;
 }
@@ -69,7 +69,7 @@ export default function CDCFarmersPage() {
         20,
         searchTerm || undefined
       );
-      setFarmers(response.users || []);
+      setFarmers(response.farmers || []);
       setTotal(response.total || 0);
       setTotalPages(response.pages || 1);
     } catch (error) {
