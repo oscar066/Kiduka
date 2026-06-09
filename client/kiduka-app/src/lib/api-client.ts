@@ -222,6 +222,28 @@ export class ApiClient {
   }
 
   /**
+   * Request a password-reset email
+   */
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    return this.request('/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  /**
+   * Complete a password reset using the token from the email link
+   */
+  async resetPassword(token: string, new_password: string): Promise<{ message: string }> {
+    return this.request('/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, new_password }),
+    });
+  }
+
+  /**
    * Check admin access
    */
   async checkAdminAccess(token: string): Promise<{
@@ -340,6 +362,7 @@ export class ApiClient {
       email: string;
       password: string;
       full_name?: string;
+      phone_number?: string;
       role?: UserRole;
       notes?: string;
     },
@@ -577,6 +600,51 @@ export class ApiClient {
       headers: this.getAuthHeaders(token),
       body: JSON.stringify(payload),
     });
+  }
+
+  // CDC ENDPOINTS
+
+  /** List/search farmer accounts */
+  async getCDCFarmers(token: string, page = 1, size = 20, search?: string): Promise<any> {
+    const params = new URLSearchParams({ page: page.toString(), size: size.toString() });
+    if (search) params.append('search', search);
+    return this.request(`/cdc/farmers?${params}`, { headers: this.getAuthHeaders(token) });
+  }
+
+  /** Get single farmer profile */
+  async getCDCFarmer(farmerId: string, token: string): Promise<any> {
+    return this.request(`/cdc/farmers/${farmerId}`, { headers: this.getAuthHeaders(token) });
+  }
+
+  /** Get farmer prediction history */
+  async getCDCFarmerPredictions(farmerId: string, token: string, page = 1, size = 20): Promise<any> {
+    const params = new URLSearchParams({ page: page.toString(), size: size.toString() });
+    return this.request(`/cdc/farmers/${farmerId}/predictions?${params}`, { headers: this.getAuthHeaders(token) });
+  }
+
+  /** Run soil analysis for a farmer */
+  async cdcRunAnalysis(data: {
+    farmer_id: string; cdc_notes?: string; soil_ph?: number; n?: number; p?: number;
+    k?: number; organic_carbon?: number; ca?: number; mg?: number;
+    location_lat?: number; location_lng?: number; location_name?: string;
+  }, token: string): Promise<any> {
+    return this.request('/cdc/farmers/analyze', { method: 'POST', headers: this.getAuthHeaders(token), body: JSON.stringify(data) });
+  }
+
+  /** Send results to farmer */
+  async cdcSendResults(data: { prediction_id: string; method: 'email' | 'sms' | 'both'; custom_message?: string }, token: string): Promise<any> {
+    return this.request('/cdc/notifications/send', { method: 'POST', headers: this.getAuthHeaders(token), body: JSON.stringify(data) });
+  }
+
+  /** Get CDC notification history */
+  async getCDCNotificationHistory(token: string, page = 1, size = 20): Promise<any> {
+    const params = new URLSearchParams({ page: page.toString(), size: size.toString() });
+    return this.request(`/cdc/notifications/history?${params}`, { headers: this.getAuthHeaders(token) });
+  }
+
+  /** Get CDC dashboard stats */
+  async getCDCDashboard(token: string): Promise<any> {
+    return this.request('/cdc/dashboard', { headers: this.getAuthHeaders(token) });
   }
 }
 

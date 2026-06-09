@@ -1,5 +1,8 @@
 """
-Application initialization utilities
+Application initialization utilities.
+
+Handles startup tasks including:
+- Loading ML models and the agrovet locator
 """
 import os
 import sys

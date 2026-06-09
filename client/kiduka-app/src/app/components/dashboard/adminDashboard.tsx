@@ -246,21 +246,21 @@ export function AdminDashboard() {
           title="Audit Logs"
           description="View system activity and admin actions"
           icon={<FileText className="h-6 w-6" />}
-          href="/admin/audit-logs"
+          href="#"
           color="blue"
         />
         <AdminActionCard
           title="Statistics"
           description="Detailed analytics and reporting"
           icon={<TrendingUp className="h-6 w-6" />}
-          href="/admin/statistics"
+          href="#"
           color="purple"
         />
         <AdminActionCard
           title="Manage Agrovets"
           description="Update agricultural store information"
           icon={<MapPin className="h-6 w-6" />}
-          href="/admin/agrovets"
+          href="#"
           color="orange"
         />
         <SuperAdminOnly>
@@ -268,7 +268,7 @@ export function AdminDashboard() {
             title="System Settings"
             description="Advanced system configuration"
             icon={<Settings className="h-6 w-6" />}
-            href="/admin/settings"
+            href="#"
             color="gray"
           />
         </SuperAdminOnly>

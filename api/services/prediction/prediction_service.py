@@ -185,7 +185,20 @@ class PredictionService:
 
             result["nutrients"] = unified_nutrients
             
-            # Create response
+            # Save to database first (if authenticated) so we can use the
+            # real DB-assigned UUID in the response, not a throwaway one.
+            saved_prediction_id = None
+            if user:
+                db_soil_data = soil_data.model_dump()
+                saved = await self._save_prediction_to_database(
+                    user_id=str(user.id),
+                    soil_data=db_soil_data,
+                    result=result
+                )
+                saved_prediction_id = saved.id
+                logger.info("Prediction saved to database successfully")
+
+            # Create response — use the real DB UUID when available
             response = PredictionResponse(
                 soil_health_index=shi_score,
                 initial_soil_fertility_status=initial_status,
@@ -196,21 +209,10 @@ class PredictionService:
                 nutrients=unified_nutrients,
                 prediction_mode=prediction_mode,
                 confidence=ml_extra_data,
-                prediction_id=uuid.uuid4(), # Generate ID if not already present
+                prediction_id=saved_prediction_id or uuid.uuid4(),
                 location_name=soil_data.location_name,
                 timestamp=datetime.now()
             )
-            
-            # Save to database if user is authenticated
-            if user:
-                db_soil_data = soil_data.model_dump()
-
-                await self._save_prediction_to_database(
-                    user_id=str(user.id),
-                    soil_data=db_soil_data,
-                    result=result
-                )
-                logger.info("Prediction saved to database successfully")
             
             return response
             

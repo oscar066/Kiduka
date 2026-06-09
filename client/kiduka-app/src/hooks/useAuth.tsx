@@ -24,6 +24,7 @@ interface AuthPermissions {
   can_manage_agrovets: boolean;
   can_create_admin_users: boolean;
   can_delete_admin_users: boolean;
+  can_access_cdc: boolean;
 }
 
 interface AuthState {
@@ -33,6 +34,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  isCDC: boolean;
   token: string | null;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -48,6 +50,7 @@ const defaultPermissions: AuthPermissions = {
   can_manage_agrovets: false,
   can_create_admin_users: false,
   can_delete_admin_users: false,
+  can_access_cdc: false,
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -65,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin =
     user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+  const isCDC = user?.role === UserRole.CDC;
 
   const loadUserData = useCallback(async () => {
     if (!token) {
@@ -100,6 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           userData.role === UserRole.SUPER_ADMIN,
         can_create_admin_users: userData.role === UserRole.SUPER_ADMIN,
         can_delete_admin_users: userData.role === UserRole.SUPER_ADMIN,
+        can_access_cdc:
+          userData.role === UserRole.CDC ||
+          userData.role === UserRole.SUPER_ADMIN,
       };
 
       setPermissions(userPermissions);
@@ -159,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated,
         isAdmin,
         isSuperAdmin,
+        isCDC,
         token,
         logout,
         refreshUser,
@@ -190,32 +198,44 @@ export function useRoleGuard(requiredRole?: UserRole, redirectTo?: string) {
     }
 
     if (requiredRole && user?.role !== requiredRole) {
-      const roleHierarchy = {
-        [UserRole.USER]: 0,
-        [UserRole.ADMIN]: 1,
-        [UserRole.SUPER_ADMIN]: 2,
-      };
+      let allowed = false;
+      const userRole = user?.role;
 
-      const userLevel = user?.role ? roleHierarchy[user.role] : -1;
-      const requiredLevel = roleHierarchy[requiredRole];
+      if (requiredRole === UserRole.CDC) {
+        allowed = userRole === UserRole.CDC || userRole === UserRole.SUPER_ADMIN;
+      } else if (requiredRole === UserRole.ADMIN) {
+        allowed = userRole === UserRole.ADMIN || userRole === UserRole.SUPER_ADMIN;
+      } else if (requiredRole === UserRole.SUPER_ADMIN) {
+        allowed = userRole === UserRole.SUPER_ADMIN;
+      } else if (requiredRole === UserRole.USER) {
+        allowed = !!userRole;
+      }
 
-      if (userLevel < requiredLevel) {
+      if (!allowed) {
         router.push("/unauthorized");
         return;
       }
     }
   }, [isLoading, isAuthenticated, user?.role, requiredRole, router, redirectTo]);
 
+  const computeHasRequiredRole = () => {
+    if (!user?.role) return false;
+    if (!requiredRole) return true;
+    if (user.role === requiredRole) return true;
+    if (requiredRole === UserRole.CDC) {
+      return user.role === UserRole.CDC || user.role === UserRole.SUPER_ADMIN;
+    }
+    if (requiredRole === UserRole.ADMIN) {
+      return user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN;
+    }
+    if (requiredRole === UserRole.USER) return true;
+    return false;
+  };
+
   return {
     isLoading,
     isAuthenticated,
-    hasRequiredRole: user?.role
-      ? requiredRole
-        ? user.role === requiredRole ||
-          (requiredRole === UserRole.ADMIN &&
-            user.role === UserRole.SUPER_ADMIN)
-        : true
-      : false,
+    hasRequiredRole: computeHasRequiredRole(),
   };
 }
 
@@ -245,6 +265,7 @@ export function useRoleBasedAccess() {
     isUser: user?.role === UserRole.USER,
     isAdmin: user?.role === UserRole.ADMIN,
     isSuperAdmin: user?.role === UserRole.SUPER_ADMIN,
+    isCDC: user?.role === UserRole.CDC,
     isAuthenticated,
     permissions,
     canAccess: (requiredPermission: keyof AuthPermissions) =>

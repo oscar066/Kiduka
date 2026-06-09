@@ -170,7 +170,9 @@ class AdminUserService:
         """
         logger.info(f"Creating user {user_data.username} by admin {created_by.username}")
         
-        # Validate permissions for role assignment
+        # Validate permissions for role assignment.
+        # Only SUPER_ADMIN may create other ADMIN or SUPER_ADMIN accounts.
+        # Both ADMIN and SUPER_ADMIN may create CDC accounts.
         if user_data.role in [UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN]:
             if not created_by.is_super_admin():
                 raise ValueError("Only super admins can create admin users")
@@ -180,13 +182,14 @@ class AdminUserService:
             if await self._user_exists(user_data.email, user_data.username):
                 raise ValueError("User with this email or username already exists")
             
-            # Create new user
+            # Create new user — admin-created accounts are auto-verified
             hashed_password = AuthSecurityManager.get_password_hash(user_data.password)
             db_user = User(
                 email=user_data.email,
                 username=user_data.username,
                 hashed_password=hashed_password,
                 full_name=user_data.full_name,
+                phone_number=getattr(user_data, "phone_number", None),
                 role=UserRole(user_data.role.value),
                 is_active=True,
                 is_verified=True,  # Admin-created users are auto-verified
@@ -456,28 +459,36 @@ class AdminUserService:
     def _can_edit_user(self, current_user: User, target_user: User) -> bool:
         """
         Enforce RBAC rules to determine if a user can be edited by the current session user.
+
+        - SUPER_ADMIN can edit anyone.
+        - ADMIN can edit USER and CDC accounts (not other admins).
+        - All others can only edit themselves.
         """
         if current_user.is_super_admin():
             return True
         elif current_user.is_admin():
-            # Admins can edit regular users but not other admins
-            return target_user.role == UserRole.USER
+            # Admins can edit regular farmers and CDC officers, not other admins
+            return target_user.role in [UserRole.USER, UserRole.CDC]
         else:
-            # Regular users can only edit themselves
+            # Regular users / CDC users can only edit themselves
             return current_user.id == target_user.id
-    
+
     def _can_delete_user(self, current_user: User, target_user: User) -> bool:
         """
         Enforce RBAC rules to determine if a user can be deleted by the current session user.
+
+        - SUPER_ADMIN can delete anyone except themselves.
+        - ADMIN can delete USER and CDC accounts only.
+        - All others can delete themselves.
         """
         if current_user.is_super_admin():
             # Super admins can delete anyone except themselves
             return current_user.id != target_user.id
         elif current_user.is_admin():
-            # Admins can delete regular users only
-            return target_user.role == UserRole.USER
+            # Admins can delete regular farmers and CDC officers only
+            return target_user.role in [UserRole.USER, UserRole.CDC]
         else:
-            # Regular users can delete themselves
+            # Regular users / CDC users can delete themselves
             return current_user.id == target_user.id
     
     def _user_to_admin_response(self, user: User) -> AdminUserResponse:

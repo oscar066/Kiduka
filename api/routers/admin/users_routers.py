@@ -97,7 +97,7 @@ async def get_all_users(
             detail="Failed to fetch users"
         )
 
-@router.post("/", response_model=AdminUserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=AdminUserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user_by_admin(
     user_data: AdminUserCreate,
     current_user: User = Depends(get_current_admin_user),
