@@ -3,6 +3,9 @@
 .venv/
 .claude/
 
+# Ignore vscode settings
+.vscode/settings.json
+
 __pycache__
 
 .DS_Store
@@ -19,4 +22,7 @@ api/app.py
 api/credentials/
 
 # Ignore Ml models
-api/ml_models/*
+api/ml_models/
+
+# Ignore Docs
+docs/

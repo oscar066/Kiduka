@@ -67,6 +67,9 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
       - ./database/migrate_to_rbac.sql:/docker-entrypoint-initdb.d/02-migrate.sql
+      - ./database/update_soil_predictions.sql:/docker-entrypoint-initdb.d/03-update-predictions.sql
+      - ./database/migrate_cdc.sql:/docker-entrypoint-initdb.d/04-migrate-cdc.sql
+      - ./database/migrate_password_reset.sql:/docker-entrypoint-initdb.d/05-migrate-password-reset.sql
     networks:
       - agri-network
     healthcheck:

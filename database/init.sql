@@ -128,8 +128,8 @@ INSERT INTO agrovets (name, address, phone, latitude, longitude, rating, service
 ('Farmer''s Choice Supplies', '456 Agricultural Ave, Nakuru', '+254-700-789012', -0.3031, 36.0800, 4.2, ARRAY['fertilizers', 'equipment', 'consultation']),
 ('Crop Care Center', '789 Harvest Street, Eldoret', '+254-700-345678', 0.5143, 35.2698, 4.7, ARRAY['fertilizers', 'seeds', 'soil_testing']);
 
--- Default admin user 
+-- Default super admin user
 INSERT INTO users (email, username, hashed_password, full_name, is_active, is_verified) VALUES
-('admin@agricultural-api.com', 'admin', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LeXltcRIwf.g.3PmK', 'System Administrator', TRUE, TRUE);
+('kiduka@gmail.com', 'kiduka', '$2b$12$kHpy84M8RgJ/XRImjGsvyexY7CZHrIvdaIxdaSWb.LDv3r8/UDZ5G', 'Kiduka Admin', TRUE, TRUE);
 
 COMMIT;

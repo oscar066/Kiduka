@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
         {
           // Proxy FastAPI auth endpoints: /api/auth/me, /api/auth/login, /api/auth/register, etc.
           // But NOT NextAuth endpoints: /api/auth/session, /api/auth/csrf, /api/auth/providers, etc.
-          source: "/api/auth/:slug(me|login|register|change-password)",
+          source: "/api/auth/:slug(me|login|register|change-password|forgot-password|reset-password)",
           destination: `${apiUrl}/auth/:slug`,
         },
         {

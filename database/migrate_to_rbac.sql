@@ -99,26 +99,26 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_target_user ON admin_audit_logs(target
 -- Set default role for existing users
 UPDATE users SET role = 'user' WHERE role IS NULL;
 
--- Update existing admin user to have admin role
-UPDATE users 
-SET role = 'super_admin', 
+-- Update existing admin user to have super_admin role
+UPDATE users
+SET role = 'super_admin',
     is_verified = TRUE,
     notes = 'Migrated system administrator account'
-WHERE email IN ('admin@agricultural-api.com', 'admin@kiduka-labs.co.ke');
+WHERE email = 'kiduka@gmail.com';
 
 -- Step 9: Insert default super admin if it doesn't exist
-INSERT INTO users (email, username, hashed_password, full_name, role, is_active, is_verified, notes) 
-SELECT 
-    'admin@agricultural-api.com',
-    'superadmin',
-    '$2b$12$E/lqk3wLE3tMSj9T6iUuwu0g.RSaU/yjRr7iLwsuuMFG8S5/yDPDi',
-    'Super Administrator',
+INSERT INTO users (email, username, hashed_password, full_name, role, is_active, is_verified, notes)
+SELECT
+    'kiduka@gmail.com',
+    'kiduka',
+    '$2b$12$kHpy84M8RgJ/XRImjGsvyexY7CZHrIvdaIxdaSWb.LDv3r8/UDZ5G',
+    'Kiduka Admin',
     'super_admin',
     TRUE,
     TRUE,
-    'Default super administrator account - CHANGE PASSWORD AFTER FIRST LOGIN'
+    'Default super administrator account'
 WHERE NOT EXISTS (
-    SELECT 1 FROM users WHERE email IN ('admin@agricultural-api.com', 'admin@kiduka-labs.co.ke')
+    SELECT 1 FROM users WHERE email = 'kiduka@gmail.com'
 );
 
 -- Step 10: Create trigger function for automatic audit logging

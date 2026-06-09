@@ -192,6 +192,7 @@ class CDCPredictionResponse(BaseModel):
     soil_fertility_status: Optional[str] = None
     recommendations: List[Any] = []
     mentions: List[Any] = []
+    nutrients: Optional[Dict[str, Any]] = None
     notification_sent: bool = False
     created_at: datetime
 

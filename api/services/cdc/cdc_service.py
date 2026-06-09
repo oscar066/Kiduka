@@ -318,6 +318,7 @@ class CDCService:
                 soil_fertility_status=prediction_response.soil_fertility_status,
                 recommendations=prediction_response.recommendations or [],
                 mentions=prediction_response.mentions or [],
+                nutrients=prediction_response.nutrients or {},
                 notification_sent=False,  # freshly created — not yet dispatched
                 created_at=prediction.created_at if prediction else datetime.now(timezone.utc),
             )

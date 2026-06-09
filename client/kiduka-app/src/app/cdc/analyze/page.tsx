@@ -66,6 +66,7 @@ interface CDCAnalysisResult {
   soil_fertility_status: string | null;
   recommendations: string[];
   mentions: unknown[];
+  nutrients: Record<string, unknown> | null;
   notification_sent: boolean;
 }
 
@@ -242,7 +243,7 @@ function CDCAnalyzeContent() {
         mentions: cdcResponse.mentions || [],
         nearest_agrovets: [],
         timestamp: new Date().toISOString(),
-        nutrients: null,
+        nutrients: cdcResponse.nutrients ?? null,
         confidence_data: null,
       } as unknown as PredictionResponse);
 

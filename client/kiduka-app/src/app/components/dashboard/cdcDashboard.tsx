@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import useSWR from "swr";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/lib/api-client";
+import { swrFetcher } from "@/lib/swr-config";
 import {
   Users,
   Beaker,
@@ -18,17 +18,21 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface CDCDashboardData {
   stats?: {
-    total_farmers?: number;
-    total_analyses?: number;
-    notifications_sent?: number;
+    total_farmers_served?: number;
+    total_analyses_done?: number;
+    total_notifications_sent?: number;
     pending_notifications?: number;
+    recent_analyses?: number;
+    recent_notifications?: number;
   };
-  recent_analyses?: Array<{
-    id: string;
-    farmer_name: string;
-    health_index: number | null;
-    fertility_status: string | null;
+  recent_activity?: Array<{
+    prediction_id: string;
+    farmer_username: string;
+    farmer_name: string | null;
+    soil_health_index: number;
+    soil_fertility_status: string | null;
     cdc_notes: string | null;
+    notification_sent: boolean;
     notification_status: string | null;
     created_at: string;
   }>;
@@ -88,29 +92,17 @@ function getNotificationBadgeStyle(status: string | null): string {
 
 export function CDCDashboard() {
   const { token, user } = useAuth();
-  const [data, setData] = useState<CDCDashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchDashboard = async () => {
-    if (!token) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await apiClient.getCDCDashboard(token);
-      setData(result);
-    } catch (err: any) {
-      console.error("Failed to load CDC dashboard:", err);
-      setError(err?.message || "Failed to load dashboard data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  const {
+    data,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+  } = useSWR<CDCDashboardData>(
+    token ? ["getCDCDashboard", token] : null,
+    swrFetcher,
+    { revalidateOnFocus: false, dedupingInterval: 5000 }
+  );
 
   if (error) {
     return (
@@ -119,10 +111,10 @@ export function CDCDashboard() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Failed to load dashboard</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>{error?.message ?? "Failed to load dashboard data"}</AlertDescription>
           </Alert>
           <button
-            onClick={fetchDashboard}
+            onClick={() => mutate()}
             className="w-full h-10 rounded-lg border border-amber-200 bg-white hover:bg-amber-50 text-sm font-medium text-green-700 flex items-center justify-center gap-2 transition-colors"
           >
             <RefreshCw className="h-4 w-4" />
@@ -134,14 +126,14 @@ export function CDCDashboard() {
   }
 
   const stats = data?.stats;
-  const recentAnalyses = data?.recent_analyses || [];
+  const recentAnalyses = data?.recent_activity || [];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          {loading && !user ? (
+          {isLoading && !user ? (
             <>
               <Skeleton className="h-9 w-64" />
               <Skeleton className="h-5 w-48" />
@@ -158,12 +150,12 @@ export function CDCDashboard() {
           )}
         </div>
         <button
-          onClick={fetchDashboard}
-          disabled={loading}
+          onClick={() => mutate()}
+          disabled={isValidating}
           className="p-2 rounded-lg border border-amber-200 bg-white hover:bg-amber-50 transition-colors disabled:opacity-50"
           aria-label="Refresh dashboard"
         >
-          <RefreshCw className={`h-4 w-4 text-green-600 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`h-4 w-4 text-green-600 ${isValidating ? "animate-spin" : ""}`} />
         </button>
       </div>
 
@@ -171,31 +163,31 @@ export function CDCDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Total Farmers Served"
-          value={stats?.total_farmers ?? 0}
+          value={stats?.total_farmers_served ?? 0}
           icon={<Users className="h-6 w-6 text-green-600" />}
           colorClass="bg-green-100"
-          loading={loading}
+          loading={isLoading}
         />
         <MetricCard
           title="Total Analyses Done"
-          value={stats?.total_analyses ?? 0}
+          value={stats?.total_analyses_done ?? 0}
           icon={<Beaker className="h-6 w-6 text-blue-600" />}
           colorClass="bg-blue-100"
-          loading={loading}
+          loading={isLoading}
         />
         <MetricCard
           title="Notifications Sent"
-          value={stats?.notifications_sent ?? 0}
+          value={stats?.total_notifications_sent ?? 0}
           icon={<Bell className="h-6 w-6 text-amber-600" />}
           colorClass="bg-amber-100"
-          loading={loading}
+          loading={isLoading}
         />
         <MetricCard
           title="Pending (Unsent)"
           value={stats?.pending_notifications ?? 0}
           icon={<Clock className="h-6 w-6 text-orange-600" />}
           colorClass="bg-orange-100"
-          loading={loading}
+          loading={isLoading}
         />
       </div>
 
@@ -208,7 +200,7 @@ export function CDCDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {loading ? (
+          {isLoading ? (
             <div className="space-y-3 p-6">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="flex items-center justify-between p-3 bg-green-50/50 rounded-lg">
@@ -220,7 +212,7 @@ export function CDCDashboard() {
                 </div>
               ))}
             </div>
-          ) : recentAnalyses.length === 0 ? (
+          ) : recentAnalyses.length === 0 && !isLoading ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
               <div className="p-4 bg-green-50 rounded-full">
                 <Beaker className="h-8 w-8 text-green-400" />
@@ -243,18 +235,25 @@ export function CDCDashboard() {
                 </thead>
                 <tbody className="bg-white divide-y divide-amber-50">
                   {recentAnalyses.map((analysis) => (
-                    <tr key={analysis.id} className="hover:bg-green-50/20 transition-colors">
+                    <tr key={analysis.prediction_id} className="hover:bg-green-50/20 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">{analysis.farmer_name}</span>
+                        <div>
+                          <span className="text-sm font-medium text-gray-900">
+                            {analysis.farmer_name || analysis.farmer_username}
+                          </span>
+                          {analysis.farmer_name && (
+                            <span className="block text-xs text-gray-400">@{analysis.farmer_username}</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge variant="outline" className={getHealthBadgeStyle(analysis.health_index)}>
-                          {analysis.health_index !== null ? `${analysis.health_index}` : "N/A"}
+                        <Badge variant="outline" className={getHealthBadgeStyle(analysis.soil_health_index)}>
+                          {analysis.soil_health_index !== null ? `${analysis.soil_health_index.toFixed(1)}` : "N/A"}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm text-gray-600 capitalize">
-                          {analysis.fertility_status || "Unknown"}
+                          {analysis.soil_fertility_status || "Unknown"}
                         </span>
                       </td>
                       <td className="px-6 py-4 max-w-xs">

@@ -80,7 +80,12 @@ for i in {1..10}; do
     sleep 3
 done
 
-$DOCKER_CMD exec -T postgres psql -U ${POSTGRES_USER:-agri_user} -d ${POSTGRES_DB:-agricultural_api} -f /docker-entrypoint-initdb.d/02-migrate.sql
+for migration in \
+    /docker-entrypoint-initdb.d/04-migrate-cdc.sql \
+    /docker-entrypoint-initdb.d/05-migrate-password-reset.sql; do
+    echo "  → Running $migration"
+    $DOCKER_CMD exec -T postgres psql -U ${POSTGRES_USER:-agri_user} -d ${POSTGRES_DB:-agricultural_api} -f "$migration"
+done
 
 echo "Deployment complete! Services should be running."
 echo "Check status with: docker compose -f docker-compose.prod.yml ps"
