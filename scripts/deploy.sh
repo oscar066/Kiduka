@@ -49,15 +49,6 @@ echo "Syncing with repository..."
 git fetch origin main
 git reset --hard origin/main
 
-# SSL Certificate Sanity Check
-echo "Checking for SSL certificates..."
-if [ ! -f .server-certificates/origin.crt ] || [ ! -f .server-certificates/origin.key ]; then
-    echo "❌ ERROR: SSL certificates not found in .server-certificates/"
-    echo "Please upload them manually using: scp -r .server-certificates/ root@84.247.161.30:~/Kiduka/"
-    exit 1
-fi
-echo "✅ Certificates found."
-
 # Build and start containers
 echo "Building and starting containers..."
 DOCKER_CMD="docker compose -f docker-compose.prod.yml"
@@ -66,7 +57,6 @@ if ! groups | grep -q "docker"; then
 fi
 
 $DOCKER_CMD up -d --build
-$DOCKER_CMD restart nginx
 
 # Run database migrations
 echo "Running database migrations..."
