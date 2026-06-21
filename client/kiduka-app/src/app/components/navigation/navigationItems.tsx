@@ -4,6 +4,8 @@ import {
   Beaker,
   Bell,
   FileText,
+  FlaskConical,
+  LayoutDashboard,
   Leaf,
   MapPin,
   Settings,
@@ -78,7 +80,7 @@ const navigationItems: NavItem[] = [
   // Admin navigation — flat links + one collapsible group for CDC management
   {
     label: "Overview",
-    icon: <BarChart3 className="h-4 w-4" />,
+    icon: <LayoutDashboard className="h-4 w-4" />,
     href: "/admin/dashboard",
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   },
@@ -90,19 +92,13 @@ const navigationItems: NavItem[] = [
   },
   {
     label: "Predictions",
-    icon: <BarChart3 className="h-4 w-4" />,
+    icon: <FlaskConical className="h-4 w-4" />,
     href: "/admin/predictions",
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   },
   {
     label: "Audit Logs",
     icon: <FileText className="h-4 w-4" />,
-    href: "#",                             // page not built yet
-    roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
-  },
-  {
-    label: "Statistics",
-    icon: <TrendingUp className="h-4 w-4" />,
     href: "#",                             // page not built yet
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   },
