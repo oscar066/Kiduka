@@ -6,7 +6,6 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../../layout/UnifiedSidebar";
 import { Navbar } from "../../layout/navbar";
 import { SessionGuard } from "../../shared/SessionGuard";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calculator, Loader2, AlertCircle } from "lucide-react";
 import { Crop, FertilizerEntry, SUPPORTED_CROPS, DEFAULT_GRAIN_PRICES } from "./components/OptimizationHelpers";
@@ -284,27 +283,23 @@ export default function OptimizationPage() {
 
             {/* Page Header */}
             <div className="space-y-1">
-              <h1 className="text-3xl font-serif font-bold flex items-center gap-2">
-                <Calculator className="h-8 w-8 text-green-600" />
+              <h1 className="text-2xl font-serif font-bold flex items-center gap-2">
+                <Calculator className="h-6 w-6 text-green-600" />
                 <span className="bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
                   Fertilizer Optimization
                 </span>
               </h1>
-              <p className="text-green-600 font-serif">
+              <p className="text-sm text-green-600 font-serif mt-0.5">
                 Maximize crop yields dynamically based on budget and nutrient baselines
               </p>
             </div>
 
             {/* Error */}
             {error && (
-              <Card className="border-red-200 bg-red-50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-red-800">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="text-sm font-medium">Error: {error}</span>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-red-200 bg-red-50 text-red-800">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span className="text-sm font-medium">{error}</span>
+              </div>
             )}
 
             {/* Two-column input layout */}
