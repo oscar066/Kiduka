@@ -66,7 +66,7 @@ export function ChatMessageItem({
             "group relative rounded-2xl px-4 py-3 text-base leading-relaxed",
             role === "user"
               ? "bg-green-600 text-white rounded-tr-sm shadow-sm"
-              : "bg-white/90 text-gray-800 border border-green-100/80 rounded-tl-sm shadow-sm"
+              : "bg-white text-gray-800 border border-amber-100 rounded-tl-sm shadow-sm"
           )}
         >
           <div className={cn(

@@ -18,7 +18,7 @@ interface ChatInputProps {
 export const ChatInput = React.forwardRef<HTMLTextAreaElement, ChatInputProps>(
   ({ inputValue, isSending, onInputChange, onKeyDown, onSendMessage, messagesLength }, ref) => {
     return (
-      <div className="flex-none px-4 md:px-6 py-4">
+      <div className="flex-none px-4 md:px-6 py-4 border-t border-amber-100 bg-gradient-to-r from-green-50/40 to-amber-50/40">
         {/* Fade-up gradient */}
         <div className="pointer-events-none absolute bottom-[72px] left-0 right-0 h-10 bg-gradient-to-t from-white/30 to-transparent" />
 
