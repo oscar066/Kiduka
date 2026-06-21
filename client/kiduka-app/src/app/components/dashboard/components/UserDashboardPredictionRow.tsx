@@ -5,14 +5,14 @@ export function UserDashboardPredictionRow({ prediction, index }: { prediction: 
   return (
     <div
       key={index}
-      className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-green-50/50 rounded-xl border border-gray-100 hover:border-green-200 hover:shadow-md transition-all"
+      className="flex items-center justify-between p-3.5 bg-green-50/20 rounded-xl border border-amber-100 hover:border-amber-200 hover:shadow-sm transition-all"
     >
-      <div className="flex items-center gap-4">
-        <div className="p-2 bg-green-100 rounded-lg">
-          <Leaf className="h-5 w-5 text-green-600" />
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-green-100 rounded-lg shrink-0">
+          <Leaf className="h-4 w-4 text-green-600" />
         </div>
         <div>
-          <p className="font-semibold text-gray-900 truncate max-w-[150px]">
+          <p className="text-sm font-semibold text-gray-900 truncate max-w-[150px]">
             {prediction.location_name || "Soil Analysis"}
           </p>
           <p className="text-xs text-gray-500">
@@ -24,13 +24,13 @@ export function UserDashboardPredictionRow({ prediction, index }: { prediction: 
           </p>
         </div>
       </div>
-      <div className="text-right">
-        <div className="px-3 py-1 bg-green-100 rounded-full">
-          <p className="text-sm font-semibold text-green-800">
+      <div className="text-right shrink-0">
+        <div className="px-2.5 py-1 bg-green-100 rounded-full inline-block">
+          <p className="text-xs font-semibold text-green-800">
             {prediction.soil_fertility_status}
           </p>
         </div>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-gray-400 mt-1 tabular-nums">
           SHI: {prediction.soil_health_index?.toFixed(2) ?? "N/A"}
         </p>
       </div>

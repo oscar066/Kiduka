@@ -103,8 +103,8 @@ class AdminUserService:
             
             # Apply pagination
             offset = (page - 1) * size
-            stmt = stmt.offset(offset).limit(size)
-            
+            stmt = stmt.offset(offset).limit(size).options(selectinload(User.assigned_cdc))
+
             # Execute queries
             users_result = await self.db.execute(stmt)
             users = users_result.scalars().all()
@@ -130,7 +130,9 @@ class AdminUserService:
                     last_login=user.last_login,
                     created_by=user.created_by,
                     notes=user.notes,
-                    prediction_count=prediction_counts.get(user.id, 0)
+                    prediction_count=prediction_counts.get(user.id, 0),
+                    assigned_cdc_id=user.assigned_cdc_id,
+                    assigned_cdc_username=user.assigned_cdc.username if user.assigned_cdc else None,
                 )
                 for user in users
             ]
@@ -505,5 +507,7 @@ class AdminUserService:
             updated_at=user.updated_at,
             last_login=user.last_login,
             created_by=user.created_by,
-            notes=user.notes
+            notes=user.notes,
+            assigned_cdc_id=user.assigned_cdc_id,
+            assigned_cdc_username=getattr(user.assigned_cdc, "username", None),
         )

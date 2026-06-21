@@ -602,6 +602,23 @@ export class ApiClient {
     });
   }
 
+  /** Assign a CDC officer to a farmer */
+  async assignFarmerToCDC(farmerId: string, cdcId: string, token: string): Promise<{ message: string }> {
+    return this.request(`/admin/users/${farmerId}/assign-cdc`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(token),
+      body: JSON.stringify({ cdc_id: cdcId }),
+    });
+  }
+
+  /** Remove CDC assignment from a farmer */
+  async unassignFarmerFromCDC(farmerId: string, token: string): Promise<{ message: string }> {
+    return this.request(`/admin/users/${farmerId}/assign-cdc`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(token),
+    });
+  }
+
   // CDC ENDPOINTS
 
   /** List/search farmer accounts */

@@ -2,12 +2,6 @@
 
 import React, { useState } from "react";
 import { ChevronDown, ChevronRight, SlidersHorizontal, MapPin } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -54,16 +48,17 @@ export function YAttConfig({ config, onChange, locationPrefilled }: YAttConfigPr
     });
 
   return (
-    <Card className="border-amber-200 bg-white shadow-lg overflow-hidden">
-      <CardHeader
-        className="bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200 py-4 px-5 cursor-pointer select-none"
+    <div className="bg-white rounded-xl border border-amber-200 shadow-sm overflow-hidden">
+      <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
+        className="w-full bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200 py-3.5 px-5 text-left cursor-pointer select-none"
       >
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-green-800 text-base font-semibold">
+          <div className="flex items-center gap-2">
             <SlidersHorizontal className="h-4 w-4 text-green-600" />
-            Advanced Settings
-          </CardTitle>
+            <span className="text-sm font-serif font-semibold text-green-800">Advanced Settings</span>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400">
               {config.source === "kephis"
@@ -77,11 +72,10 @@ export function YAttConfig({ config, onChange, locationPrefilled }: YAttConfigPr
             )}
           </div>
         </div>
-      </CardHeader>
+      </button>
 
       {open && (
-        <CardContent className="p-5 space-y-5">
-          {/* Yield source */}
+        <div className="p-5 space-y-5">
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-gray-700">
               Attainable Yield Source
@@ -104,14 +98,11 @@ export function YAttConfig({ config, onChange, locationPrefilled }: YAttConfigPr
             </Select>
           </div>
 
-          {/* WOFOST-only: sowing date, elevation, location */}
           {config.source === "wofost" && (
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-gray-700">
-                    Sowing Date
-                  </Label>
+                  <Label className="text-sm font-medium text-gray-700">Sowing Date</Label>
                   <Input
                     type="date"
                     value={config.wofost_sowing_date}
@@ -193,8 +184,8 @@ export function YAttConfig({ config, onChange, locationPrefilled }: YAttConfigPr
               </div>
             </>
           )}
-        </CardContent>
+        </div>
       )}
-    </Card>
+    </div>
   );
 }

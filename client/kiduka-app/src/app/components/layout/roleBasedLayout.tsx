@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import UnifiedSidebar from "./UnifiedSidebar";
@@ -15,8 +15,10 @@ interface RoleBasedLayoutProps {
 export function RoleBasedLayout({ children }: RoleBasedLayoutProps) {
   const { isLoading, isAuthenticated } = useAuth();
   const { Skeleton } = require("@/components/ui/skeleton");
+  const hasLoaded = useRef(false);
+  useEffect(() => { if (!isLoading && isAuthenticated) hasLoaded.current = true; }, [isLoading, isAuthenticated]);
 
-  if (isLoading) {
+  if (isLoading && !hasLoaded.current) {
     return (
       <SidebarProvider>
         <div className="h-screen w-full flex bg-gradient-to-br from-green-50 via-white to-amber-50">
@@ -88,8 +90,10 @@ export function RoleBasedLayout({ children }: RoleBasedLayoutProps) {
 export function AdminLayout({ children }: RoleBasedLayoutProps) {
   const { isLoading, isAuthenticated, isAdmin } = useAuth();
   const { Skeleton } = require("@/components/ui/skeleton");
+  const hasLoaded = useRef(false);
+  useEffect(() => { if (!isLoading && isAuthenticated) hasLoaded.current = true; }, [isLoading, isAuthenticated]);
 
-  if (isLoading) {
+  if (isLoading && !hasLoaded.current) {
     return (
       <SidebarProvider>
         <div className="h-screen w-full flex bg-gradient-to-br from-green-50 via-white to-amber-50">
@@ -163,8 +167,10 @@ export function AdminLayout({ children }: RoleBasedLayoutProps) {
 export function CDCLayout({ children }: RoleBasedLayoutProps) {
   const { isLoading, isAuthenticated, isCDC, isSuperAdmin } = useAuth();
   const { Skeleton } = require("@/components/ui/skeleton");
+  const hasLoaded = useRef(false);
+  useEffect(() => { if (!isLoading && isAuthenticated) hasLoaded.current = true; }, [isLoading, isAuthenticated]);
 
-  if (isLoading) {
+  if (isLoading && !hasLoaded.current) {
     return (
       <SidebarProvider>
         <div className="h-screen w-full flex bg-gradient-to-br from-green-50 via-white to-amber-50">

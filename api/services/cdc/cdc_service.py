@@ -70,6 +70,7 @@ class CDCService:
 
     async def get_farmers(
         self,
+        cdc_user_id: UUID,
         page: int = 1,
         size: int = 20,
         search: Optional[str] = None,
@@ -99,8 +100,11 @@ class CDCService:
         )
 
         try:
-            # Base filter: only USER role accounts
-            conditions = [User.role == UserRole.USER]
+            # Base filter: only farmers assigned to this CDC
+            conditions = [
+                User.role == UserRole.USER,
+                User.assigned_cdc_id == cdc_user_id,
+            ]
 
             if search:
                 conditions.append(
@@ -160,16 +164,19 @@ class CDCService:
             logger.error("[CDCService] Error fetching farmers: %s", exc)
             raise
 
-    async def get_farmer_by_id(self, farmer_id: UUID) -> Optional[FarmerDetailResponse]:
+    async def get_farmer_by_id(self, farmer_id: UUID, cdc_user_id: UUID) -> Optional[FarmerDetailResponse]:
         """
         Retrieve a single farmer's detailed profile by their UUID.
 
         Args:
             farmer_id (UUID): The UUID of the farmer account to fetch.
+            cdc_user_id (UUID): The requesting CDC's ID — only returns the
+                farmer if they are assigned to this CDC.
 
         Returns:
             Optional[FarmerDetailResponse]: The farmer's full profile, or None
-                if no USER-role account with that ID exists.
+                if no USER-role account with that ID exists or the farmer is
+                not assigned to this CDC.
 
         Raises:
             Exception: Propagates any unexpected database error.
@@ -177,7 +184,11 @@ class CDCService:
         try:
             result = await self.db.execute(
                 select(User).where(
-                    and_(User.id == farmer_id, User.role == UserRole.USER)
+                    and_(
+                        User.id == farmer_id,
+                        User.role == UserRole.USER,
+                        User.assigned_cdc_id == cdc_user_id,
+                    )
                 )
             )
             farmer = result.scalar_one_or_none()

@@ -11,7 +11,7 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ onClear, messagesLength = 0 }: ChatHeaderProps) {
   return (
-    <div className="flex-none px-6 pt-5 pb-3 border-b border-amber-100/70">
+    <div className="flex-none px-5 py-3.5 bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200">
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}

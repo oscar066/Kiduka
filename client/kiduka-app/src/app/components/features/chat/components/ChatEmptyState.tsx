@@ -30,7 +30,7 @@ export function ChatEmptyState({ suggestedPrompts, onSendMessage }: ChatEmptySta
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-3xl font-serif font-bold text-green-900 tracking-tight">
+        <h3 className="text-2xl font-serif font-bold text-green-900 tracking-tight">
           How can I help you today?
         </h3>
         <p className="text-sm text-green-700/70 leading-relaxed font-serif max-w-md">
@@ -45,7 +45,7 @@ export function ChatEmptyState({ suggestedPrompts, onSendMessage }: ChatEmptySta
           <Button
             key={label}
             variant="outline"
-            className="flex flex-col items-center justify-center text-center gap-2.5 h-28 border-green-100 hover:border-green-300 hover:bg-green-50/80 text-green-800 bg-white/80 rounded-xl font-medium transition-all hover:-translate-y-0.5 hover:shadow-md whitespace-normal"
+            className="flex flex-col items-center justify-center text-center gap-2.5 h-28 border-amber-200 hover:border-green-300 hover:bg-green-50/80 text-green-800 bg-white rounded-xl font-medium transition-all hover:-translate-y-0.5 hover:shadow-sm whitespace-normal"
             onClick={() => onSendMessage(prompt)}
           >
             <span className="p-2 bg-green-50 rounded-lg border border-green-100 text-green-600">

@@ -93,7 +93,7 @@ async def list_farmers(
             details={"search": search, "page": page, "size": size},
         )
 
-        return await cdc_service.get_farmers(page=page, size=size, search=search)
+        return await cdc_service.get_farmers(cdc_user_id=current_user.id, page=page, size=size, search=search)
 
     except Exception as exc:
         logger.error("[CDC farmers] Error listing farmers: %s", exc)
@@ -131,7 +131,7 @@ async def get_farmer_profile(
         HTTPException: 500 if an unexpected server error occurs.
     """
     try:
-        farmer = await cdc_service.get_farmer_by_id(farmer_id)
+        farmer = await cdc_service.get_farmer_by_id(farmer_id, cdc_user_id=current_user.id)
         if not farmer:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

@@ -8,9 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.db.connection import get_db
 from api.db.models.database import User
+from uuid import UUID
+from sqlalchemy import select, and_
+from api.db.models.database import UserRole
 from api.schema.auth_schema import (
     AdminUserCreate, AdminUserResponse, AdminUserUpdate, UserListResponse,
-    AdminPasswordReset, UserRoleEnum
+    AdminPasswordReset, UserRoleEnum, AssignCDCRequest,
 )
 from api.services.admin.user_service import AdminUserService
 from api.utils.auth import get_current_admin_user
@@ -347,4 +350,94 @@ async def delete_user_by_admin(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete user"
+        )
+
+
+@router.put("/{farmer_id}/assign-cdc")
+async def assign_cdc_to_farmer(
+    farmer_id: UUID,
+    body: AssignCDCRequest,
+    current_user: User = Depends(get_current_admin_user),
+    user_service: AdminUserService = Depends(get_admin_user_service),
+    request: Request = None,
+):
+    """Assign a CDC officer to a farmer. Replaces any existing assignment."""
+    try:
+        db = user_service.db
+
+        farmer_result = await db.execute(
+            select(User).where(and_(User.id == farmer_id, User.role == UserRole.USER))
+        )
+        farmer = farmer_result.scalar_one_or_none()
+        if not farmer:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farmer not found")
+
+        cdc_result = await db.execute(
+            select(User).where(and_(User.id == body.cdc_id, User.role == UserRole.CDC))
+        )
+        cdc_user = cdc_result.scalar_one_or_none()
+        if not cdc_user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="CDC user not found")
+
+        farmer.assigned_cdc_id = body.cdc_id
+        await db.commit()
+
+        await AuthManager.log_admin_action(
+            db=db,
+            admin_user_id=current_user.id,
+            action="assign_cdc_to_farmer",
+            request=request,
+            details={"farmer_id": str(farmer_id), "cdc_id": str(body.cdc_id)},
+        )
+
+        return {"message": f"Farmer assigned to CDC '{cdc_user.username}' successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error assigning CDC to farmer: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to assign CDC",
+        )
+
+
+@router.delete("/{farmer_id}/assign-cdc")
+async def unassign_cdc_from_farmer(
+    farmer_id: UUID,
+    current_user: User = Depends(get_current_admin_user),
+    user_service: AdminUserService = Depends(get_admin_user_service),
+    request: Request = None,
+):
+    """Remove the CDC assignment from a farmer."""
+    try:
+        db = user_service.db
+
+        farmer_result = await db.execute(
+            select(User).where(and_(User.id == farmer_id, User.role == UserRole.USER))
+        )
+        farmer = farmer_result.scalar_one_or_none()
+        if not farmer:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farmer not found")
+
+        farmer.assigned_cdc_id = None
+        await db.commit()
+
+        await AuthManager.log_admin_action(
+            db=db,
+            admin_user_id=current_user.id,
+            action="unassign_cdc_from_farmer",
+            request=request,
+            details={"farmer_id": str(farmer_id)},
+        )
+
+        return {"message": "CDC assignment removed successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error removing CDC assignment: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to remove CDC assignment",
         )

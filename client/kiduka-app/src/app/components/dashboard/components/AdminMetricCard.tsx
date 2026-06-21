@@ -1,5 +1,4 @@
 import type React from "react";
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export interface MetricCardProps {
@@ -19,36 +18,30 @@ export function AdminMetricCard({
   changeType,
   loading = false,
 }: MetricCardProps) {
-  const changeColorClass = {
+  const changeColor = {
     positive: "text-green-600",
-    negative: "text-red-600",
-    neutral: "text-gray-600",
+    negative: "text-red-500",
+    neutral: "text-amber-600",
   }[changeType];
 
   return (
-    <Card className="border-amber-200 bg-white shadow-lg hover:shadow-xl transition-shadow">
-      <CardHeader className="flex items-center pb-2">
-        <div className="p-2 bg-green-50 rounded-lg shrink-0">{icon}</div>
-        <div className="ml-4 flex-1">
-          <CardTitle className="text-sm font-medium text-green-700">
-            {title}
-          </CardTitle>
-          {loading ? (
-            <Skeleton className="h-8 w-24 mt-1" />
-          ) : (
-            <div className="text-2xl font-bold text-green-900 mt-0.5">
-              {value.toLocaleString()}
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
+    <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-4 flex items-start gap-3 hover:shadow-md transition-shadow">
+      <div className="p-2 bg-green-50 rounded-lg shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-green-700 uppercase tracking-wide">{title}</p>
         {loading ? (
-          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-7 w-20 mt-1" />
         ) : (
-          <p className={`text-sm ${changeColorClass}`}>{change}</p>
+          <p className="text-2xl font-bold text-green-900 mt-0.5 leading-none">
+            {value.toLocaleString()}
+          </p>
         )}
-      </CardContent>
-    </Card>
+        {loading ? (
+          <Skeleton className="h-3 w-24 mt-2" />
+        ) : (
+          <p className={`text-xs mt-1.5 ${changeColor}`}>{change}</p>
+        )}
+      </div>
+    </div>
   );
 }

@@ -110,11 +110,11 @@ export default function ReportDetailPage({ reportId }: Props) {
                 </Button>
 
                 <div>
-                  <h1 className="text-3xl font-serif font-bold text-green-800">
+                  <h1 className="text-2xl font-serif font-bold bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
                     Report Details
                   </h1>
                   {report && (
-                    <p className="text-green-600 font-serif text-sm">
+                    <p className="text-sm text-green-600 font-serif mt-0.5">
                       {new Date(report.created_at || "").toLocaleDateString(
                         "en-US",
                         { year: "numeric", month: "long", day: "numeric" }
@@ -193,8 +193,8 @@ export default function ReportDetailPage({ reportId }: Props) {
                 {report.agrovets && report.agrovets.length > 0 && (
                   <AgrovetsDisplay
                     agrovets={report.agrovets}
-                    userLat={report.location_lat}
-                    userLng={report.location_lng}
+                    userLat={report.location_lat ?? undefined}
+                    userLng={report.location_lng ?? undefined}
                   />
                 )}
               </div>

@@ -6,7 +6,17 @@ export interface AdminActionCardProps {
   icon: React.ReactNode;
   href: string;
   color: "green" | "amber" | "blue" | "purple" | "orange" | "gray";
+  disabled?: boolean;
 }
+
+const iconBg: Record<AdminActionCardProps["color"], string> = {
+  green: "bg-green-100 text-green-700",
+  amber: "bg-amber-100 text-amber-700",
+  blue: "bg-blue-100 text-blue-700",
+  purple: "bg-purple-100 text-purple-700",
+  orange: "bg-orange-100 text-orange-700",
+  gray: "bg-gray-100 text-gray-600",
+};
 
 export function AdminActionCard({
   title,
@@ -14,31 +24,22 @@ export function AdminActionCard({
   icon,
   href,
   color,
+  disabled,
 }: AdminActionCardProps) {
-  const colorClasses = {
-    green: "bg-green-500 hover:bg-green-600",
-    amber: "bg-amber-500 hover:bg-amber-600",
-    blue: "bg-blue-500 hover:bg-blue-600",
-    purple: "bg-purple-500 hover:bg-purple-600",
-    orange: "bg-orange-500 hover:bg-orange-600",
-    gray: "bg-gray-500 hover:bg-gray-600",
-  };
-
   return (
     <a
-      href={href}
-      className="block bg-white rounded-lg shadow-lg border border-amber-200 hover:shadow-xl transition-all duration-200 hover:scale-105"
+      href={disabled ? undefined : href}
+      aria-disabled={disabled}
+      className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+        disabled
+          ? "opacity-50 cursor-not-allowed bg-white border-amber-100"
+          : "bg-white border-amber-200 hover:bg-amber-50 hover:border-amber-300 hover:shadow-sm cursor-pointer"
+      }`}
     >
-      <div className="p-6">
-        <div
-          className={`inline-flex p-3 rounded-lg text-white ${colorClasses[color]}`}
-        >
-          {icon}
-        </div>
-        <h3 className="mt-4 text-lg font-serif font-medium text-green-800">
-          {title}
-        </h3>
-        <p className="mt-2 text-sm text-green-600">{description}</p>
+      <div className={`p-2 rounded-lg shrink-0 ${iconBg[color]}`}>{icon}</div>
+      <div className="min-w-0">
+        <p className="text-sm font-medium font-serif text-green-800 leading-tight">{title}</p>
+        <p className="text-xs text-green-600 truncate">{description}</p>
       </div>
     </a>
   );

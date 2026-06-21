@@ -26,6 +26,8 @@ export interface AdminUserResponse extends UserResponse {
   notes: string | null;
   prediction_count: number | null;
   session_count: number | null;
+  assigned_cdc_id: string | null;
+  assigned_cdc_username: string | null;
 }
 
 export interface LoginResponse {

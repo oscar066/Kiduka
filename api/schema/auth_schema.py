@@ -112,19 +112,23 @@ class UserResponse(UserBase):
 class AdminUserResponse(UserResponse):
     """
     Extended user schema for administrative views.
-    
+
     Inherits attributes from UserResponse.
-    
+
     Attributes:
         created_by (Optional[uuid.UUID]): The ID of the admin who created this user, if applicable.
         notes (Optional[str]): Administrative notes about the user.
         prediction_count (Optional[int]): Total number of predictions made by the user.
         session_count (Optional[int]): Total number of sessions initiated by the user.
+        assigned_cdc_id (Optional[uuid.UUID]): The CDC officer assigned to this farmer, if any.
+        assigned_cdc_username (Optional[str]): The username of the assigned CDC officer.
     """
     created_by: Optional[uuid.UUID] = None
     notes: Optional[str] = None
     prediction_count: Optional[int] = None
     session_count: Optional[int] = None
+    assigned_cdc_id: Optional[uuid.UUID] = None
+    assigned_cdc_username: Optional[str] = None
 
 class UserUpdate(BaseModel):
     """
@@ -420,6 +424,11 @@ class AdminDashboardStats(BaseModel):
     recent_predictions: int
     users_by_role: dict
     predictions_by_status: dict
+
+class AssignCDCRequest(BaseModel):
+    """Request body for assigning a farmer to a CDC officer."""
+    cdc_id: uuid.UUID
+
 
 class AdminDashboardResponse(BaseModel):
     """

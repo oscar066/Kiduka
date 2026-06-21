@@ -2,13 +2,6 @@
 
 import React from "react";
 import { FlaskRound, History, TriangleAlert } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -46,7 +39,6 @@ const FIELDS: {
   { key: "k_exchangeable_ppm", label: "Exch. K",     unit: "ppm",  min: 0,             step: 1,   hint: "Exchangeable K (mg/kg)" },
 ];
 
-// Ranges supported by the RQUEFTS model — values outside are clamped silently.
 const RQUEFTS_RANGES: Record<keyof Omit<SoilData, "mode">, { modelMin: number; modelMax: number; displayLabel: string }> = {
   ph:                 { modelMin: 4.5,  modelMax: 7.0,   displayLabel: "pH" },
   soc_percent:        { modelMin: 0,    modelMax: 7,     displayLabel: "Organic C" },
@@ -70,13 +62,13 @@ export function SoilInputs({ soil, onChange, prefillInfo }: SoilInputsProps) {
     onChange({ ...soil, [key]: value });
 
   return (
-    <Card className="border-amber-200 bg-white shadow-lg overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200 py-4 px-5">
-        <CardTitle className="flex items-center gap-2 text-green-800 text-base font-semibold">
+    <div className="bg-white rounded-xl border border-amber-200 shadow-sm overflow-hidden">
+      <div className="bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200 py-3.5 px-5">
+        <div className="flex items-center gap-2">
           <FlaskRound className="h-4 w-4 text-green-600" />
-          Soil Analysis
-        </CardTitle>
-        <CardDescription className="text-xs text-gray-500 mt-0.5">
+          <span className="text-sm font-serif font-semibold text-green-800">Soil Analysis</span>
+        </div>
+        <p className="text-xs text-gray-500 mt-0.5">
           {prefillInfo ? (
             <span className="flex items-center gap-1 text-green-700">
               <History className="h-3 w-3 shrink-0" />
@@ -88,10 +80,10 @@ export function SoilInputs({ soil, onChange, prefillInfo }: SoilInputsProps) {
           ) : (
             "Enter values from your soil test report"
           )}
-        </CardDescription>
-      </CardHeader>
+        </p>
+      </div>
 
-      <CardContent className="p-5">
+      <div className="p-5">
         <div className="grid grid-cols-2 gap-4">
           {FIELDS.map(({ key, label, unit, min, max, step, hint }) => {
             const warning = getRangeWarning(key, soil[key]);
@@ -124,7 +116,7 @@ export function SoilInputs({ soil, onChange, prefillInfo }: SoilInputsProps) {
             );
           })}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
