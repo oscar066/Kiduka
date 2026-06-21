@@ -96,13 +96,13 @@ export default function UnifiedSidebar() {
         {/* Flat items — single group, no gaps between each item */}
         <SidebarGroup className="p-0">
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {flatItems.map((item) => (
                 <SidebarMenuItem key={item.label}>
                   <SidebarMenuButton
                     asChild
                     isActive={isActiveRoute(item.href)}
-                    className="text-green-800 font-semibold data-[active=true]:bg-green-100 data-[active=true]:text-green-800 hover:bg-green-50 hover:text-green-800"
+                    className="h-10 text-green-800 font-semibold data-[active=true]:bg-green-100 data-[active=true]:text-green-800 hover:bg-green-50 hover:text-green-800"
                   >
                     <Link href={item.href} className="flex items-center gap-2">
                       {item.icon}

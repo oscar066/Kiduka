@@ -73,6 +73,17 @@ ln -s /etc/nginx/sites-available/apps.conf /etc/nginx/sites-enabled/apps.conf
 rm -f /etc/nginx/sites-enabled/default
 ```
 
+> ⚠️ **This symlink step is critical — do not skip it.**  
+> Without it nginx serves the default page and both apps return a 521 error.
+
+Verify it is in place:
+
+```bash
+ls /etc/nginx/sites-enabled/
+# Should show: apps.conf
+# Should NOT show: default
+```
+
 > Don't test or reload nginx yet — SSL certs must be in place first.
 
 ### 1.5 Open firewall ports
@@ -237,6 +248,7 @@ docker compose -f docker-compose.prod.yml down
 |---|---|
 | 502 Bad Gateway | `docker compose -f docker-compose.prod.yml ps` — is the container running? |
 | nginx won't start | Port 80/443 already in use: `ss -tlnp \| grep -E ':80\|:443'` |
+| 521 Web server down | `ls /etc/nginx/sites-enabled/` — `apps.conf` symlink missing; run `ln -s /etc/nginx/sites-available/apps.conf /etc/nginx/sites-enabled/apps.conf && systemctl reload nginx` |
 | nginx config error | `nginx -t` shows the exact line |
 | SSL error in browser | Verify cert files exist: `ls /etc/nginx/ssl/` |
 | Redirect loop | SSL/TLS mode in Cloudflare must be **Full (Strict)**, not Flexible |
