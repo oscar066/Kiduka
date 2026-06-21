@@ -3,10 +3,6 @@
 import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
 // Import components
@@ -137,11 +133,11 @@ export default function SoilFertilityDashboard() {
           <Navbar />
 
           <main className="flex-1 space-y-6 p-6 bg-gradient-to-br from-green-25 via-amber-25 to-green-25 min-h-screen">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
+            <div className="space-y-0.5">
+              <h1 className="text-2xl font-serif font-bold bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
                 Soil Fertility Analysis
               </h1>
-              <p className="text-green-600 font-serif">
+              <p className="text-sm text-green-600 font-serif mt-0.5">
                 Comprehensive soil health assessment and recommendations
               </p>
             </div>
@@ -152,14 +148,10 @@ export default function SoilFertilityDashboard() {
 
             {/* Error Display */}
             {error && (
-              <Card className="border-red-200 bg-red-50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-red-800">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="text-sm font-medium">Error: {error}</span>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-red-200 bg-red-50 text-red-800">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span className="text-sm font-medium">{error}</span>
+              </div>
             )}
 
             <div className="grid lg:grid-cols-3 gap-6 items-start">
@@ -197,64 +189,60 @@ export default function SoilFertilityDashboard() {
                     )}
                   </>
                 ) : (
-                  <Card className="border-amber-200 bg-white shadow-lg h-full">
-                    <CardContent className="p-6 h-full flex flex-col justify-center">
-                      <div className="text-center space-y-3 mb-6">
-                        <div className="p-2 bg-green-100 rounded-full w-fit mx-auto">
-                          <Leaf className="h-6 w-6 text-green-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-serif font-bold text-gray-900">
-                            Ready for Analysis
-                          </h3>
-                          <p className="text-gray-500 mt-1">
-                            Fill in your soil details on the left to get started
-                          </p>
-                        </div>
+                  <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-6 flex flex-col justify-center">
+                    <div className="text-center space-y-2 mb-6">
+                      <div className="p-3 bg-green-100 rounded-full w-fit mx-auto">
+                        <Leaf className="h-6 w-6 text-green-600" />
                       </div>
+                      <h3 className="text-lg font-serif font-bold text-green-900">
+                        Ready for Analysis
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        Fill in your soil details on the left to get started
+                      </p>
+                    </div>
 
-                      {/* 3-step guide */}
-                      <div className="grid md:grid-cols-3 gap-4">
-                        {[
-                          {
-                            step: "01",
-                            icon: <FlaskConical className="h-5 w-5 text-blue-600" />,
-                            iconBg: "bg-blue-100",
-                            title: "Enter pH & Location",
-                            desc: "Provide your soil pH and enable location. Have lab results? Add your nutrient values in the optional tab for a more precise analysis.",
-                          },
-                          {
-                            step: "02",
-                            icon: <BarChart3 className="h-5 w-5 text-green-600" />,
-                            iconBg: "bg-green-100",
-                            title: "Run Analysis",
-                            desc: "Our AI model calculates your Soil Health Index and nutrient breakdown.",
-                          },
-                          {
-                            step: "03",
-                            icon: <Sprout className="h-5 w-5 text-amber-600" />,
-                            iconBg: "bg-amber-100",
-                            title: "Get Recommendations",
-                            desc: "Receive fertilizer recommendations and find nearby agrovets.",
-                          },
-                        ].map(({ step, icon, iconBg, title, desc }) => (
-                          <div
-                            key={step}
-                            className="flex flex-col items-center text-center p-4 rounded-xl border border-amber-100 bg-gradient-to-b from-green-50/50 to-white space-y-3"
-                          >
-                            <div className="relative">
-                              <div className={`p-3 ${iconBg} rounded-xl`}>{icon}</div>
-                              <span className="absolute -top-2 -right-2 text-[10px] font-bold text-white bg-green-600 rounded-full w-5 h-5 flex items-center justify-center">
-                                {step}
-                              </span>
-                            </div>
-                            <h4 className="font-semibold font-serif text-green-900 text-sm">{title}</h4>
-                            <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
+                    {/* 3-step guide */}
+                    <div className="grid md:grid-cols-3 gap-4">
+                      {[
+                        {
+                          step: "01",
+                          icon: <FlaskConical className="h-5 w-5 text-green-600" />,
+                          iconBg: "bg-green-100",
+                          title: "Enter pH & Location",
+                          desc: "Provide your soil pH and enable location. Have lab results? Add your nutrient values in the optional tab for a more precise analysis.",
+                        },
+                        {
+                          step: "02",
+                          icon: <BarChart3 className="h-5 w-5 text-amber-600" />,
+                          iconBg: "bg-amber-100",
+                          title: "Run Analysis",
+                          desc: "Our AI model calculates your Soil Health Index and nutrient breakdown.",
+                        },
+                        {
+                          step: "03",
+                          icon: <Sprout className="h-5 w-5 text-green-700" />,
+                          iconBg: "bg-green-50",
+                          title: "Get Recommendations",
+                          desc: "Receive fertilizer recommendations and find nearby agrovets.",
+                        },
+                      ].map(({ step, icon, iconBg, title, desc }) => (
+                        <div
+                          key={step}
+                          className="flex flex-col items-center text-center p-4 rounded-xl border border-amber-100 bg-gradient-to-b from-green-50/50 to-white space-y-2.5"
+                        >
+                          <div className="relative">
+                            <div className={`p-3 ${iconBg} rounded-xl border border-amber-100`}>{icon}</div>
+                            <span className="absolute -top-2 -right-2 text-[10px] font-bold text-white bg-green-600 rounded-full w-5 h-5 flex items-center justify-center">
+                              {step}
+                            </span>
                           </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                          <h4 className="font-semibold font-serif text-green-900 text-sm">{title}</h4>
+                          <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
