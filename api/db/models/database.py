@@ -133,6 +133,9 @@ class User(Base):
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     notes = Column(Text, nullable=True)  # Admin notes about the user
 
+    # CDC assignment — which CDC officer is responsible for this farmer (nullable)
+    assigned_cdc_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+
     # Self-service password reset
     password_reset_token = Column(String(255), nullable=True, index=True)
     password_reset_expires = Column(DateTime(timezone=True), nullable=True)
@@ -150,7 +153,7 @@ class User(Base):
         foreign_keys="SoilPrediction.performed_by_cdc_id"
     )
     sessions: Mapped[List["UserSession"]] = relationship("UserSession", back_populates="user")
-    created_users: Mapped[List["User"]] = relationship("User", remote_side=[id])
+    created_users: Mapped[List["User"]] = relationship("User", foreign_keys="User.created_by", back_populates=None)
     # Notifications sent by this CDC user
     sent_notifications: Mapped[List["CDCNotification"]] = relationship(
         "CDCNotification",
@@ -162,6 +165,19 @@ class User(Base):
         "CDCNotification",
         back_populates="farmer",
         foreign_keys="CDCNotification.farmer_id"
+    )
+    # The CDC officer assigned to this farmer (farmer side of the relationship)
+    assigned_cdc: Mapped[Optional["User"]] = relationship(
+        "User",
+        foreign_keys=[assigned_cdc_id],
+        back_populates="assigned_farmers",
+        remote_side="User.id",
+    )
+    # Farmers assigned to this CDC user (CDC side of the relationship)
+    assigned_farmers: Mapped[List["User"]] = relationship(
+        "User",
+        foreign_keys="User.assigned_cdc_id",
+        back_populates="assigned_cdc",
     )
 
     # Role helper methods
