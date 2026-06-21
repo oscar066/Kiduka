@@ -292,7 +292,7 @@ function CDCAnalyzeContent() {
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
+        <h1 className="text-2xl font-serif font-bold bg-gradient-to-r from-green-800 via-emerald-600 to-green-700 bg-clip-text text-transparent">
           Soil Analysis for Farmer
         </h1>
         <p className="text-green-600 font-serif">
@@ -301,95 +301,102 @@ function CDCAnalyzeContent() {
       </div>
 
       {/* Farmer Selector */}
-      <Card className="border-amber-200 shadow-sm bg-white">
-        <CardHeader className="bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200 pb-4">
-          <CardTitle className="flex items-center gap-2 text-green-800 text-base">
-            <User className="h-5 w-5" />
-            Select Farmer
-          </CardTitle>
-          <CardDescription className="text-green-600">
-            Search and select the farmer whose soil you are analysing
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4">
+      <div className="bg-white rounded-xl border border-amber-200 shadow-sm">
+        <div className="px-4 py-3 bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200 rounded-t-xl flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-green-600" />
+            <span className="text-sm font-serif font-semibold text-green-800">Select Farmer</span>
+          </div>
+          {selectedFarmer && (
+            <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Farmer selected
+            </span>
+          )}
+        </div>
+
+        <div className="p-4">
           {selectedFarmer ? (
-            <div className="flex items-center justify-between p-3 rounded-lg border border-emerald-200 bg-emerald-50">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-emerald-100 border-2 border-emerald-300 flex items-center justify-center shrink-0">
-                  <span className="text-emerald-700 font-bold text-sm">
-                    {(selectedFarmer.full_name || selectedFarmer.username).charAt(0).toUpperCase()}
-                  </span>
+            <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-amber-200 bg-gradient-to-r from-green-50/60 to-amber-50/60">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-10 w-10 rounded-full bg-green-100 border border-green-200 flex items-center justify-center shrink-0 text-green-700 font-bold text-sm">
+                  {(selectedFarmer.full_name || selectedFarmer.username).charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <p className="font-semibold text-emerald-900 text-sm">
+                <div className="min-w-0">
+                  <p className="font-semibold text-green-900 text-sm truncate">
                     {selectedFarmer.full_name || selectedFarmer.username}
                   </p>
                   <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                    <span className="flex items-center gap-1 text-xs text-emerald-600">
-                      <Mail className="h-3 w-3" />
+                    <span className="flex items-center gap-1 text-xs text-gray-500">
+                      <Mail className="h-3 w-3 text-green-400" />
                       {selectedFarmer.email}
                     </span>
                     {selectedFarmer.phone_number && (
-                      <span className="flex items-center gap-1 text-xs text-emerald-600">
-                        <Phone className="h-3 w-3" />
+                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <Phone className="h-3 w-3 text-green-400" />
                         {selectedFarmer.phone_number}
                       </span>
                     )}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 ml-4 shrink-0">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearFarmer}
-                  className="h-8 w-8 p-0 text-gray-400 hover:text-red-500"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFarmer}
+                className="h-8 w-8 p-0 text-gray-300 hover:text-red-500 hover:bg-red-50 shrink-0 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           ) : (
             <div ref={searchRef} className="relative">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-400" />
-                {farmerSearchLoading && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-400 animate-spin" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-green-400" />
+                {farmerSearchLoading ? (
+                  <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-green-400 animate-spin" />
+                ) : farmerSearch.length > 0 && (
+                  <button
+                    onClick={() => { setFarmerSearch(""); setShowFarmerDropdown(false); }}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 )}
                 <Input
-                  placeholder="Search by farmer name or email..."
+                  placeholder="Type a name or email to search farmers..."
                   value={farmerSearch}
                   onChange={(e) => handleFarmerSearchChange(e.target.value)}
                   onFocus={() => farmerResults.length > 0 && setShowFarmerDropdown(true)}
-                  className="pl-10 pr-10 border-amber-200 focus-visible:ring-green-500"
+                  className="pl-10 pr-10 h-11 border-amber-200 focus-visible:ring-green-500 text-sm"
                 />
               </div>
 
               {showFarmerDropdown && farmerResults.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-amber-200 rounded-lg shadow-lg overflow-hidden">
+                <div className="absolute z-50 w-full mt-1.5 bg-white border border-amber-200 rounded-xl shadow-lg overflow-hidden">
+                  <p className="px-3 py-2 text-[10px] font-semibold text-green-700 uppercase tracking-wide bg-green-50/60 border-b border-amber-100">
+                    {farmerResults.length} result{farmerResults.length !== 1 ? "s" : ""}
+                  </p>
                   {farmerResults.map((farmer) => (
                     <button
                       key={farmer.id}
                       onClick={() => handleSelectFarmer(farmer)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-green-50 transition-colors text-left border-b border-amber-50 last:border-0"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-green-50 transition-colors text-left border-b border-amber-50 last:border-0"
                     >
-                      <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                        <span className="text-green-700 font-semibold text-xs">
-                          {(farmer.full_name || farmer.username).charAt(0).toUpperCase()}
-                        </span>
+                      <div className="h-8 w-8 rounded-full bg-green-100 border border-green-100 flex items-center justify-center shrink-0 text-green-700 font-semibold text-xs">
+                        {(farmer.full_name || farmer.username).charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-900 truncate">
                           {farmer.full_name || farmer.username}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">{farmer.email}</p>
+                        <p className="text-xs text-gray-400 truncate">{farmer.email}</p>
                       </div>
                       {farmer.phone_number && (
-                        <Badge variant="outline" className="ml-auto shrink-0 text-xs border-green-200 text-green-700">
-                          <Phone className="h-2.5 w-2.5 mr-1" />
+                        <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 border border-green-100 px-1.5 py-0.5 rounded-full shrink-0">
+                          <Phone className="h-2.5 w-2.5" />
                           SMS
-                        </Badge>
+                        </span>
                       )}
                     </button>
                   ))}
@@ -397,36 +404,35 @@ function CDCAnalyzeContent() {
               )}
 
               {showFarmerDropdown && !farmerSearchLoading && farmerSearch.length > 0 && farmerResults.length === 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-amber-200 rounded-lg shadow-sm p-4 text-center text-sm text-gray-500">
-                  No farmers found for &ldquo;{farmerSearch}&rdquo;
+                <div className="absolute z-50 w-full mt-1.5 bg-white border border-amber-200 rounded-xl shadow-sm px-4 py-6 text-center">
+                  <p className="text-sm text-gray-500">No farmers found for <span className="font-medium text-gray-700">&ldquo;{farmerSearch}&rdquo;</span></p>
+                  <p className="text-xs text-gray-400 mt-0.5">Try a different name or email</p>
                 </div>
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Location Detector — CDC must be at the farm */}
-      <div className="space-y-1">
-        <p className="text-xs font-medium text-green-700 uppercase tracking-wide px-0.5">
-          Field Location <span className="text-red-500">*</span>
-          <span className="ml-2 normal-case font-normal text-gray-400">
-            — You must be at the farmer&apos;s field for accurate analysis
-          </span>
-        </p>
-        <LocationDetector onLocationDetected={handleLocationDetected} />
+      {/* Location Detector */}
+      <div className="bg-white rounded-xl border border-amber-200 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200">
+          <p className="text-sm font-serif font-semibold text-green-800">
+            Field Location <span className="text-red-500">*</span>
+          </p>
+          <p className="text-xs text-green-600 mt-0.5">You must be at the farmer's field for accurate analysis</p>
+        </div>
+        <div className="p-4">
+          <LocationDetector onLocationDetected={handleLocationDetected} />
+        </div>
       </div>
 
       {/* Error Display */}
       {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-red-800">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span className="text-sm font-medium">{error}</span>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-red-200 bg-red-50 text-red-800">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span className="text-sm font-medium">{error}</span>
+        </div>
       )}
 
       {/* Main grid — identical layout to the farmer's analysis page */}
@@ -492,13 +498,13 @@ function CDCAnalyzeContent() {
               )}
 
               {/* Send Results panel */}
-              <Card className="border-blue-200 bg-white shadow-md">
-                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200 pb-4">
-                  <CardTitle className="flex items-center gap-2 text-blue-800 text-base">
+              <Card className="border-amber-200 bg-white shadow-sm">
+                <CardHeader className="bg-gradient-to-r from-green-50 to-amber-50 border-b border-amber-200 pb-4">
+                  <CardTitle className="flex items-center gap-2 text-green-800 text-base font-serif">
                     <Send className="h-5 w-5" />
                     Send Results to Farmer
                   </CardTitle>
-                  <CardDescription className="text-blue-600">
+                  <CardDescription className="text-green-600">
                     Notify {selectedFarmer?.full_name || selectedFarmer?.username} of their results
                   </CardDescription>
                 </CardHeader>
@@ -594,7 +600,7 @@ function CDCAnalyzeContent() {
                       <Button
                         onClick={handleSendResults}
                         disabled={isSending}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md"
+                        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold shadow-sm"
                       >
                         {isSending ? (
                           <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending...</>
