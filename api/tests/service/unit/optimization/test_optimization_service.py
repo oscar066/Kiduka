@@ -79,6 +79,53 @@ def test_optimization_service_builds_new_quefts_contract_from_api_request():
     assert response.summary_row["budget_used"] <= 1000.0 + 1e-6
 
 
+def _base_request_payload(soil_overrides: dict, location: dict | None = None) -> dict:
+    payload = {
+        "soil": {
+            "mode": "direct",
+            "soc_percent": 0.7,
+            "p_olsen_ppm": 5.0,
+            "k_exchangeable_ppm": 55.0,
+            **soil_overrides,
+        },
+        "crops": [{"crop": "Maize", "area_ha": 0.2, "grain_price_currency_per_kg": 58.5}],
+        "fertilizers": [
+            {
+                "product": "NPK 23:23:23",
+                "n_fraction": 0.23,
+                "p2o5_fraction": 0.23,
+                "k2o_fraction": 0.23,
+                "package_price_currency": 5750.0,
+                "package_weight_kg": 50.0,
+            }
+        ],
+        "scenario": {
+            "budget_currency": 1000.0,
+            "solver": {"method": "fd_oa", "time_limit_seconds": 1.0, "max_iterations": 2, "no_improvement_limit": 1},
+        },
+    }
+    if location is not None:
+        payload["location"] = location
+    return payload
+
+
+def test_optimization_service_resolves_ph_from_location_when_omitted():
+    request = OptimizationRequest.model_validate(
+        _base_request_payload({}, location={"lat": 0.46, "lon": 34.11})
+    )
+
+    response = OptimizationService.optimize(request, yield_model=FakeYieldModel())
+
+    assert response.status == "Feasible"
+
+
+def test_optimization_service_requires_location_when_ph_omitted():
+    request = OptimizationRequest.model_validate(_base_request_payload({}))
+
+    with pytest.raises(ValueError, match="soil.ph is required when location is not provided"):
+        OptimizationService.optimize(request, yield_model=FakeYieldModel())
+
+
 def test_optimization_service_keeps_history_soil_as_unwired_interface_boundary():
     request = OptimizationRequest.model_validate(
         {

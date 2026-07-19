@@ -65,9 +65,11 @@ class SoilInputModel(StrictModel):
             ValueError: If 'direct' mode is selected but any soil parameters are missing.
             ValueError: If 'history' mode is selected but the 'soil_analysis_id' is missing.
         """
-        direct_values = (self.ph, self.soc_percent, self.p_olsen_ppm, self.k_exchangeable_ppm)
+        # ph is not required here: if omitted, the service layer falls back to a
+        # regional default derived from the request's location.
+        direct_values = (self.soc_percent, self.p_olsen_ppm, self.k_exchangeable_ppm)
         if self.mode == "direct" and any(value is None for value in direct_values):
-            raise ValueError("Direct soil input requires ph, soc_percent, p_olsen_ppm, and k_exchangeable_ppm.")
+            raise ValueError("Direct soil input requires soc_percent, p_olsen_ppm, and k_exchangeable_ppm.")
         if self.mode == "history" and not self.soil_analysis_id:
             raise ValueError("History soil input requires soil_analysis_id.")
         return self
