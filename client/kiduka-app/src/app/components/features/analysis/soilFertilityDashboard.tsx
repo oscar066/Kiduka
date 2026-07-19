@@ -28,7 +28,6 @@ export default function SoilFertilityDashboard() {
   const router = useRouter();
 
   const [soilData, setSoilData] = useState<SoilInput>({
-    ph: 0,
     latitude: 0,
     longitude: 0,
   });
@@ -54,6 +53,18 @@ export default function SoilFertilityDashboard() {
       longitude: lng,
       location_name: name,
     }));
+
+    // Suggest a regional default pH for this location, without overwriting
+    // a value the user has already typed in.
+    apiClient
+      .getDefaultPh(lat, lng)
+      .then(({ ph }) => {
+        if (ph === null) return;
+        setSoilData((prev) => (prev.ph === undefined ? { ...prev, ph } : prev));
+      })
+      .catch(() => {
+        // No suggestion available — user can still enter pH manually.
+      });
   };
 
   const handleFormSubmit = async () => {
@@ -62,8 +73,9 @@ export default function SoilFertilityDashboard() {
       return;
     }
 
-    // Validate pH is required and within limits
-    if (!soilData.ph || soilData.ph <= 0 || soilData.ph > 14) {
+    // pH is optional — if omitted, the backend applies a regional default
+    // based on location. If provided, it must be within range.
+    if (soilData.ph !== undefined && (soilData.ph <= 0 || soilData.ph > 14)) {
       setError("Please enter a valid pH value (must be between 0 and 14).");
       return;
     }

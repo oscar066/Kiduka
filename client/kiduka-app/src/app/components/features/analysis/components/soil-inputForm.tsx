@@ -37,7 +37,8 @@ export function SoilInputForm({
   };
 
   const isFormValid = () =>
-    soilData.ph > 0 && soilData.ph <= 14 && soilData.latitude !== 0 && soilData.longitude !== 0;
+    (soilData.ph === undefined || (soilData.ph > 0 && soilData.ph <= 14)) &&
+    soilData.latitude !== 0 && soilData.longitude !== 0;
 
   return (
     <div className="bg-white rounded-xl border border-amber-200 shadow-sm overflow-hidden">
@@ -69,7 +70,7 @@ export function SoilInputForm({
           <TabsContent value="basic" className="space-y-3 mt-4">
             <div className="space-y-1.5">
               <Label htmlFor="ph" className="text-sm font-medium text-gray-700">
-                pH Level <span className="text-red-500 font-bold">*</span>
+                pH Level
               </Label>
               <Input
                 id="ph"
@@ -83,7 +84,10 @@ export function SoilInputForm({
                   handleInputChange("ph", val === "" ? undefined : (Number.parseFloat(val) || 0));
                 }}
               />
-              <p className="text-xs text-gray-400">Scale: 0–14 · Ideal for most crops: 6.0–7.0</p>
+              <p className="text-xs text-gray-400">
+                Scale: 0–14 · Ideal for most crops: 6.0–7.0 · Auto-filled from regional survey data
+                where available — edit if you have a lab test result.
+              </p>
             </div>
           </TabsContent>
 

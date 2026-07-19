@@ -94,7 +94,7 @@ function CDCAnalyzeContent() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Soil analysis — mirrors exactly what the farmer page uses
-  const [soilData, setSoilData] = useState<SoilInput>({ ph: 0, latitude: 0, longitude: 0 });
+  const [soilData, setSoilData] = useState<SoilInput>({ latitude: 0, longitude: 0 });
   const [cdcNotes, setCdcNotes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -189,12 +189,26 @@ function CDCAnalyzeContent() {
 
   const handleLocationDetected = (lat: number, lng: number, name?: string) => {
     setSoilData((prev) => ({ ...prev, latitude: lat, longitude: lng, location_name: name }));
+
+    // Suggest a regional default pH for this location, without overwriting
+    // a value the CDC officer has already typed in.
+    apiClient
+      .getDefaultPh(lat, lng)
+      .then(({ ph }) => {
+        if (ph === null) return;
+        setSoilData((prev) => (prev.ph === undefined ? { ...prev, ph } : prev));
+      })
+      .catch(() => {
+        // No suggestion available — pH can still be entered manually.
+      });
   };
 
   const handleFormSubmit = async () => {
     if (!token) { setError("Authentication token not found. Please sign in again."); return; }
     if (!selectedFarmer) { setError("Please select a farmer before running the analysis."); return; }
-    if (!soilData.ph || soilData.ph <= 0 || soilData.ph > 14) {
+    // pH is optional — if omitted, the backend applies a regional default
+    // based on location. If provided, it must be within range.
+    if (soilData.ph !== undefined && (soilData.ph <= 0 || soilData.ph > 14)) {
       setError("Please enter a valid pH value (must be between 0 and 14).");
       return;
     }
