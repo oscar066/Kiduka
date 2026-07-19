@@ -25,7 +25,7 @@ class SoilData(BaseModel):
         longitude (float): Geographic longitude of the soil sample (-180 to 180).
         location_name (Optional[str]): A human-readable name or address for the location.
     """
-    ph: float = Field(..., description="Soil pH level", ge=0, le=14)
+    ph: Optional[float] = Field(None, description="Soil pH level. If omitted, a regional default is used based on latitude/longitude.", ge=0, le=14)
     n: Optional[float] = Field(None, description="Nitrogen content", ge=0)
     p: Optional[float] = Field(None, description="Phosphorus content", ge=0)
     k: Optional[float] = Field(None, description="Potassium content", ge=0)
@@ -37,6 +37,17 @@ class SoilData(BaseModel):
     latitude: float = Field(..., description="Location latitude", ge=-90, le=90)
     longitude: float = Field(..., description="Location longitude", ge=-180, le=180)
     location_name: Optional[str] = Field(None, description="Human-readable location name")
+
+class DefaultPhResponse(BaseModel):
+    """
+    Schema for a regional soil pH suggestion lookup.
+
+    Attributes:
+        ph (Optional[float]): The surveyed pH for the region containing this location,
+            or None if the location does not fall within any surveyed region.
+    """
+    ph: Optional[float] = Field(None, description="Surveyed pH for this location's region, if available.")
+
 
 class AgrovetInfo(BaseModel):
     """

@@ -17,6 +17,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 # Import local modules
 from api.utils.agrovet import AgrovetLocator
 from api.services.prediction.ml_predictor import MLPredictor
+from api.utils.soil_ph import get_soil_ph_locator
 from api.utils.config import AppConfig
 from api.utils.logging_config import setup_logger
 
@@ -76,6 +77,13 @@ def initialize_app_components() -> Dict[str, Any]:
     ml_predictor = initialize_ml_predictor()
     if ml_predictor:
         components['ml_predictor'] = ml_predictor
-    
+
+    # Warm the soil pH locator cache so the first request isn't slowed by CSV parsing
+    try:
+        get_soil_ph_locator()
+        logger.info("SoilPhLocator initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing SoilPhLocator: {e}")
+
     logger.debug(f"Initialized components: {list(components.keys())}")
     return components

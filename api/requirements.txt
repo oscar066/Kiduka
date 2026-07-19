@@ -51,6 +51,7 @@ pypdf==4.0.0
 # Optimization dependencies
 scipy==1.11.4
 pcse==6.0.12
+shapely==2.0.4
 
 # Notification dependencies
 resend==2.10.0

@@ -26,6 +26,7 @@ from api.services.optimization.core.unit_conversions import (
     p2o5_fraction_to_p,
 )
 from api.services.optimization.solvers.fd_oa import FdOaSolver
+from api.utils.soil_ph import get_soil_ph_locator
 from api.services.optimization.yield_models.base import YieldModel
 from api.services.optimization.yield_models.kephis_yatt import KephisYAttProvider
 from api.services.optimization.yield_models.rquefts import RqueftsYieldModel
@@ -174,8 +175,17 @@ class OptimizationService:
                 "soil.mode='history' is part of the interface, but no soil-analysis resolver is wired yet. "
                 "Resolve the history record upstream and call optimization with soil.mode='direct'."
             )
+
+        ph = soil.ph
+        if ph is None:
+            if request.location is None:
+                raise ValueError("soil.ph is required when location is not provided.")
+            ph = get_soil_ph_locator().get_default_ph(request.location.lat, request.location.lon)
+            if ph is None:
+                raise ValueError("soil.ph is required and no regional default is available for this location.")
+
         return SoilInput(
-            pH=min(max(float(soil.ph), QUEFTS_PH_MIN), QUEFTS_PH_MAX),
+            pH=min(max(float(ph), QUEFTS_PH_MIN), QUEFTS_PH_MAX),
             soc_percent=min(float(soil.soc_percent), QUEFTS_SOC_MAX_PERCENT),
             p_olsen_ppm=min(float(soil.p_olsen_ppm), QUEFTS_P_OLSEN_MAX_MG_KG),
             k_ppm=min(float(soil.k_exchangeable_ppm), QUEFTS_K_EXCHANGEABLE_MAX_PPM),

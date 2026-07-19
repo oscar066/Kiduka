@@ -310,7 +310,7 @@ export function ComprehensiveAnalysis({
               <p className="text-xs text-gray-600">SHI Score</p>
             </div>
             <div className="text-center">
-              <p className="text-lg font-semibold text-gray-800">{soilInput.ph.toFixed(1)}</p>
+              <p className="text-lg font-semibold text-gray-800">{soilInput.ph !== undefined ? soilInput.ph.toFixed(1) : "N/A"}</p>
               <p className="text-xs text-gray-600">pH Level</p>
             </div>
             <div className="text-center">

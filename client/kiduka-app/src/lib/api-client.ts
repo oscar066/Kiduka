@@ -497,11 +497,26 @@ export class ApiClient {
    * Make soil prediction
    */
   async makePrediction(soilData: SoilInput, token?: string): Promise<PredictionResponse> {
-    const headers = token ? this.getAuthHeaders(token) : {};   
+    const headers = token ? this.getAuthHeaders(token) : {};
     return this.request('/predictions/predict', {
       method: 'POST',
       headers,
       body: JSON.stringify(soilData),
+    });
+  }
+
+  /**
+   * Look up the surveyed regional default pH for a location, to suggest a
+   * value in the soil analysis form when the user hasn't run a lab test.
+   * Returns ph=null if the location isn't within any surveyed region.
+   */
+  async getDefaultPh(latitude: number, longitude: number): Promise<{ ph: number | null }> {
+    const params = new URLSearchParams({
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+    });
+    return this.request(`/predictions/default-ph?${params.toString()}`, {
+      method: 'GET',
     });
   }
 

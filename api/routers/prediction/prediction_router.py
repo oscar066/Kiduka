@@ -3,19 +3,34 @@ Main prediction endpoint using service layer
 """
 import logging
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Request, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.schema.schema import SoilData, PredictionResponse
+from api.schema.schema import SoilData, PredictionResponse, DefaultPhResponse
 from api.utils.auth import get_current_user
 from api.db.connection import get_db
 from api.db.models.database import User
 from api.services.prediction import PredictionService
 from api.utils.session import SessionManager
+from api.utils.soil_ph import get_soil_ph_locator
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["prediction-main"])
+
+@router.get("/default-ph", response_model=DefaultPhResponse)
+async def get_default_ph(
+    latitude: float = Query(..., ge=-90, le=90),
+    longitude: float = Query(..., ge=-180, le=180),
+):
+    """
+    Look up the surveyed regional soil pH for a location, for pre-filling the
+    soil analysis form. Returns ph=None if the location isn't within any
+    surveyed region (the caller should leave the field for manual entry —
+    the /predict endpoint still applies a nearest-region fallback if needed).
+    """
+    ph = get_soil_ph_locator().get_exact_ph(latitude, longitude)
+    return DefaultPhResponse(ph=ph)
 
 # Dependency to get prediction service
 async def get_prediction_service(db: AsyncSession = Depends(get_db)) -> PredictionService:
