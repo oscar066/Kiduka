@@ -70,6 +70,8 @@ def sample_user(user_id):
     user.last_login = None
     user.created_by = None
     user.notes = None
+    user.assigned_cdc_id = None
+    user.assigned_cdc = None
     user.is_admin = MagicMock(return_value=False)
     user.is_super_admin = MagicMock(return_value=False)
     return user
@@ -92,6 +94,8 @@ def admin_user(admin_id):
     user.last_login = None
     user.created_by = None
     user.notes = None
+    user.assigned_cdc_id = None
+    user.assigned_cdc = None
     user.is_admin = MagicMock(return_value=True)
     user.is_super_admin = MagicMock(return_value=False)
     return user
@@ -114,6 +118,8 @@ def super_admin_user(super_admin_id):
     user.last_login = None
     user.created_by = None
     user.notes = None
+    user.assigned_cdc_id = None
+    user.assigned_cdc = None
     user.is_admin = MagicMock(return_value=True)
     user.is_super_admin = MagicMock(return_value=True)
     return user
