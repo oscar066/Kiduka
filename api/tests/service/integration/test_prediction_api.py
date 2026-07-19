@@ -156,3 +156,25 @@ def test_ml_only_has_required_fields(auth_headers, ml_payload):
     result = requests.post(PREDICT_URL, json=ml_payload, headers=auth_headers).json()
     assert "soil_fertility_status" in result
     assert "nutrients" in result
+
+
+# ---------------------------------------------------------------------------
+# Scenario 4: No pH provided — regional default used
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def no_ph_payload():
+    return {
+        "latitude": -1.286389,
+        "longitude": 36.817223,
+    }
+
+
+def test_no_ph_returns_200(auth_headers, no_ph_payload):
+    response = requests.post(PREDICT_URL, json=no_ph_payload, headers=auth_headers)
+    assert response.status_code == 200
+
+
+def test_no_ph_mentions_regional_default(auth_headers, no_ph_payload):
+    result = requests.post(PREDICT_URL, json=no_ph_payload, headers=auth_headers).json()
+    assert any("regional soil survey" in m.lower() for m in result.get("mentions", []))

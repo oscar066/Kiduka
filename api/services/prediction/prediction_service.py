@@ -12,6 +12,7 @@ from api.schema.schema import SoilData, PredictionResponse
 from api.db.models.database import User, SoilPrediction, Agrovet
 from api.utils.dependencies import dependency_manager
 from api.utils.soil_classifier import SoilHealthClassifier
+from api.utils.soil_ph import get_soil_ph_locator
 from api.utils.config import AppConfig
 from api.services.prediction.nutrient_score_payload import build_unified_nutrients
 
@@ -69,7 +70,17 @@ class PredictionService:
             app_components = dependency_manager.get_components()
             agrovet_locator = app_components.get('agrovet_locator')
             ml_predictor = app_components.get('ml_predictor')
-            
+
+            # Resolve pH: use the lab-tested value if provided, otherwise fall back
+            # to the regional default for this location (no lab test available).
+            effective_ph = soil_data.ph
+            ph_is_default = False
+            if effective_ph is None:
+                effective_ph = get_soil_ph_locator().get_default_ph(soil_data.latitude, soil_data.longitude)
+                ph_is_default = effective_ph is not None
+            if effective_ph is None:
+                raise ValueError("Soil pH is required and no regional default is available for this location.")
+
             # Identify nutrients
             optional_nutrients = ["n", "p", "k", "organic_carbon", "ca", "mg"]
             provided_nutrients = {n: getattr(soil_data, n) for n in optional_nutrients if getattr(soil_data, n) is not None}
@@ -95,7 +106,7 @@ class PredictionService:
                     ml_results = ml_predictor.predict_soil_health(
                         latitude=soil_data.latitude,
                         longitude=soil_data.longitude,
-                        ph=soil_data.ph,
+                        ph=effective_ph,
                         ph_score=soil_data.ph_score,
                         year=soil_data.year or 2025
                     )
@@ -106,8 +117,8 @@ class PredictionService:
             nutrient_method = {} # Track "measured" or "estimated"
             
             # Always include pH (Required)
-            merged_scores["pH"] = soil_data.ph_score or classifier.classify_ph(soil_data.ph)
-            nutrient_method["pH"] = "measured"
+            merged_scores["pH"] = soil_data.ph_score or classifier.classify_ph(effective_ph)
+            nutrient_method["pH"] = "estimated_regional_default" if ph_is_default else "measured"
             
             # Map for classifier
             field_to_name = {"n": "N", "p": "P", "k": "K", "organic_carbon": "OC", "ca": "Ca", "mg": "Mg"}
@@ -133,9 +144,13 @@ class PredictionService:
                         nutrient_method[name] = "estimated"
             
             # 3. Recalculate SHI from unified dataset
-            classification_result = classifier.get_analysis_from_scores(merged_scores, ph_val=soil_data.ph)
+            classification_result = classifier.get_analysis_from_scores(merged_scores, ph_val=effective_ph)
             classification_result["Mentions"] = classification_result.get("Mentions", [])
-            
+            if ph_is_default:
+                classification_result["Mentions"].append(
+                    "pH estimated from regional soil survey data (no lab test provided)"
+                )
+
             # Determine overall prediction mode label
             if provided_nutrients and ml_results:
                 prediction_mode = "ML" # We still call it ML mode if it involved ML, but UI will show "Hybrid"
@@ -190,6 +205,7 @@ class PredictionService:
             saved_prediction_id = None
             if user:
                 db_soil_data = soil_data.model_dump()
+                db_soil_data["ph"] = effective_ph
                 saved = await self._save_prediction_to_database(
                     user_id=str(user.id),
                     soil_data=db_soil_data,
